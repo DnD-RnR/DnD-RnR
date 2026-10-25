@@ -13,7 +13,7 @@ type AppLayoutProps = {
 
 export function AppLayout({ activePage, onNavigate, children, user, onLogout, logoutPending }: AppLayoutProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const navigationPage = activePage === 'create-character' ? 'admin' : activePage;
+  const navigationPage = activePage === 'create-character' ? 'admin' : activePage === 'game' ? 'characters' : activePage;
 
   return (
     <div className="app-shell">

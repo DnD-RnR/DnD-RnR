@@ -1,0 +1,13 @@
+[
+  { "id": "head", "label": "Głowa", "symbol": "♔" },
+  { "id": "neck", "label": "Szyja", "symbol": "◇" },
+  { "id": "cloak", "label": "Plecy", "symbol": "◈" },
+  { "id": "armor", "label": "Pancerz", "symbol": "⬡" },
+  { "id": "off-hand", "label": "Druga ręka", "symbol": "⛨" },
+  { "id": "main-hand", "label": "Główna ręka", "symbol": "⚔" },
+  { "id": "hands", "label": "Dłonie", "symbol": "✧" },
+  { "id": "belt", "label": "Pas", "symbol": "∞" },
+  { "id": "ring-left", "label": "Pierścień I", "symbol": "○" },
+  { "id": "ring-right", "label": "Pierścień II", "symbol": "○" },
+  { "id": "feet", "label": "Stopy", "symbol": "⌁" }
+]

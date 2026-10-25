@@ -119,3 +119,15 @@ Usuwanie wymaga potwierdzenia w interfejsie. Te operacje są dostępne tylko dla
 Administrator wybiera gracza, imię, gatunek (rasę), pochodzenie, klasę i poziom 1–20. Od poziomu 3 wymagana jest podklasa pasująca do klasy. Katalog obejmuje 10 gatunków, 16 pochodzeń i 12 klas z 48 podklasami z Player’s Handbook 2024, według https://dnd2024.wikidot.com/. Angielskie nazwy podklas odpowiadają wiki; polskie etykiety są pomocnicze. Dodatki i opcje homebrew nie są jeszcze uwzględnione.
 
 Wybory są sprawdzane przez API, zapisywane w SQLite i widoczne na karcie gracza. Baza automatycznie otrzymuje nowe kolumny; istniejące postacie zachowują dane, a nowe pola należy uzupełnić przy edycji. Ten etap zapisuje podstawy postaci; nie wylicza jeszcze cech, biegłości, atutów, zaklęć ani wyposażenia.
+
+## Ekran gry i ekwipunek
+
+Przycisk „Wejdź do gry” na karcie postaci otwiera ekran z zakładką „Ekwipunek”.
+Sylwetka pokazuje 11 slotów; wybranie slotu wyświetla opis założonego przedmiotu.
+Plecak pokazuje przedmioty przypisane do postaci. Gracz może zakładać i zdejmować
+przedmioty oraz usuwać je z plecaka, ale nie może dodawać ani przekazywać ich
+innym postaciom. Przydzielanie przedmiotów zostanie udostępnione osobno.
+Założenie nowego przedmiotu odkłada poprzedni z tego slotu do plecaka.
+Dane są zapisywane w SQLite, a API pozwala korzystać tylko z ekwipunku własnych
+postaci. Sloty służą do ewidencji: aplikacja nie wylicza statystyk postaci,
+premii ani ograniczeń używania przedmiotów, takich jak broń dwuręczna czy dostrojenie.

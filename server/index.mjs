@@ -59,6 +59,31 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         db.prepare('DELETE FROM sessions WHERE token = ?').run(digest(token)); cookie('', 0); return send(200, { ok: true });
       }
       if (path === '/api/characters' && req.method === 'GET') return send(200, { characters: db.prepare('SELECT id, name, class, level, species, background, subclass FROM characters WHERE user_id = ?').all(user.id) });
+      const inventoryRoute = path.match(/^\/api\/characters\/([1-9]\d*)\/inventory(?:\/([1-9]\d*)\/(equip|unequip|delete))?$/);
+      if (inventoryRoute) {
+        const [, rawCharacterId, rawItemId, action] = inventoryRoute;
+        const characterId = Number(rawCharacterId);
+        if (!db.prepare('SELECT id FROM characters WHERE id = ? AND user_id = ?').get(characterId, user.id)) return send(404, { error: 'Nie znaleziono postaci.' });
+        if (!action && req.method === 'GET') return send(200, { items: db.prepare('SELECT id, name, description, quantity, slot, equipped FROM character_items WHERE character_id = ? ORDER BY id DESC').all(characterId) });
+        if (action && req.method === 'POST') {
+          const itemId = Number(rawItemId);
+          const item = db.prepare('SELECT id, slot FROM character_items WHERE id = ? AND character_id = ?').get(itemId, characterId);
+          if (!item) return send(404, { error: 'Nie znaleziono przedmiotu.' });
+          if (action === 'delete') db.prepare('DELETE FROM character_items WHERE id = ? AND character_id = ?').run(itemId, characterId);
+          if (action === 'unequip') db.prepare('UPDATE character_items SET equipped = 0 WHERE id = ? AND character_id = ?').run(itemId, characterId);
+          if (action === 'equip') {
+            if (item.slot === 'backpack') return send(400, { error: 'Ten przedmiot jest przeznaczony do plecaka.' });
+            db.exec('BEGIN');
+            try {
+              db.prepare('UPDATE character_items SET equipped = 0 WHERE character_id = ? AND slot = ?').run(characterId, item.slot);
+              db.prepare('UPDATE character_items SET equipped = 1 WHERE id = ? AND character_id = ?').run(itemId, characterId);
+              db.exec('COMMIT');
+            } catch (error) { db.exec('ROLLBACK'); throw error; }
+          }
+          return send(200, { ok: true });
+        }
+        return send(405, { error: 'Niedozwolona metoda.' });
+      }
       if (path.startsWith('/api/admin/')) {
         if (user.role !== 'admin') return send(403, { error: 'Dostęp tylko dla administratora.' });
         const target = path.match(/^\/api\/admin\/(players|characters)\/([1-9]\d*)\/(update|delete)$/);

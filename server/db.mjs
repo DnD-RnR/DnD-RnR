@@ -34,5 +34,15 @@ export function openDatabase(path = process.env.DB_PATH || 'data/dnd.sqlite') {
   for (const column of ['species', 'background', 'subclass']) {
     if (!columns.has(column)) db.exec(`ALTER TABLE characters ADD COLUMN ${column} TEXT NOT NULL DEFAULT ''`);
   }
+  db.exec(`CREATE TABLE IF NOT EXISTS character_items (
+    id INTEGER PRIMARY KEY,
+    character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    quantity INTEGER NOT NULL CHECK(quantity BETWEEN 1 AND 9999),
+    slot TEXT NOT NULL,
+    equipped INTEGER NOT NULL DEFAULT 0 CHECK(equipped IN (0, 1))
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS one_item_per_slot ON character_items(character_id, slot) WHERE equipped = 1;`);
   return db;
 }

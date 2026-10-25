@@ -1,5 +1,6 @@
 export type User = { id: number; username: string; name: string; role: 'admin' | 'player' };
 export type Character = { id: number; name: string; class: string; level: number; species: string; background: string; subclass: string };
+export type InventoryItem = { id: number; name: string; description: string; quantity: number; slot: string; equipped: number };
 
 export async function api<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(`/api${path}`, {
