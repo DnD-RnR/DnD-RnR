@@ -1,0 +1,143 @@
+{
+  "source": "https://dnd2024.wikidot.com/",
+  "species": [
+    "Aasimar",
+    "Człowiek (Human)",
+    "Diabelstwo (Tiefling)",
+    "Elf",
+    "Gnom (Gnome)",
+    "Goliat (Goliath)",
+    "Krasnolud (Dwarf)",
+    "Niziołek (Halfling)",
+    "Ork (Orc)",
+    "Smokowiec (Dragonborn)"
+  ],
+  "backgrounds": [
+    "Akolita (Acolyte)",
+    "Rzemieślnik (Artisan)",
+    "Szarlatan (Charlatan)",
+    "Przestępca (Criminal)",
+    "Artysta (Entertainer)",
+    "Rolnik (Farmer)",
+    "Strażnik (Guard)",
+    "Przewodnik (Guide)",
+    "Pustelnik (Hermit)",
+    "Kupiec (Merchant)",
+    "Szlachcic (Noble)",
+    "Mędrzec (Sage)",
+    "Żeglarz (Sailor)",
+    "Skryba (Scribe)",
+    "Żołnierz (Soldier)",
+    "Wędrowiec (Wayfarer)"
+  ],
+  "classes": [
+    {
+      "name": "Barbarzyńca (Barbarian)",
+      "subclasses": [
+        "Path of the Berserker",
+        "Path of the Wild Heart",
+        "Path of the World Tree",
+        "Path of the Zealot"
+      ]
+    },
+    {
+      "name": "Bard",
+      "subclasses": [
+        "College of Dance",
+        "College of Glamour",
+        "College of Lore",
+        "College of Valor"
+      ]
+    },
+    {
+      "name": "Kleryk (Cleric)",
+      "subclasses": [
+        "Life Domain",
+        "Light Domain",
+        "Trickery Domain",
+        "War Domain"
+      ]
+    },
+    {
+      "name": "Druid",
+      "subclasses": [
+        "Circle of the Land",
+        "Circle of the Moon",
+        "Circle of the Sea",
+        "Circle of the Stars"
+      ]
+    },
+    {
+      "name": "Wojownik (Fighter)",
+      "subclasses": [
+        "Battle Master",
+        "Champion",
+        "Eldritch Knight",
+        "Psi Warrior"
+      ]
+    },
+    {
+      "name": "Mnich (Monk)",
+      "subclasses": [
+        "Warrior of Mercy",
+        "Warrior of Shadow",
+        "Warrior of the Elements",
+        "Warrior of the Open Hand"
+      ]
+    },
+    {
+      "name": "Paladyn (Paladin)",
+      "subclasses": [
+        "Oath of Devotion",
+        "Oath of Glory",
+        "Oath of the Ancients",
+        "Oath of Vengeance"
+      ]
+    },
+    {
+      "name": "Łowca (Ranger)",
+      "subclasses": [
+        "Beast Master",
+        "Fey Wanderer",
+        "Gloom Stalker",
+        "Hunter"
+      ]
+    },
+    {
+      "name": "Łotrzyk (Rogue)",
+      "subclasses": [
+        "Arcane Trickster",
+        "Assassin",
+        "Soulknife",
+        "Thief"
+      ]
+    },
+    {
+      "name": "Zaklinacz (Sorcerer)",
+      "subclasses": [
+        "Aberrant Sorcery",
+        "Clockwork Sorcery",
+        "Draconic Sorcery",
+        "Wild Magic Sorcery"
+      ]
+    },
+    {
+      "name": "Czarnoksiężnik (Warlock)",
+      "subclasses": [
+        "Archfey Patron",
+        "Celestial Patron",
+        "Fiend Patron",
+        "Great Old One Patron"
+      ]
+    },
+    {
+      "name": "Czarodziej (Wizard)",
+      "subclasses": [
+        "Abjurer",
+        "Diviner",
+        "Evoker",
+        "Illusionist"
+      ]
+    }
+  ]
+}

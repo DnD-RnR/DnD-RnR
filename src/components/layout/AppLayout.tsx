@@ -13,6 +13,7 @@ type AppLayoutProps = {
 
 export function AppLayout({ activePage, onNavigate, children, user, onLogout, logoutPending }: AppLayoutProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigationPage = activePage === 'create-character' ? 'admin' : activePage;
 
   return (
     <div className="app-shell">
@@ -28,7 +29,7 @@ export function AppLayout({ activePage, onNavigate, children, user, onLogout, lo
         <p className="sidebar-label">PRZESTRZEŃ DRUŻYNY</p>
         <nav id="navigation" aria-label="Nawigacja główna">
           {[...navigation, ...(user.role === 'admin' ? [{ id: 'admin' as const, label: 'Administracja', symbol: '⚙' }] : [])].map(({ id, label, symbol }) => (
-            <button key={id} className={`nav-item ${activePage === id ? 'is-active' : ''}`} aria-current={activePage === id ? 'page' : undefined} onClick={() => { onNavigate(id); setMenuOpen(false); }}>
+            <button key={id} className={`nav-item ${navigationPage === id ? 'is-active' : ''}`} aria-current={navigationPage === id ? 'page' : undefined} onClick={() => { onNavigate(id); setMenuOpen(false); }}>
               <span aria-hidden="true">{symbol}</span>{label}
             </button>
           ))}

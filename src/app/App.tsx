@@ -2,12 +2,10 @@ import { useEffect, useState } from 'react';
 import { api, type User } from '../api';
 import { LoginPage } from '../features/auth/LoginPage';
 import { AdminPage } from '../features/admin/AdminPage';
+import { CreateCharacterPage } from '../features/admin/CreateCharacterPage';
 import type { PageId } from './navigation';
 import { AppLayout } from '../components/layout/AppLayout';
-import { CampaignPage } from '../features/campaign/CampaignPage';
 import { CharactersPage } from '../features/characters/CharactersPage';
-import { SessionsPage } from '../features/sessions/SessionsPage';
-import { NotesPage } from '../features/notes/NotesPage';
 
 export function App() {
   const [activePage, setActivePage] = useState<PageId>('characters');
@@ -33,11 +31,9 @@ export function App() {
   return (
     <AppLayout key={user.id} user={user} activePage={activePage} onNavigate={setActivePage} onLogout={logout} logoutPending={logoutPending}>
       {error && <p role="alert" className="form-error">{error}</p>}
-      {activePage === 'admin' && user.role === 'admin' && <AdminPage />}
-      {activePage === 'campaign' && <CampaignPage onNavigate={setActivePage} />}
+      {activePage === 'admin' && user.role === 'admin' && <AdminPage onCreateCharacter={() => setActivePage('create-character')} />}
+      {activePage === 'create-character' && user.role === 'admin' && <CreateCharacterPage onBack={() => setActivePage('admin')} />}
       {activePage === 'characters' && <CharactersPage />}
-      {activePage === 'sessions' && <SessionsPage />}
-      {activePage === 'notes' && <NotesPage />}
     </AppLayout>
   );
 }

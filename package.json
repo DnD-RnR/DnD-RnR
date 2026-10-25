@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "server": "node --env-file-if-exists=.env server/index.mjs",
+    "server:dev": "node --watch --env-file-if-exists=.env server/index.mjs",
     "admin:create": "node --env-file-if-exists=.env server/create-admin.mjs",
     "test": "node --test server/auth.test.mjs",
     "build": "tsc -b && vite build",

@@ -30,5 +30,9 @@ export function openDatabase(path = process.env.DB_PATH || 'data/dnd.sqlite') {
       id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id),
       name TEXT NOT NULL, class TEXT NOT NULL, level INTEGER NOT NULL DEFAULT 1
     );`);
+  const columns = new Set(db.prepare('PRAGMA table_info(characters)').all().map(column => column.name));
+  for (const column of ['species', 'background', 'subclass']) {
+    if (!columns.has(column)) db.exec(`ALTER TABLE characters ADD COLUMN ${column} TEXT NOT NULL DEFAULT ''`);
+  }
   return db;
 }

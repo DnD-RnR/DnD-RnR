@@ -1,9 +1,18 @@
+import options from '../shared/character-options.json' with { type: 'json' };
 import { createServer } from 'node:http';
 import { createHash, randomBytes } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { openDatabase, hashPassword, verifyPassword } from './db.mjs';
 
 const digest = (value) => createHash('sha256').update(value).digest('hex');
+function characterError(body) {
+  const { userId, name, characterClass, level, species, background, subclass } = body;
+  const selectedClass = options.classes.find(entry => entry.name === characterClass);
+  if (!Number.isSafeInteger(userId) || typeof name !== 'string' || !name.trim() || name.length > 80 || !Number.isInteger(level) || level < 1 || level > 20) return 'Wybierz gracza, podaj imię (do 80 znaków) i poziom 1–20.';
+  if (!selectedClass || !options.species.includes(species) || !options.backgrounds.includes(background)) return 'Wybierz klasę, gatunek i pochodzenie z list D&D 2024.';
+  if (level < 3 ? subclass !== '' : !selectedClass.subclasses.includes(subclass)) return 'Podklasa musi pasować do klasy i jest wybierana od 3. poziomu.';
+  return null;
+}
 const publicUser = ({ id, username, name, role }) => ({ id, username, name, role });
 export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0.1:5173') {
   const attempts = new Map();
@@ -49,13 +58,58 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
       if (path === '/api/logout' && req.method === 'POST') {
         db.prepare('DELETE FROM sessions WHERE token = ?').run(digest(token)); cookie('', 0); return send(200, { ok: true });
       }
-      if (path === '/api/characters' && req.method === 'GET') return send(200, { characters: db.prepare('SELECT id, name, class, level FROM characters WHERE user_id = ?').all(user.id) });
+      if (path === '/api/characters' && req.method === 'GET') return send(200, { characters: db.prepare('SELECT id, name, class, level, species, background, subclass FROM characters WHERE user_id = ?').all(user.id) });
       if (path.startsWith('/api/admin/')) {
         if (user.role !== 'admin') return send(403, { error: 'Dostęp tylko dla administratora.' });
+        const target = path.match(/^\/api\/admin\/(players|characters)\/([1-9]\d*)\/(update|delete)$/);
+        if (target && req.method === 'POST') {
+          const [, kind, rawId, action] = target;
+          const id = Number(rawId);
+          if (!Number.isSafeInteger(id)) return send(400, { error: 'Niepoprawny identyfikator.' });
+          const record = kind === 'players'
+            ? db.prepare("SELECT id FROM users WHERE id = ? AND role = 'player'").get(id)
+            : db.prepare('SELECT id FROM characters WHERE id = ?').get(id);
+          if (!record) return send(404, { error: 'Nie znaleziono zasobu.' });
+          if (action === 'delete') {
+            if (kind === 'players') {
+              db.exec('BEGIN');
+              try {
+                db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
+                db.prepare('DELETE FROM characters WHERE user_id = ?').run(id);
+                db.prepare('DELETE FROM users WHERE id = ?').run(id);
+                db.exec('COMMIT');
+              } catch (error) { db.exec('ROLLBACK'); throw error; }
+            } else db.prepare('DELETE FROM characters WHERE id = ?').run(id);
+            return send(200, { ok: true });
+          }
+          if (kind === 'players') {
+            const { username, name, password } = body;
+            if (typeof username !== 'string' || !/^[a-z0-9._-]{3,40}$/.test(username) || typeof name !== 'string' || !name.trim() || name.length > 80 || (password !== undefined && (typeof password !== 'string' || (password !== '' && (password.length < 6 || password.length > 128))))) return send(400, { error: 'Podaj poprawny login, imię (do 80 znaków) i opcjonalne hasło (6–128 znaków).' });
+            const hashed = password ? await hashPassword(password) : null;
+            try {
+              db.exec('BEGIN');
+              db.prepare('UPDATE users SET username = ?, name = ?, password = COALESCE(?, password) WHERE id = ?').run(username, name.trim(), hashed, id);
+              if (hashed) db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
+              db.exec('COMMIT');
+            } catch (error) {
+              db.exec('ROLLBACK');
+              if (error.errcode === 2067 || String(error.code).includes('CONSTRAINT')) return send(409, { error: 'Ten login jest już zajęty.' });
+              throw error;
+            }
+          } else {
+            const { userId, name, characterClass, level, species, background, subclass } = body;
+            const validationError = characterError(body);
+            if (validationError) return send(400, { error: validationError });
+            if (!db.prepare("SELECT id FROM users WHERE id = ? AND role = 'player'").get(userId)) return send(400, { error: 'Nie znaleziono gracza.' });
+            db.prepare('UPDATE characters SET user_id = ?, name = ?, class = ?, level = ?, species = ?, background = ?, subclass = ? WHERE id = ?').run(userId, name.trim(), characterClass, level, species, background, subclass, id);
+          }
+          return send(200, { ok: true });
+        }
+        if (path === '/api/admin/characters' && req.method === 'GET') return send(200, { characters: db.prepare('SELECT id, user_id AS userId, name, class, level, species, background, subclass FROM characters ORDER BY id DESC').all() });
         if (path === '/api/admin/players' && req.method === 'GET') return send(200, { players: db.prepare("SELECT id, username, name, role FROM users WHERE role = 'player' ORDER BY id DESC").all() });
         if (path === '/api/admin/players' && req.method === 'POST') {
           const { username, name, password } = body;
-          if (typeof username !== 'string' || !/^[a-z0-9._-]{3,40}$/.test(username) || typeof name !== 'string' || !name.trim() || name.length > 80 || typeof password !== 'string' || password.length < 12 || password.length > 128) return send(400, { error: 'Login: 3–40 znaków a-z, 0-9, . _ -. Imię: 1–80 znaków. Hasło: 12–128 znaków.' });
+          if (typeof username !== 'string' || !/^[a-z0-9._-]{3,40}$/.test(username) || typeof name !== 'string' || !name.trim() || name.length > 80 || typeof password !== 'string' || password.length < 6 || password.length > 128) return send(400, { error: 'Login: 3–40 znaków a-z, 0-9, . _ -. Imię: 1–80 znaków. Hasło: 6–128 znaków.' });
           if (db.prepare('SELECT id FROM users WHERE username = ?').get(username)) return send(409, { error: 'Ten login jest już zajęty.' });
           const hashed = await hashPassword(password);
           try {
@@ -64,10 +118,11 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
           } catch (error) { if (String(error.code).includes('CONSTRAINT')) return send(409, { error: 'Ten login jest już zajęty.' }); throw error; }
         }
         if (path === '/api/admin/characters' && req.method === 'POST') {
-          const { userId, name, characterClass } = body;
-          if (!Number.isSafeInteger(userId) || typeof name !== 'string' || !name.trim() || name.length > 80 || typeof characterClass !== 'string' || !characterClass.trim() || characterClass.length > 80) return send(400, { error: 'Wybierz gracza, podaj imię i klasę postaci (do 80 znaków).' });
+          const { userId, name, characterClass, level, species, background, subclass } = body;
+            const validationError = characterError(body);
+            if (validationError) return send(400, { error: validationError });
           if (!db.prepare("SELECT id FROM users WHERE id = ? AND role = 'player'").get(userId)) return send(400, { error: 'Nie znaleziono gracza.' });
-          db.prepare('INSERT INTO characters (user_id, name, class) VALUES (?, ?, ?)').run(userId, name.trim(), characterClass.trim());
+          db.prepare('INSERT INTO characters (user_id, name, class, level, species, background, subclass) VALUES (?, ?, ?, ?, ?, ?, ?)').run(userId, name.trim(), characterClass, level, species, background, subclass);
           return send(201, { ok: true });
         }
       }
