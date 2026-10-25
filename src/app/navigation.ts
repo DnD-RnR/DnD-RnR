@@ -1,4 +1,5 @@
 export const navigation = [
+  { id: 'games', label: 'Gry', symbol: '⚄' },
   { id: 'characters', label: 'Postacie', symbol: '♙' },
 ] as const;
 

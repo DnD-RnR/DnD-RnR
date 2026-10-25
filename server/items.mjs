@@ -1,0 +1,18 @@
+import slots from '../shared/equipment-slots.json' with { type: 'json' };
+
+export function handleItems(db, user, path, method, body, send) {
+  if (path !== '/api/items') return false;
+  const reply = (status, data) => { send(status, data); return true; };
+  if (method === 'GET') {
+    if (!['admin', 'gm'].includes(user.role)) return reply(403, { error: 'Katalog jest dostępny dla administratora i GM.' });
+    return reply(200, { items: db.prepare('SELECT id, name, description, slot FROM item_catalog ORDER BY name, id').all() });
+  }
+  if (method === 'POST') {
+    if (user.role !== 'admin') return reply(403, { error: 'Tylko administrator może dodawać przedmioty do katalogu.' });
+    const { name, description = '', slot } = body;
+    if (typeof name !== 'string' || !name.trim() || name.length > 80 || typeof description !== 'string' || description.length > 2000 || !['backpack', ...slots.map(s => s.id)].includes(slot)) return reply(400, { error: 'Podaj nazwę (1–80 znaków), opis (do 2000 znaków) i wybierz slot z listy.' });
+    const result = db.prepare('INSERT INTO item_catalog (name, description, slot) VALUES (?, ?, ?)').run(name.trim(), description.trim(), slot);
+    return reply(201, { id: Number(result.lastInsertRowid) });
+  }
+  return reply(405, { error: 'Niedozwolona metoda.' });
+}

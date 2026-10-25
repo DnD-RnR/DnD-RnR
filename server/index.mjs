@@ -1,3 +1,6 @@
+import { handleGames } from './games.mjs';
+import { handleItems } from './items.mjs';
+import { handleStatistics } from './statistics.mjs';
 import options from '../shared/character-options.json' with { type: 'json' };
 import { createServer } from 'node:http';
 import { createHash, randomBytes } from 'node:crypto';
@@ -30,7 +33,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
       if (req.method === 'POST') {
         if (!req.headers['content-type']?.startsWith('application/json')) return send(415, { error: 'Wymagany format JSON.' });
         let raw = '';
-        for await (const chunk of req) { raw += chunk; if (Buffer.byteLength(raw) > 8192) return send(413, { error: 'Za duże żądanie.' }); }
+        for await (const chunk of req) { raw += chunk; if (Buffer.byteLength(raw) > 65536) return send(413, { error: 'Za duże żądanie.' }); }
         try { body = JSON.parse(raw); } catch { return send(400, { error: 'Niepoprawne dane.' }); }
         if (!body || typeof body !== 'object' || Array.isArray(body)) return send(400, { error: 'Niepoprawne dane.' });
       }
@@ -58,7 +61,26 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
       if (path === '/api/logout' && req.method === 'POST') {
         db.prepare('DELETE FROM sessions WHERE token = ?').run(digest(token)); cookie('', 0); return send(200, { ok: true });
       }
-      if (path === '/api/characters' && req.method === 'GET') return send(200, { characters: db.prepare('SELECT id, name, class, level, species, background, subclass FROM characters WHERE user_id = ?').all(user.id) });
+      if (handleGames(db, user, path, req.method, body, send)) return;
+      if (handleItems(db, user, path, req.method, body, send)) return;
+      if (handleStatistics(db, user, path, req.method, body, send)) return;
+      if (path === '/api/characters' && req.method === 'POST') {
+        if (!['player', 'gm'].includes(user.role)) return send(403, { error: 'Administrator tworzy postacie w panelu administracji.' });
+        if (body.userId !== undefined && body.userId !== user.id) return send(403, { error: 'Możesz tworzyć postacie tylko na swoim koncie.' });
+        if (user.role === 'player' && body.level !== 1) return send(400, { error: 'Gracz może utworzyć postać tylko na poziomie 1.' });
+        const character = { ...body, userId: user.id };
+        const validationError = characterError(character);
+        if (validationError) return send(400, { error: validationError });
+        const { name, characterClass, level, species, background, subclass } = character;
+        const result = db.prepare('INSERT INTO characters (user_id, name, class, level, species, background, subclass) VALUES (?, ?, ?, ?, ?, ?, ?)').run(user.id, name.trim(), characterClass, level, species, background, subclass);
+        return send(201, { id: Number(result.lastInsertRowid) });
+      }
+      if (path === '/api/characters' && req.method === 'GET') return send(200, { characters: db.prepare(`
+        SELECT c.id, c.name, c.class, c.level, c.species, c.background, c.subclass, g.name AS gameName
+        FROM characters c
+        LEFT JOIN game_members m ON m.character_id = c.id AND m.status = 'accepted'
+        LEFT JOIN games g ON g.id = m.game_id
+        WHERE c.user_id = ?`).all(user.id) });
       const recipientsRoute = path.match(/^\/api\/characters\/([1-9]\d*)\/recipients$/);
       if (recipientsRoute && req.method === 'GET') {
         const characterId = Number(recipientsRoute[1]);
@@ -121,7 +143,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
           const id = Number(rawId);
           if (!Number.isSafeInteger(id)) return send(400, { error: 'Niepoprawny identyfikator.' });
           const record = kind === 'players'
-            ? db.prepare("SELECT id FROM users WHERE id = ? AND role = 'player'").get(id)
+            ? db.prepare("SELECT id FROM users WHERE id = ? AND role IN ('player', 'gm')").get(id)
             : db.prepare('SELECT id FROM characters WHERE id = ?').get(id);
           if (!record) return send(404, { error: 'Nie znaleziono zasobu.' });
           if (action === 'delete') {
@@ -154,28 +176,31 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
             const { userId, name, characterClass, level, species, background, subclass } = body;
             const validationError = characterError(body);
             if (validationError) return send(400, { error: validationError });
-            if (!db.prepare("SELECT id FROM users WHERE id = ? AND role = 'player'").get(userId)) return send(400, { error: 'Nie znaleziono gracza.' });
+            if (!db.prepare("SELECT id FROM users WHERE id = ? AND role IN ('player', 'gm')").get(userId)) return send(400, { error: 'Nie znaleziono gracza.' });
+            db.prepare('DELETE FROM game_members WHERE character_id = ? AND EXISTS (SELECT 1 FROM characters WHERE id = ? AND user_id != ?)').run(id, id, userId);
             db.prepare('UPDATE characters SET user_id = ?, name = ?, class = ?, level = ?, species = ?, background = ?, subclass = ? WHERE id = ?').run(userId, name.trim(), characterClass, level, species, background, subclass, id);
           }
           return send(200, { ok: true });
         }
         if (path === '/api/admin/characters' && req.method === 'GET') return send(200, { characters: db.prepare('SELECT id, user_id AS userId, name, class, level, species, background, subclass FROM characters ORDER BY id DESC').all() });
+        if (path === '/api/admin/gms' && req.method === 'GET') return send(200, { players: db.prepare("SELECT id, username, name, role FROM users WHERE role = 'gm' ORDER BY id DESC").all() });
         if (path === '/api/admin/players' && req.method === 'GET') return send(200, { players: db.prepare("SELECT id, username, name, role FROM users WHERE role = 'player' ORDER BY id DESC").all() });
         if (path === '/api/admin/players' && req.method === 'POST') {
-          const { username, name, password } = body;
+          const { username, name, password, role = 'player' } = body;
+          if (!['player', 'gm'].includes(role)) return send(400, { error: 'Wybierz konto gracza lub GM.' });
           if (typeof username !== 'string' || !/^[a-z0-9._-]{3,40}$/.test(username) || typeof name !== 'string' || !name.trim() || name.length > 80 || typeof password !== 'string' || password.length < 6 || password.length > 128) return send(400, { error: 'Login: 3–40 znaków a-z, 0-9, . _ -. Imię: 1–80 znaków. Hasło: 6–128 znaków.' });
           if (db.prepare('SELECT id FROM users WHERE username = ?').get(username)) return send(409, { error: 'Ten login jest już zajęty.' });
           const hashed = await hashPassword(password);
           try {
-            const result = db.prepare("INSERT INTO users (username, name, password, role) VALUES (?, ?, ?, 'player')").run(username, name.trim(), hashed);
-            return send(201, { user: { id: Number(result.lastInsertRowid), username, name: name.trim(), role: 'player' } });
+            const result = db.prepare("INSERT INTO users (username, name, password, role) VALUES (?, ?, ?, ?)").run(username, name.trim(), hashed, role);
+            return send(201, { user: { id: Number(result.lastInsertRowid), username, name: name.trim(), role } });
           } catch (error) { if (String(error.code).includes('CONSTRAINT')) return send(409, { error: 'Ten login jest już zajęty.' }); throw error; }
         }
         if (path === '/api/admin/characters' && req.method === 'POST') {
           const { userId, name, characterClass, level, species, background, subclass } = body;
             const validationError = characterError(body);
             if (validationError) return send(400, { error: validationError });
-          if (!db.prepare("SELECT id FROM users WHERE id = ? AND role = 'player'").get(userId)) return send(400, { error: 'Nie znaleziono gracza.' });
+          if (!db.prepare("SELECT id FROM users WHERE id = ? AND role IN ('player', 'gm')").get(userId)) return send(400, { error: 'Nie znaleziono gracza.' });
           db.prepare('INSERT INTO characters (user_id, name, class, level, species, background, subclass) VALUES (?, ?, ?, ?, ?, ?, ?)').run(userId, name.trim(), characterClass, level, species, background, subclass);
           return send(201, { ok: true });
         }

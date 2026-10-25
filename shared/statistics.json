@@ -1,0 +1,57 @@
+{
+  "abilities": [
+    { "id": "str", "label": "Siła", "short": "SIŁ" },
+    { "id": "dex", "label": "Zręczność", "short": "ZRĘ" },
+    { "id": "con", "label": "Kondycja", "short": "KON" },
+    { "id": "int", "label": "Inteligencja", "short": "INT" },
+    { "id": "wis", "label": "Mądrość", "short": "MĄD" },
+    { "id": "cha", "label": "Charyzma", "short": "CHA" }
+  ],
+  "skills": [
+    { "id": "acrobatics", "label": "Akrobatyka", "ability": "dex" },
+    { "id": "athletics", "label": "Atletyka", "ability": "str" },
+    { "id": "stealth", "label": "Skradanie się", "ability": "dex" },
+    { "id": "sleightOfHand", "label": "Zwinne dłonie", "ability": "dex" },
+    { "id": "arcana", "label": "Wiedza tajemna", "ability": "int" },
+    { "id": "history", "label": "Historia", "ability": "int" },
+    { "id": "investigation", "label": "Śledztwo", "ability": "int" },
+    { "id": "nature", "label": "Przyroda", "ability": "int" },
+    { "id": "religion", "label": "Religia", "ability": "int" },
+    { "id": "animalHandling", "label": "Opieka nad zwierzętami", "ability": "wis" },
+    { "id": "insight", "label": "Intuicja", "ability": "wis" },
+    { "id": "medicine", "label": "Medycyna", "ability": "wis" },
+    { "id": "perception", "label": "Percepcja", "ability": "wis" },
+    { "id": "survival", "label": "Sztuka przetrwania", "ability": "wis" },
+    { "id": "deception", "label": "Oszustwo", "ability": "cha" },
+    { "id": "intimidation", "label": "Zastraszanie", "ability": "cha" },
+    { "id": "performance", "label": "Występy", "ability": "cha" },
+    { "id": "persuasion", "label": "Perswazja", "ability": "cha" }
+  ],
+  "numbers": [
+    { "id": "hp", "label": "Aktualne PW", "min": 0, "max": 9999 },
+    { "id": "maxHp", "label": "Maksymalne PW", "min": 1, "max": 9999 },
+    { "id": "tempHp", "label": "Tymczasowe PW", "min": 0, "max": 9999 },
+    { "id": "ac", "label": "Klasa pancerza", "min": 0, "max": 99 },
+    { "id": "speed", "label": "Szybkość (stopy)", "min": 0, "max": 999 },
+    { "id": "initiativeBonus", "label": "Dodatkowa premia do inicjatywy", "min": -30, "max": 30 },
+    { "id": "hitDice", "label": "Pozostałe kości wytrzymałości", "min": 0, "max": 20 },
+    { "id": "deathSuccesses", "label": "Rzuty przeciw śmierci: sukcesy", "min": 0, "max": 3 },
+    { "id": "deathFailures", "label": "Rzuty przeciw śmierci: porażki", "min": 0, "max": 3 },
+    { "id": "exhaustion", "label": "Poziom wyczerpania", "min": 0, "max": 6 },
+    { "id": "inspiration", "label": "Heroiczna inspiracja (0 / 1)", "min": 0, "max": 1 },
+    { "id": "xp", "label": "Punkty doświadczenia", "min": 0, "max": 9999999 },
+    { "id": "spellBonus", "label": "Dodatkowa premia do ataku czarem", "min": -30, "max": 30 },
+    { "id": "spellDcBonus", "label": "Dodatkowa premia do ST czarów", "min": -30, "max": 30 }
+  ],
+  "notes": [
+    { "id": "attacks", "label": "Ataki: broń, premie, obrażenia i zasięgi" },
+    { "id": "languages", "label": "Języki" },
+    { "id": "proficiencies", "label": "Biegłości: broń, pancerze i narzędzia" },
+    { "id": "features", "label": "Zdolności klasowe, gatunkowe i atuty" },
+    { "id": "defenses", "label": "Odporności, niewrażliwości i podatności" },
+    { "id": "senses", "label": "Zmysły i dodatkowe rodzaje ruchu" },
+    { "id": "conditions", "label": "Stany i aktywne efekty" },
+    { "id": "resources", "label": "Zasoby klasowe i kości wytrzymałości" },
+    { "id": "spells", "label": "Znane czary, przygotowane czary i komórki czarów" }
+  ]
+}

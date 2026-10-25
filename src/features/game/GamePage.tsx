@@ -1,9 +1,12 @@
+import { StatisticsTab } from './StatisticsTab';
+import { CharacterGameInfo } from '../characters/CharacterGameInfo';
 import { useEffect, useRef, useState } from 'react';
 import { api, type Character, type InventoryItem } from '../../api';
 import slots from '../../../shared/equipment-slots.json';
 import { TransferItemDialog } from './TransferItemDialog';
 
 export function GamePage({ character, onBack }: { character: Character; onBack: () => void }) {
+  const [activeTab, setActiveTab] = useState<'equipment' | 'statistics'>('equipment');
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
@@ -54,8 +57,10 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
 
   return <>
     <button className="text-button" onClick={onBack}>← Moje postacie</button>
-    <header className="page-heading game-heading"><div><p className="eyebrow">TWOJA PRZYGODA</p><h1 ref={heading} tabIndex={-1}>{character.name}</h1><p>{[character.species, character.class, character.subclass].filter(Boolean).join(' · ')}</p></div><span className="level-badge">Poziom <strong>{character.level}</strong></span></header>
-    <nav className="game-tabs" aria-label="Zakładki gry"><button aria-current="page" className="game-tab is-active"><span aria-hidden="true">⛨</span> Ekwipunek</button></nav>
+    <header className="page-heading game-heading"><div><p className="eyebrow">TWOJA PRZYGODA</p><h1 ref={heading} tabIndex={-1}>{character.name}</h1><p>{[character.species, character.class, character.subclass].filter(Boolean).join(' · ')}</p><CharacterGameInfo character={character} /></div><span className="level-badge">Poziom <strong>{character.level}</strong></span></header>
+    <nav className="game-tabs" aria-label="Zakładki postaci">{([{ id: 'equipment', label: 'Ekwipunek', symbol: '⛨' }, { id: 'statistics', label: 'Statystyki', symbol: '◈' }] as const).map(tab => <button key={tab.id} className={`game-tab ${activeTab === tab.id ? 'is-active' : ''}`} aria-current={activeTab === tab.id ? 'page' : undefined} aria-controls={`character-${tab.id}`} onClick={() => setActiveTab(tab.id)}><span aria-hidden="true">{tab.symbol}</span> {tab.label}</button>)}</nav>
+    <div id="character-statistics" hidden={activeTab !== 'statistics'}><StatisticsTab character={character} /></div>
+    <div id="character-equipment" hidden={activeTab !== 'equipment'}>
     {error && <p role="alert" className="form-error">{error}</p>}
     {message && <p role="status" className="inventory-message">{message}</p>}
     {transferItem && <TransferItemDialog characterId={character.id} item={transferItem} onClose={() => setTransferItem(null)} onTransferred={() => {
@@ -89,5 +94,6 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
         {backpack.length ? <ul className="inventory-list">{backpack.map(item => <li key={item.id}><div className="inventory-item-icon" aria-hidden="true">{slots.find(entry => entry.id === item.slot)?.symbol ?? '▣'}</div><div className="inventory-item-info"><h3>{item.name} <span>×{item.quantity}</span></h3><p>{item.description || (slots.find(entry => entry.id === item.slot)?.label ?? 'Przedmiot w plecaku')}</p></div><div className="admin-actions">{item.slot !== 'backpack' && <button className="text-button" disabled={pending} onClick={() => itemAction(item, 'equip')}>Załóż ↑</button>}<button className="text-button" disabled={pending} onClick={() => setTransferItem(item)} aria-haspopup="dialog" aria-label={`Przekaż ${item.name} innej postaci`}>Przekaż →</button><button className="text-button danger-button" disabled={pending} onClick={() => itemAction(item, 'delete')} aria-label={`Usuń ${item.name}`}>Usuń</button></div></li>)}</ul> : <div className="inventory-empty"><span aria-hidden="true">▣</span><h3>Plecak jest pusty</h3><p>Tutaj pojawią się przedmioty przydzielone postaci.</p></div>}
       </section>
     </>}
+    </div>
   </>;
 }

@@ -13,7 +13,7 @@ type AppLayoutProps = {
 
 export function AppLayout({ activePage, onNavigate, children, user, onLogout, logoutPending }: AppLayoutProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const navigationPage = activePage === 'create-character' ? 'admin' : activePage === 'game' ? 'characters' : activePage;
+  const navigationPage = activePage === 'create-character' ? (user.role === 'admin' ? 'admin' : 'characters') : activePage === 'game' ? 'characters' : activePage;
 
   return (
     <div className="app-shell">
@@ -34,7 +34,7 @@ export function AppLayout({ activePage, onNavigate, children, user, onLogout, lo
             </button>
           ))}
         </nav>
-        <div className="account"><strong>{user.name}</strong><span>{user.role === 'admin' ? 'Administrator' : 'Gracz'}</span><button className="text-button" onClick={onLogout} disabled={logoutPending}>{logoutPending ? 'Wylogowywanie…' : 'Wyloguj się'}</button></div>
+        <div className="account"><strong>{user.name}</strong><span>{user.role === 'admin' ? 'Administrator' : user.role === 'gm' ? 'Gamemaster' : 'Gracz'}</span><button className="text-button" onClick={onLogout} disabled={logoutPending}>{logoutPending ? 'Wylogowywanie…' : 'Wyloguj się'}</button></div>
       </aside>
       <main id="main" tabIndex={-1}>{children}</main>
     </div>

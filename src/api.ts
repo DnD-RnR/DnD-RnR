@@ -1,6 +1,14 @@
-export type User = { id: number; username: string; name: string; role: 'admin' | 'player' };
-export type Character = { id: number; name: string; class: string; level: number; species: string; background: string; subclass: string };
+export type User = { id: number; username: string; name: string; role: 'admin' | 'player' | 'gm' };
+export type Character = { id: number; name: string; class: string; level: number; species: string; background: string; subclass: string; gameName?: string | null };
 export type InventoryItem = { id: number; name: string; description: string; quantity: number; slot: string; equipped: number };
+export type CatalogItem = { id: number; name: string; description: string; slot: string };
+export type CharacterStatistics = {
+  values: Record<string, number | null>;
+  savingThrows: string[];
+  skills: Record<string, number>;
+  spellAbility: string;
+  notes: Record<string, string>;
+};
 
 export async function api<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(`/api${path}`, {
