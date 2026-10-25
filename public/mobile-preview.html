@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DnD RnR — podgląd telefonu</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100dvh; padding: 28px 16px; background: #101117; color: #f0eee9; font: 16px/1.6 system-ui, sans-serif; text-align: center; }
+      h1 { margin: 0 0 8px; font-size: 1.4rem; }
+      p { margin: 0 0 20px; color: #a9acba; }
+      label { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+      select { min-height: 44px; padding: 8px 12px; background: #1e2029; border: 1px solid #343743; border-radius: 8px; color: inherit; font: inherit; }
+      iframe { display: block; width: 390px; max-width: 100%; height: 844px; margin: auto; border: 1px solid #5d606c; border-radius: 24px; background: #171921; box-shadow: 0 24px 80px #0006; }
+      a { display: inline-block; color: #d8b786; padding: 12px; margin-top: 16px; }
+      :focus-visible { outline: 2px solid #d8b786; outline-offset: 4px; }
+    </style>
+  </head>
+  <body>
+    <h1>DnD RnR na telefonie</h1>
+    <p>Interaktywny podgląd aplikacji. Otwórz menu i przełączaj widoki.</p>
+    <label>Szerokość ekranu
+      <select id="width">
+        <option value="320">320 px</option>
+        <option value="360">360 px</option>
+        <option value="390" selected>390 px</option>
+        <option value="430">430 px</option>
+      </select>
+    </label>
+    <iframe id="phone" src="/" title="Mobilny widok aplikacji DnD RnR"></iframe>
+    <a href="/">Przejdź do aplikacji</a>
+    <script>
+      document.getElementById('width').addEventListener('change', (event) => {
+        document.getElementById('phone').style.width = event.target.value + 'px';
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,96 @@
+@import './tokens.css';
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--background); color: var(--text); font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; }
+button { font: inherit; cursor: pointer; min-height: 44px; }
+button, a { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+h1, h2, h3, p { margin-top: 0; }
+h1, h2, h3 { line-height: 1.25; }
+h1 { font-family: Georgia, serif; font-size: clamp(2.25rem, 5vw, 3.5rem); margin-bottom: 1rem; font-weight: 500; }
+h2 { font-size: 1.3rem; }
+h3 { font-size: 1rem; }
+p { color: var(--muted); }
+.app-shell { min-height: 100dvh; display: grid; grid-template-columns: 240px minmax(0, 1fr); }
+.sidebar { padding: 36px 22px; border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; }
+.brand { font-size: 1.5rem; font-weight: 750; letter-spacing: .03em; white-space: nowrap; }
+.brand span { color: var(--accent); }
+.sidebar-label { font-size: .63rem; letter-spacing: .16em; margin: 54px 10px 16px; }
+nav { display: grid; gap: 8px; }
+.nav-item { display: flex; gap: 14px; align-items: center; width: 100%; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--muted); padding: 12px 14px; text-align: left; }
+.nav-item:hover { background: var(--raised); color: var(--text); }
+.nav-item.is-active { color: var(--accent); background: #c7a57412; border-color: #c7a57430; }
+.nav-item > span { font-size: 1.3rem; width: 22px; text-align: center; }
+.sidebar-footer { margin-top: auto; padding: 60px 10px 0; color: var(--accent); font-family: Georgia, serif; }
+.sidebar-footer span { color: var(--muted); font-size: .85rem; }
+main { width: 100%; max-width: 1280px; padding: 60px clamp(24px, 5vw, 80px); margin: 0 auto; min-width: 0; }
+.eyebrow { font-size: .65rem; font-weight: 650; letter-spacing: .18em; color: var(--accent); margin-bottom: 16px; }
+.page-heading { margin-bottom: 36px; }
+.page-heading > p:last-child { max-width: 580px; }
+.welcome-banner { display: flex; align-items: center; gap: 40px; padding: 36px; margin-bottom: 28px; border: 1px solid #c7a57435; border-radius: 12px; background: linear-gradient(120deg, #302b28, var(--surface)); }
+.welcome-banner h2 { font-family: Georgia, serif; font-size: clamp(1.5rem, 3vw, 2.15rem); font-weight: 400; }
+.welcome-banner p:last-child { margin-bottom: 0; }
+.banner-symbol { color: var(--accent); font-size: 6rem; line-height: 1; }
+.dashboard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.card { padding: 28px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.card .eyebrow { margin-bottom: 10px; }
+.empty-state { text-align: center; padding: 30px 8px; }
+.empty-symbol { display: block; font-size: 2.5rem; color: var(--accent); margin-bottom: 20px; }
+.empty-state p { font-size: .9rem; margin: 0 auto; max-width: 400px; }
+.text-button { border: 0; padding: 8px 0; color: var(--accent); background: none; text-align: left; }
+.text-button:hover { text-decoration: underline; }
+.mobile-header { display: none; }
+.login-shell { min-height: 100dvh; display: grid; grid-template-columns: 1fr 1fr; align-items: center; max-width: 1200px; margin: auto; padding: 48px; gap: 80px; }
+.login-intro { position: relative; }
+.login-intro .brand { display: block; margin-bottom: 64px; }
+.login-intro h1 { font-size: clamp(2.2rem, 4vw, 3.6rem); }
+.login-intro > p { max-width: 380px; }
+.login-dice { font-size: 8rem; color: var(--accent); opacity: .4; }
+main.login-panel { padding: 36px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; max-width: 460px; }
+.login-panel h2 { font-family: Georgia, serif; font-size: 2rem; font-weight: 400; }
+.stack-form { display: grid; gap: 20px; margin-top: 24px; }
+.stack-form label { display: grid; gap: 8px; font-size: .9rem; min-width: 0; }
+.stack-form input, .stack-form select { width: 100%; min-width: 0; min-height: 48px; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--background); color: var(--text); font: inherit; font-size: 1rem; }
+.stack-form small { color: var(--muted); }
+.primary-button { border: 1px solid var(--accent); border-radius: 8px; min-height: 48px; padding: 12px 20px; background: var(--accent); color: #171921; font-weight: 650; }
+button:disabled { cursor: wait; opacity: .6; }
+.form-error { color: #ffb4ab; padding: 12px; border: 1px solid #ffb4ab50; border-radius: 8px; overflow-wrap: anywhere; }
+.login-help { margin: 28px 0 0; font-size: .85rem; }
+.loading-screen { min-height: 100dvh; display: grid; place-items: center; }
+.account { margin-top: auto; padding-top: 36px; display: grid; overflow-wrap: anywhere; }
+.account > span { color: var(--muted); font-size: .8rem; }
+.player-list { margin-top: 36px; }
+.player-list ul { list-style: none; padding: 0; }
+.player-list li { padding: 16px 0; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.player-list span { color: var(--muted); }
+@media (max-width: 900px) {
+  .login-shell { gap: 32px; padding: 32px; }
+}
+@media (max-width: 640px) {
+  .login-shell { display: block; padding: 24px 20px; }
+  .login-intro .brand { margin-bottom: 28px; }
+  .login-intro h1 { font-size: 2rem; }
+  .login-dice { display: none; }
+  main.login-panel { padding: 24px; margin-top: 28px; }
+  .account { padding-top: 20px; }
+}
+.skip-link { position: fixed; top: 8px; left: 8px; transform: translateY(-150%); padding: 10px; background: var(--text); color: var(--background); z-index: 10; }
+.skip-link:focus { transform: translateY(0); }
+@media (max-width: 900px) {
+  .app-shell { grid-template-columns: 200px minmax(0, 1fr); }
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .welcome-banner { gap: 24px; padding: 28px; }
+  .banner-symbol { font-size: 4rem; }
+}
+@media (max-width: 640px) {
+  .app-shell { display: block; }
+  .mobile-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .menu-toggle { background: var(--raised); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 9px 12px; font-size: .8rem; }
+  .sidebar { display: none; border-right: 0; border-bottom: 1px solid var(--border); padding: 16px 20px; }
+  .sidebar.is-open { display: block; }
+  .desktop-brand, .sidebar-label, .sidebar-footer { display: none; }
+  main { padding: 32px 20px; }
+  .welcome-banner { padding: 24px; }
+  .banner-symbol { display: none; }
+  .card { padding: 24px; }
+}
