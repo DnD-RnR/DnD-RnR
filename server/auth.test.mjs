@@ -453,7 +453,7 @@ test('admin provisions players; sessions and character ownership are enforced', 
     assert.equal((await request(`/admin/characters/${heroId}/update`, { userId: 1, name: 'New Hero', characterClass: 'Bard', species: 'Elf', background: 'Mędrzec (Sage)', subclass: 'College of Lore', level: 3 }, admin)).status, 400);
     assert.equal((await request(`/admin/characters/${heroId}/update`, { userId: bobId, name: 'New Hero', characterClass: 'Bard', species: 'Elf', background: 'Mędrzec (Sage)', subclass: 'College of Lore', level: 3 }, admin)).status, 200);
     assert.equal((await (await request('/characters', undefined, aliceNew)).json()).characters.length, 0);
-    assert.deepEqual((await (await request('/characters', undefined, bob)).json()).characters.find(c => c.id === heroId), { id: heroId, gameName: null, name: 'New Hero', class: 'Bard', level: 3, species: 'Elf', background: 'Mędrzec (Sage)', subclass: 'College of Lore' });
+    assert.deepEqual((await (await request('/characters', undefined, bob)).json()).characters.find(c => c.id === heroId), { id: heroId, gameName: null, activeSessionId: null, participating: 0, name: 'New Hero', class: 'Bard', level: 3, species: 'Elf', background: 'Mędrzec (Sage)', subclass: 'College of Lore' });
     assert.equal((await request(`/admin/players/${aliceId}/update`, { username: 'alice', name: 'Alice', password: 'new-long-test-password' }, admin)).status, 200);
     assert.equal((await request('/me', undefined, aliceNew)).status, 401);
     assert.equal((await request('/login', { username: 'alice', password }, '')).status, 401);

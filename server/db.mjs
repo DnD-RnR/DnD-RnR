@@ -50,6 +50,17 @@ export function openDatabase(path = process.env.DB_PATH || 'data/dnd.sqlite') {
     UNIQUE(game_id, character_id)
   );`);
   // Keep the earliest membership if an older database allowed multiple games.
+  db.exec(`CREATE TABLE IF NOT EXISTS game_sessions (
+    id INTEGER PRIMARY KEY, game_id INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+    started_at INTEGER NOT NULL, ended_at INTEGER
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS one_active_session_per_game ON game_sessions(game_id) WHERE ended_at IS NULL;
+  CREATE TABLE IF NOT EXISTS session_participants (
+    session_id INTEGER NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
+    member_id INTEGER NOT NULL REFERENCES game_members(id) ON DELETE CASCADE,
+    joined_at INTEGER NOT NULL,
+    PRIMARY KEY (session_id, member_id)
+  );`);
   db.exec(`BEGIN IMMEDIATE;
     UPDATE game_members SET status = 'pending'
     WHERE status = 'accepted' AND id NOT IN (

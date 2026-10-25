@@ -1,7 +1,16 @@
 export type User = { id: number; username: string; name: string; role: 'admin' | 'player' | 'gm' };
-export type Character = { id: number; name: string; class: string; level: number; species: string; background: string; subclass: string; gameName?: string | null };
+export type Character = { id: number; name: string; class: string; level: number; species: string; background: string; subclass: string; gameName?: string | null; activeSessionId?: number | null; participating?: number };
+export type CharacterSession = { game: { id: number; name: string } | null; activeSession: { id: number; startedAt: number; participating: boolean } | null };
 export type InventoryItem = { id: number; name: string; description: string; quantity: number; slot: string; equipped: number };
 export type CatalogItem = { id: number; name: string; description: string; slot: string };
+export type StatisticsSummary = {
+  hp: number | null; maxHp: number | null; tempHp: number | null; ac: number | null;
+  speed: number | null; proficiency: number; initiative: number | null; passivePerception: number | null;
+  deathSuccesses: number | null; deathFailures: number | null; exhaustion: number | null; inspiration: number | null;
+  spellAttack: number | null; spellDc: number | null;
+  abilities: Record<string, { score: number | null; modifier: number | null }>;
+  savingThrows: Record<string, number | null>; skills: Record<string, number | null>;
+};
 export type CharacterStatistics = {
   traits: import('../shared/character-traits.mjs').TraitSelection;
   spells: import('../shared/spellcasting.mjs').SpellSelection;

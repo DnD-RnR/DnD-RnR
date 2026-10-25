@@ -1,3 +1,5 @@
+import { statisticsSummary } from './statistics-summary.mjs';
+
 export function handleGames(db, user, path, method, body, send) {
   if (!/^\/api\/(games|invitations)(\/|$)/.test(path)) return false;
   const reply = (status, data) => { send(status, data); return true; };
@@ -38,6 +40,25 @@ export function handleGames(db, user, path, method, body, send) {
     return result.changes ? reply(200, { ok: true }) : reply(404, { error: 'Nie znaleziono uczestnika gry.' });
   }
   const route = path.match(/^\/api\/games\/([1-9]\d*)(?:\/(candidates|invitations|equipment))?$/);
+  const equipmentRemoval = path.match(/^\/api\/games\/([1-9]\d*)\/equipment\/remove$/);
+  if (equipmentRemoval && method === 'POST') {
+    const gameId = Number(equipmentRemoval[1]);
+    if (user.role !== 'gm' || !db.prepare('SELECT id FROM games WHERE id = ? AND gm_id = ?').get(gameId, user.id)) return reply(404, { error: 'Nie znaleziono gry.' });
+    const { characterId, itemId, quantity } = body;
+    if (!Number.isSafeInteger(characterId) || characterId < 1 || !Number.isSafeInteger(itemId) || itemId < 1 || !Number.isInteger(quantity) || quantity < 1 || quantity > 9999) return reply(400, { error: 'Wybierz przedmiot i liczbę sztuk 1–9999.' });
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      const item = db.prepare(`SELECT i.id, i.quantity FROM character_items i
+        JOIN game_members m ON m.character_id = i.character_id JOIN games g ON g.id = m.game_id
+        WHERE i.id = ? AND i.character_id = ? AND m.game_id = ? AND m.status = 'accepted' AND g.gm_id = ?`).get(itemId, characterId, gameId, user.id);
+      if (!item) { db.exec('ROLLBACK'); return reply(404, { error: 'Nie znaleziono przedmiotu u członka tej gry.' }); }
+      if (quantity > item.quantity) { db.exec('ROLLBACK'); return reply(409, { error: 'Postać nie ma tylu sztuk. Odśwież ekwipunek.' }); }
+      if (quantity === item.quantity) db.prepare('DELETE FROM character_items WHERE id = ?').run(itemId);
+      else db.prepare('UPDATE character_items SET quantity = quantity - ? WHERE id = ?').run(quantity, itemId);
+      db.exec('COMMIT');
+    } catch (error) { db.exec('ROLLBACK'); throw error; }
+    return reply(200, { ok: true });
+  }
   if (route) {
     const game = db.prepare('SELECT * FROM games WHERE id = ? AND gm_id = ?').get(Number(route[1]), user.id);
     if (!game || user.role !== 'gm') return reply(404, { error: 'Nie znaleziono gry.' });
@@ -62,12 +83,16 @@ export function handleGames(db, user, path, method, body, send) {
       return result.changes ? reply(201, { ok: true }) : reply(409, { error: 'Ten bohater został już zaproszony.' });
     }
     if (!route[2] && method === 'GET') {
+      const activeSession = db.prepare('SELECT id, started_at AS startedAt FROM game_sessions WHERE game_id = ? AND ended_at IS NULL').get(game.id) ?? null;
       const members = db.prepare(`SELECT m.id, m.status, c.id AS characterId, c.name, u.name AS playerName FROM game_members m JOIN characters c ON c.id = m.character_id JOIN users u ON u.id = c.user_id WHERE m.game_id = ? ORDER BY m.id`).all(game.id);
       for (const member of members) if (member.status === 'accepted') {
+        member.participating = Boolean(activeSession && db.prepare('SELECT 1 FROM session_participants WHERE session_id = ? AND member_id = ?').get(activeSession.id, member.id));
         member.character = db.prepare('SELECT id, name, class, level, species, background, subclass FROM characters WHERE id = ?').get(member.characterId);
+        const saved = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(member.characterId);
+        member.statistics = statisticsSummary(member.character, saved ? JSON.parse(saved.data) : null);
         member.items = db.prepare('SELECT id, name, description, quantity, slot, equipped FROM character_items WHERE character_id = ? ORDER BY id').all(member.characterId);
       }
-      return reply(200, { game, members });
+      return reply(200, { game, members, activeSession });
     }
   }
   return reply(404, { error: 'Nie znaleziono zasobu.' });

@@ -1,4 +1,6 @@
 import { handleGames } from './games.mjs';
+import { createGameEvents } from './game-events.mjs';
+import { handleGameSessions } from './game-sessions.mjs';
 import { handleItems } from './items.mjs';
 import { handleStatistics } from './statistics.mjs';
 import options from '../shared/character-options.json' with { type: 'json' };
@@ -19,8 +21,12 @@ function characterError(body) {
 const publicUser = ({ id, username, name, role }) => ({ id, username, name, role });
 export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0.1:5173') {
   const attempts = new Map();
+  const gameEvents = createGameEvents(db);
   const dummyHash = hashPassword(randomBytes(32).toString('hex'));
   return createServer(async (req, res) => {
+    res.once('finish', () => {
+      if (req.method === 'POST' && res.statusCode >= 200 && res.statusCode < 300) gameEvents.publish();
+    });
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     const send = (status, data) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(data)); };
@@ -57,10 +63,18 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         return send(200, { user: publicUser(found) });
       }
       if (!user) return send(401, { error: 'Zaloguj się, aby kontynuować.' });
+      const eventsRoute = path.match(/^\/api\/games\/([1-9]\d*)\/events$/);
+      if (eventsRoute && req.method === 'GET') {
+        const gameId = Number(eventsRoute[1]);
+        if (user.role !== 'gm' || !db.prepare('SELECT id FROM games WHERE id = ? AND gm_id = ?').get(gameId, user.id)) return send(404, { error: 'Nie znaleziono gry.' });
+        gameEvents.subscribe(req, res, { gameId, userId: user.id, token: digest(token) });
+        return;
+      }
       if (path === '/api/me' && req.method === 'GET') return send(200, { user: publicUser(user) });
       if (path === '/api/logout' && req.method === 'POST') {
         db.prepare('DELETE FROM sessions WHERE token = ?').run(digest(token)); cookie('', 0); return send(200, { ok: true });
       }
+      if (handleGameSessions(db, user, path, req.method, body, send)) return;
       if (handleGames(db, user, path, req.method, body, send)) return;
       if (handleItems(db, user, path, req.method, body, send)) return;
       if (handleStatistics(db, user, path, req.method, body, send)) return;
@@ -76,10 +90,13 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         return send(201, { id: Number(result.lastInsertRowid) });
       }
       if (path === '/api/characters' && req.method === 'GET') return send(200, { characters: db.prepare(`
-        SELECT c.id, c.name, c.class, c.level, c.species, c.background, c.subclass, g.name AS gameName
+        SELECT c.id, c.name, c.class, c.level, c.species, c.background, c.subclass, g.name AS gameName,
+          s.id AS activeSessionId, CASE WHEN p.member_id IS NOT NULL THEN 1 ELSE 0 END AS participating
         FROM characters c
         LEFT JOIN game_members m ON m.character_id = c.id AND m.status = 'accepted'
         LEFT JOIN games g ON g.id = m.game_id
+        LEFT JOIN game_sessions s ON s.game_id = g.id AND s.ended_at IS NULL
+        LEFT JOIN session_participants p ON p.session_id = s.id AND p.member_id = m.id
         WHERE c.user_id = ?`).all(user.id) });
       const recipientsRoute = path.match(/^\/api\/characters\/([1-9]\d*)\/recipients$/);
       if (recipientsRoute && req.method === 'GET') {

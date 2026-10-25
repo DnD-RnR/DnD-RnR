@@ -1,5 +1,93 @@
 # DnD-RnR
 
+## Usuwanie ekwipunku przez GM
+
+W panelu gry rozwiń **Postać i ekwipunek**, a przy przedmiocie wybierz
+**Usuń przedmiot**. Wskaż liczbę sztuk i potwierdź operację. Usunięcie części
+zmniejsza ilość, a usunięcie wszystkich sztuk usuwa pozycję z ekwipunku.
+Dotyczy to również przedmiotów założonych; częściowe usunięcie zachowuje ich
+założenie. API sprawdza aktualną ilość oraz zaakceptowaną przynależność postaci
+do gry prowadzonej przez tego GM. Nie jest wymagany udział w aktywnej sesji.
+Zmiana nie usuwa wzoru z katalogu i powiadamia otwarte panele GM przez SSE.
+
+## Aktualizacje panelu GM
+
+Panel GM odbiera powiadomienia SSE z `/api/games/:id/events` zamiast pobierać dane
+co 15 sekund. Po udanym zapisie przez API serwer porównuje bieżący widok gry
+z poprzednim i wysyła sygnał tylko wtedy, gdy zmieniły się dane tej gry lub katalog
+przedmiotów. Dotyczy to m.in. udziału w sesji, statystyk, ekwipunku i członkostwa.
+Sygnał nie zawiera danych postaci; aktualne dane są pobierane przez istniejące API.
+
+Po przerwaniu połączenia przeglądarka automatycznie łączy się ponownie i pobiera
+aktualny stan, zachowując rozwinięte karty. Nadal działa „Odśwież drużynę” oraz
+odświeżenie po powrocie do karty. Połączenie wymaga sesji prowadzącego GM;
+serwer ponownie sprawdza dostęp przy zmianach i sygnałach podtrzymania połączenia.
+Reverse proxy powinno wyłączać buforowanie dla strumienia SSE.
+
+Powiadomienia obejmują zapisy przez ten proces API. Ręczne zmiany SQLite lub
+zapisy przez inny proces wymagają ręcznego odświeżenia. Lista postaci i widok
+gracza nadal sprawdzają stan co 5 sekund.
+
+## Statystyki drużyny dla GM
+
+Postacie w panelu gry są ułożone w zwartej siatce: na komputerze trzy kolumny
+(sześć postaci w dwóch rzędach), na bardzo szerokim ekranie sześć kolumn,
+a na mniejszych ekranach dwie lub jedna kolumna, bez przewijania w bok.
+Szczegóły postaci i ekwipunek są rozwijane. Karty koncentrują się na podróży i eksploracji:
+szybkość, pasywna Percepcja, premie do Atletyki, Akrobatyki, Skradania się,
+Percepcji, Sztuki przetrwania, Śledztwa, Przyrody, Opieki nad zwierzętami oraz
+poziom wyczerpania. Statystyki walki (PW, KP, inicjatywa, rzuty obronne i magia)
+nie są pokazywane w tym widoku; pozostają zapisane na karcie postaci.
+
+Wartości są wyprowadzane z zapisanej karty postaci i tego samego modułu cech,
+który obsługuje widok gracza, z uwzględnieniem automatycznych biegłości i premii.
+Brak danych oznacza kreskę. Nie są automatycznie naliczane efekty przedmiotów
+ani warunkowe efekty stanów. Zmiany są pobierane przy odświeżeniu drużyny.
+API udostępnia GM podsumowanie liczbowe tylko postaci należących do jego gry
+po akceptacji zaproszenia, bez prywatnych notatek. Ekwipunek, przydzielanie
+przedmiotów i wyrzucanie z sesji pozostają dostępne.
+
+## Wyrzucanie z sesji przez GM
+
+Przy postaci w bieżącej sesji GM ma przycisk **Wyrzuć z sesji**. Po potwierdzeniu
+postać kończy udział w tej sesji, zachowując przynależność do gry, ekwipunek
+i statystyki. Pozostali uczestnicy i sama sesja pozostają aktywni. Widok gracza
+wykrywa usunięcie przy kolejnym odświeżeniu stanu (do 5 sekund).
+Wyrzucenie nie jest blokadą: właściciel może ponownie wybrać **Wejdź do gry**.
+Operacja wymaga uprawnień prowadzącego GM i dotyczy wskazanej aktywnej sesji.
+
+## Przynależność do gry i udział w sesji
+
+Zaakceptowane zaproszenie przypisuje postać do jednej gry. Samo przypisanie nie
+oznacza udziału w sesji. GM na podstronie gry wybiera **Rozpocznij sesję** lub
+**Zakończ sesję**. W jednej grze może trwać tylko jedna sesja.
+
+Na liście postaci dostępne są dwa przyciski:
+
+- **Podgląd** otwiera dotychczasowy ekran ekwipunku i statystyk, także bez gry
+  i bez rozpoczętej sesji. Nie zgłasza udziału postaci.
+- **Wejdź do gry** zgłasza udział właściciela wybraną postacią w bieżącej sesji.
+  Jest dostępny dopiero po zaakceptowaniu zaproszenia i rozpoczęciu sesji przez GM.
+  Dla postaci już uczestniczącej ma etykietę **Wróć do sesji**.
+
+GM widzi osobno postacie w bieżącej sesji oraz rozwijaną listę bohaterów należących
+do gry poza sesją. Wgląd w ekwipunek i przydzielanie przedmiotów działają również
+dla członków poza sesją. U gracza przycisk **Opuść sesję** kończy tylko udział
+w sesji. Powrót do listy postaci, zamknięcie karty lub wylogowanie nie usuwa
+zgłoszonego udziału — pozostaje on do opuszczenia sesji lub zakończenia jej przez GM.
+To lista uczestników sesji, nie wskaźnik połączenia online.
+
+Zakończenie sesji wyłącza udział wszystkich postaci, zachowując przynależność,
+statystyki i ekwipunek. Nowa sesja zaczyna się z pustą listą uczestników i wymaga
+ponownego wejścia. Usunięcie z gry usuwa też udział w sesji; ponowne zaproszenie
+nie przywraca go automatycznie. API sprawdza właściciela postaci, prowadzącego GM,
+przynależność i identyfikator aktywnej sesji, aby stare żądania nie dołączały do
+nowej sesji ani jej nie kończyły.
+
+Stan jest zapisany w SQLite (`game_sessions`, `session_participants`) i przetrwa
+restart API. Migracja dodaje tabele bez zmiany obecnych przypisań postaci.
+Lista postaci i widok gracza sprawdzają stan co 5 sekund, a panel GM odbiera powiadomienia o zmianach.
+
 ## Statystyki postaci
 
 ### Automatyczne wpisy z zasad 2024
@@ -98,7 +186,7 @@ właściciel, poziom, podstawy bohatera, podgląd ekwipunku i przydzielanie prze
 Zaproszenia są dostępne w osobnym panelu **Edytuj grę**, otwieranym z listy gier
 lub z podstrony gry. Panel pozwala zapraszać bohaterów i sprawdzać status wszystkich
 wysłanych zaproszeń. Przycisk „Wróć” przywraca poprzedni widok.
-Panel odświeża dane co 15 sekund, po powrocie do karty i po wybraniu
+Panel aktualizuje dane po powiadomieniu o zmianie, po powrocie do karty i po wybraniu
 „Odśwież drużynę”. Uczestnictwo oznacza zaakceptowany udział, a nie obecność online.
 
 Adres zawiera `?gmGame=ID`, więc odświeżenie strony zachowuje wybraną grę.
@@ -293,7 +381,7 @@ Wybory są sprawdzane przez API, zapisywane w SQLite i widoczne na karcie gracza
 
 ## Ekran gry i ekwipunek
 
-Przycisk „Wejdź do gry” na karcie postaci otwiera ekran z zakładką „Ekwipunek”.
+Przycisk „Podgląd” na karcie postaci otwiera ekran z zakładką „Ekwipunek”.
 Sylwetka pokazuje 11 slotów; wybranie slotu wyświetla opis założonego przedmiotu.
 Plecak pokazuje przedmioty przypisane do postaci. Gracz może zakładać i zdejmować
 przedmioty, usuwać je z plecaka oraz przekazywać innym postaciom. GM przydziela

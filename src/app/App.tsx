@@ -1,5 +1,6 @@
 import { GamesPage } from '../features/games/GamesPage';
 import { GameSessionPage } from '../features/games/GameSessionPage';
+import { PlayerSessionPage } from '../features/games/PlayerSessionPage';
 import { useEffect, useState } from 'react';
 import { api, type User, type Character } from '../api';
 import { GamePage } from '../features/game/GamePage';
@@ -17,6 +18,7 @@ export function App() {
   });
   const [activePage, setActivePage] = useState<PageId>('characters');
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  const [joinedSessionId, setJoinedSessionId] = useState<number | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [logoutPending, setLogoutPending] = useState(false);
@@ -50,8 +52,8 @@ export function App() {
       {activePage === 'admin' && user.role === 'admin' && <AdminPage onCreateCharacter={() => setActivePage('create-character')} />}
       {activePage === 'create-character' && <CreateCharacterPage key={user.id} user={user} onBack={() => setActivePage(user.role === 'admin' ? 'admin' : 'characters')} />}
       {activePage === 'games' && <GamesPage key={user.id} user={user} />}
-      {activePage === 'characters' && <CharactersPage onCreate={() => setActivePage('create-character')} onSelect={character => { setSelectedCharacter(character); setActivePage('game'); }} />}
-      {activePage === 'game' && selectedCharacter && <GamePage key={`${user.id}-${selectedCharacter.id}`} character={selectedCharacter} onBack={() => setActivePage('characters')} />}
+      {activePage === 'characters' && <CharactersPage onCreate={() => setActivePage('create-character')} onSelect={character => { setJoinedSessionId(null); setSelectedCharacter(character); setActivePage('game'); }} onEnter={(character, sessionId) => { setJoinedSessionId(sessionId); setSelectedCharacter(character); setActivePage('game'); }} />}
+      {activePage === 'game' && selectedCharacter && (joinedSessionId !== null ? <PlayerSessionPage key={`${user.id}-${selectedCharacter.id}-${joinedSessionId}`} character={selectedCharacter} sessionId={joinedSessionId} onBack={() => setActivePage('characters')} /> : <GamePage key={`${user.id}-${selectedCharacter.id}`} character={selectedCharacter} onBack={() => setActivePage('characters')} />)}
     </AppLayout>
   );
 }
