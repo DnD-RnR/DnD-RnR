@@ -59,7 +59,13 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         db.prepare('DELETE FROM sessions WHERE token = ?').run(digest(token)); cookie('', 0); return send(200, { ok: true });
       }
       if (path === '/api/characters' && req.method === 'GET') return send(200, { characters: db.prepare('SELECT id, name, class, level, species, background, subclass FROM characters WHERE user_id = ?').all(user.id) });
-      const inventoryRoute = path.match(/^\/api\/characters\/([1-9]\d*)\/inventory(?:\/([1-9]\d*)\/(equip|unequip|delete))?$/);
+      const recipientsRoute = path.match(/^\/api\/characters\/([1-9]\d*)\/recipients$/);
+      if (recipientsRoute && req.method === 'GET') {
+        const characterId = Number(recipientsRoute[1]);
+        if (!db.prepare('SELECT id FROM characters WHERE id = ? AND user_id = ?').get(characterId, user.id)) return send(404, { error: 'Nie znaleziono postaci.' });
+        return send(200, { characters: db.prepare('SELECT id, name FROM characters WHERE id != ? ORDER BY name, id').all(characterId) });
+      }
+      const inventoryRoute = path.match(/^\/api\/characters\/([1-9]\d*)\/inventory(?:\/([1-9]\d*)\/(equip|unequip|delete|transfer))?$/);
       if (inventoryRoute) {
         const [, rawCharacterId, rawItemId, action] = inventoryRoute;
         const characterId = Number(rawCharacterId);
@@ -69,6 +75,29 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
           const itemId = Number(rawItemId);
           const item = db.prepare('SELECT id, slot FROM character_items WHERE id = ? AND character_id = ?').get(itemId, characterId);
           if (!item) return send(404, { error: 'Nie znaleziono przedmiotu.' });
+          if (action === 'transfer') {
+            const { recipientId, quantity } = body;
+            if (!Number.isSafeInteger(recipientId) || recipientId === characterId || !Number.isInteger(quantity) || quantity < 1 || quantity > 9999) return send(400, { error: 'Wybierz inną postać i poprawną liczbę sztuk.' });
+            db.exec('BEGIN IMMEDIATE');
+            try {
+              const source = db.prepare('SELECT * FROM character_items WHERE id = ? AND character_id = ?').get(itemId, characterId);
+              if (!source || source.equipped || quantity > source.quantity) {
+                db.exec('ROLLBACK');
+                return send(409, { error: 'Przedmiot musi być w plecaku i mieć wystarczającą liczbę sztuk. Odśwież ekwipunek.' });
+              }
+              if (!db.prepare('SELECT id FROM characters WHERE id = ?').get(recipientId)) {
+                db.exec('ROLLBACK');
+                return send(404, { error: 'Postać odbiorcy już nie istnieje.' });
+              }
+              if (quantity === source.quantity) {
+                db.prepare('UPDATE character_items SET character_id = ? WHERE id = ?').run(recipientId, itemId);
+              } else {
+                db.prepare('UPDATE character_items SET quantity = quantity - ? WHERE id = ?').run(quantity, itemId);
+                db.prepare('INSERT INTO character_items (character_id, name, description, quantity, slot, equipped) VALUES (?, ?, ?, ?, ?, 0)').run(recipientId, source.name, source.description, quantity, source.slot);
+              }
+              db.exec('COMMIT');
+            } catch (error) { db.exec('ROLLBACK'); throw error; }
+          }
           if (action === 'delete') db.prepare('DELETE FROM character_items WHERE id = ? AND character_id = ?').run(itemId, characterId);
           if (action === 'unequip') db.prepare('UPDATE character_items SET equipped = 0 WHERE id = ? AND character_id = ?').run(itemId, characterId);
           if (action === 'equip') {

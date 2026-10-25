@@ -125,9 +125,12 @@ Wybory są sprawdzane przez API, zapisywane w SQLite i widoczne na karcie gracza
 Przycisk „Wejdź do gry” na karcie postaci otwiera ekran z zakładką „Ekwipunek”.
 Sylwetka pokazuje 11 slotów; wybranie slotu wyświetla opis założonego przedmiotu.
 Plecak pokazuje przedmioty przypisane do postaci. Gracz może zakładać i zdejmować
-przedmioty oraz usuwać je z plecaka, ale nie może dodawać ani przekazywać ich
-innym postaciom. Przydzielanie przedmiotów zostanie udostępnione osobno.
+przedmioty, usuwać je z plecaka oraz przekazywać innym postaciom. Przydzielanie
+nowych przedmiotów zostanie udostępnione osobno.
 Założenie nowego przedmiotu odkłada poprzedni z tego slotu do plecaka.
 Dane są zapisywane w SQLite, a API pozwala korzystać tylko z ekwipunku własnych
 postaci. Sloty służą do ewidencji: aplikacja nie wylicza statystyk postaci,
 premii ani ograniczeń używania przedmiotów, takich jak broń dwuręczna czy dostrojenie.
+
+Przycisk „Przekaż” w plecaku pozwala wybrać inną postać i liczbę sztuk.
+Przedmiot trafia do plecaka odbiorcy; założone przedmioty trzeba najpierw zdjąć.

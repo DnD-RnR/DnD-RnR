@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, type Character, type InventoryItem } from '../../api';
 import slots from '../../../shared/equipment-slots.json';
+import { TransferItemDialog } from './TransferItemDialog';
 
 export function GamePage({ character, onBack }: { character: Character; onBack: () => void }) {
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -12,6 +13,7 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
   const heading = useRef<HTMLHeadingElement>(null);
   const equipmentDialog = useRef<HTMLDialogElement>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [transferItem, setTransferItem] = useState<InventoryItem | null>(null);
   const inventoryPath = `/characters/${character.id}/inventory`;
   async function load() {
     const data = await api<{ items: InventoryItem[] }>(inventoryPath);
@@ -56,6 +58,12 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
     <nav className="game-tabs" aria-label="Zakładki gry"><button aria-current="page" className="game-tab is-active"><span aria-hidden="true">⛨</span> Ekwipunek</button></nav>
     {error && <p role="alert" className="form-error">{error}</p>}
     {message && <p role="status" className="inventory-message">{message}</p>}
+    {transferItem && <TransferItemDialog characterId={character.id} item={transferItem} onClose={() => setTransferItem(null)} onTransferred={() => {
+      setTransferItem(null);
+      setError('');
+      setMessage('Przedmiot przekazany do plecaka odbiorcy.');
+      void load().catch(() => setError('Przedmiot został przekazany, ale nie udało się odświeżyć plecaka. Wejdź ponownie na ekran postaci.'));
+    }} />}
     {loading ? <p role="status">Wczytywanie ekwipunku…</p> : <>
       <section className="equipment-section" aria-labelledby="equipped-heading">
         <div className="inventory-section-heading"><div><p className="eyebrow">GOTOWOŚĆ DO PRZYGODY</p><h2 id="equipped-heading">Założony ekwipunek</h2></div><span>{equipped.length} / {slots.length} slotów</span></div>
@@ -78,7 +86,7 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
         </div></dialog>
       </section>
       <section className="backpack-section" aria-labelledby="backpack-heading"><div className="inventory-section-heading"><div><p className="eyebrow">WSZYSTKO POD RĘKĄ</p><h2 id="backpack-heading">Plecak <span className="item-count">{backpack.length}</span></h2></div></div>
-        {backpack.length ? <ul className="inventory-list">{backpack.map(item => <li key={item.id}><div className="inventory-item-icon" aria-hidden="true">{slots.find(entry => entry.id === item.slot)?.symbol ?? '▣'}</div><div className="inventory-item-info"><h3>{item.name} <span>×{item.quantity}</span></h3><p>{item.description || (slots.find(entry => entry.id === item.slot)?.label ?? 'Przedmiot w plecaku')}</p></div><div className="admin-actions">{item.slot !== 'backpack' && <button className="text-button" disabled={pending} onClick={() => itemAction(item, 'equip')}>Załóż ↑</button>}<button className="text-button danger-button" disabled={pending} onClick={() => itemAction(item, 'delete')} aria-label={`Usuń ${item.name}`}>Usuń</button></div></li>)}</ul> : <div className="inventory-empty"><span aria-hidden="true">▣</span><h3>Plecak jest pusty</h3><p>Tutaj pojawią się przedmioty przydzielone postaci.</p></div>}
+        {backpack.length ? <ul className="inventory-list">{backpack.map(item => <li key={item.id}><div className="inventory-item-icon" aria-hidden="true">{slots.find(entry => entry.id === item.slot)?.symbol ?? '▣'}</div><div className="inventory-item-info"><h3>{item.name} <span>×{item.quantity}</span></h3><p>{item.description || (slots.find(entry => entry.id === item.slot)?.label ?? 'Przedmiot w plecaku')}</p></div><div className="admin-actions">{item.slot !== 'backpack' && <button className="text-button" disabled={pending} onClick={() => itemAction(item, 'equip')}>Załóż ↑</button>}<button className="text-button" disabled={pending} onClick={() => setTransferItem(item)} aria-haspopup="dialog" aria-label={`Przekaż ${item.name} innej postaci`}>Przekaż →</button><button className="text-button danger-button" disabled={pending} onClick={() => itemAction(item, 'delete')} aria-label={`Usuń ${item.name}`}>Usuń</button></div></li>)}</ul> : <div className="inventory-empty"><span aria-hidden="true">▣</span><h3>Plecak jest pusty</h3><p>Tutaj pojawią się przedmioty przydzielone postaci.</p></div>}
       </section>
     </>}
   </>;

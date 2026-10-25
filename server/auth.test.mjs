@@ -82,10 +82,28 @@ test('admin provisions players; sessions and character ownership are enforced', 
     assert.equal(db.prepare('SELECT equipped FROM character_items WHERE id = ?').get(hat.id).equipped, 0);
     assert.equal((await request(`${inventoryPath}/${rope.id}/delete`, {}, bob)).status, 200);
     assert.equal((await (await request(inventoryPath, undefined, bob)).json()).items.length, 2);
-    assert.equal((await request(`/characters/${bobHeroId}/recipients`, undefined, bob)).status, 404);
+    const recipients = await (await request(`/characters/${bobHeroId}/recipients`, undefined, bob)).json();
+    assert.deepEqual(recipients.characters, [{ id: heroId, name: 'alice hero' }]);
+    assert.equal((await request(`/characters/${heroId}/recipients`, undefined, bob)).status, 404);
+    insertItem.run(bobHeroId, 'Rations', 'Food', 5, 'backpack');
+    const rationsId = Number(db.prepare("SELECT id FROM character_items WHERE character_id = ? AND name = 'Rations'").get(bobHeroId).id);
+    const transferPath = `${inventoryPath}/${rationsId}/transfer`;
+    for (const invalid of [{ recipientId: bobHeroId, quantity: 1 }, { recipientId: heroId, quantity: 0 }, { recipientId: heroId, quantity: 1.5 }]) {
+      assert.equal((await request(transferPath, invalid, bob)).status, 400);
+    }
+    assert.equal((await request(transferPath, { recipientId: 999999, quantity: 1 }, bob)).status, 404);
+    assert.equal((await request(transferPath, { recipientId: heroId, quantity: 6 }, bob)).status, 409);
+    assert.equal(db.prepare('SELECT quantity FROM character_items WHERE id = ?').get(rationsId).quantity, 5);
+    assert.equal((await request(transferPath, { recipientId: heroId, quantity: 2 }, bob)).status, 200);
+    assert.equal(db.prepare('SELECT quantity FROM character_items WHERE id = ?').get(rationsId).quantity, 3);
+    const receivedRations = db.prepare("SELECT quantity, slot, equipped, description FROM character_items WHERE character_id = ? AND name = 'Rations'").get(heroId);
+    assert.deepEqual({ ...receivedRations }, { quantity: 2, slot: 'backpack', equipped: 0, description: 'Food' });
+    assert.equal((await request(`${inventoryPath}/${helmet.id}/transfer`, { recipientId: heroId, quantity: 1 }, bob)).status, 200);
+    assert.equal(db.prepare('SELECT character_id FROM character_items WHERE id = ?').get(helmet.id).character_id, heroId);
     assert.equal((await request(`${inventoryPath}/${helmet.id}/transfer`, { recipientId: heroId, quantity: 1 }, bob)).status, 404);
+    assert.equal((await request(`/characters/${heroId}/inventory/${helmet.id}/transfer`, { recipientId: bobHeroId, quantity: 1 }, bob)).status, 404);
     assert.equal((await request(`${inventoryPath}/${hat.id}/equip`, {}, bob)).status, 200);
-    assert.equal((await request(`${inventoryPath}/${hat.id}/transfer`, { recipientId: heroId, quantity: 1 }, bob)).status, 404);
+    assert.equal((await request(`${inventoryPath}/${hat.id}/transfer`, { recipientId: heroId, quantity: 1 }, bob)).status, 409);
     assert.equal((await request(`${inventoryPath}/${hat.id}/unequip`, {}, bob)).status, 200);
     assert.equal(all.find(c => c.id === heroId).species, 'Elf');
     assert.equal(all.find(c => c.id === heroId).background, 'Mędrzec (Sage)');
