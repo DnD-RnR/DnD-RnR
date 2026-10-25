@@ -1,3 +1,4 @@
+import { formatDice } from '../../lib/dice';
 import { useId, useState, type FormEvent } from 'react';
 import { api, type CatalogItem } from '../../api';
 import slots from '../../../shared/equipment-slots.json';
@@ -29,7 +30,7 @@ export function AssignEquipmentForm({ gameId, characterId, characterName, items,
     {error && <p role="alert" className="form-error">{error}</p>}{message && <p role="status">{message}</p>}
     {items.length ? <form className="stack-form" onSubmit={assign} aria-label={`Przydziel ekwipunek: ${characterName}`}><fieldset disabled={pending || disabled}>
       <label>Przedmiot z katalogu<select required value={itemId} onChange={e => setItemId(e.target.value)}><option value="" disabled>Wybierz przedmiot</option>{items.map(i => <option key={i.id} value={i.id}>{i.name} — {slots.find(s => s.id === i.slot)?.label ?? 'Tylko plecak'}</option>)}</select></label>
-      {item && <p className="item-description">{item.description || 'Brak opisu.'}</p>}
+      {item && <p className="item-description">{formatDice(item.description || 'Brak opisu.')}</p>}
       <label>Liczba sztuk<input type="number" name="quantity" min={1} max={9999} step={1} defaultValue={1} required /></label>
       <button className="primary-button" disabled={!item}>{pending ? 'Przydzielanie…' : 'Dodaj do plecaka'}</button>
     </fieldset></form> : <p>Katalog jest pusty. Administrator musi najpierw dodać przedmioty.</p>}

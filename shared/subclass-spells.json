@@ -1,0 +1,992 @@
+{
+  "Path of the Berserker": {
+    "classId": "barbarian",
+    "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-berserker",
+    "variants": []
+  },
+  "Path of the Wild Heart": {
+    "classId": "barbarian",
+    "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-wild-heart",
+    "variants": []
+  },
+  "Path of the World Tree": {
+    "classId": "barbarian",
+    "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-world-tree",
+    "variants": []
+  },
+  "Path of the Zealot": {
+    "classId": "barbarian",
+    "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-zealot",
+    "variants": []
+  },
+  "College of Dance": {
+    "classId": "bard",
+    "url": "https://dnd2024.wikidot.com/bard:college-of-dance",
+    "variants": []
+  },
+  "College of Glamour": {
+    "classId": "bard",
+    "url": "https://dnd2024.wikidot.com/bard:college-of-glamour",
+    "variants": []
+  },
+  "College of Lore": {
+    "classId": "bard",
+    "url": "https://dnd2024.wikidot.com/bard:college-of-lore",
+    "variants": []
+  },
+  "College of Valor": {
+    "classId": "bard",
+    "url": "https://dnd2024.wikidot.com/bard:college-of-valor",
+    "variants": []
+  },
+  "Life Domain": {
+    "classId": "cleric",
+    "url": "https://dnd2024.wikidot.com/cleric:life-domain",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "aid",
+            "bless",
+            "cure-wounds",
+            "lesser-restoration"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "mass-healing-word",
+            "revivify"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "aura-of-life",
+            "death-ward"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "greater-restoration",
+            "mass-cure-wounds"
+          ]
+        }
+      ]
+    ]
+  },
+  "Light Domain": {
+    "classId": "cleric",
+    "url": "https://dnd2024.wikidot.com/cleric:light-domain",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "burning-hands",
+            "faerie-fire",
+            "scorching-ray",
+            "see-invisibility"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "daylight",
+            "fireball"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "arcane-eye",
+            "wall-of-fire"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "flame-strike",
+            "scrying"
+          ]
+        }
+      ]
+    ]
+  },
+  "Trickery Domain": {
+    "classId": "cleric",
+    "url": "https://dnd2024.wikidot.com/cleric:trickery-domain",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "charm-person",
+            "disguise-self",
+            "invisibility",
+            "pass-without-trace"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "hypnotic-pattern",
+            "nondetection"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "confusion",
+            "dimension-door"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "dominate-person",
+            "modify-memory"
+          ]
+        }
+      ]
+    ]
+  },
+  "War Domain": {
+    "classId": "cleric",
+    "url": "https://dnd2024.wikidot.com/cleric:war-domain",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "guiding-bolt",
+            "magic-weapon",
+            "shield-of-faith",
+            "spiritual-weapon"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "crusader-s-mantle",
+            "spirit-guardians"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "fire-shield",
+            "freedom-of-movement"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "hold-monster",
+            "steel-wind-strike"
+          ]
+        }
+      ]
+    ]
+  },
+  "Circle of the Land": {
+    "classId": "druid",
+    "url": "https://dnd2024.wikidot.com/druid:circle-of-the-land",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "blur",
+            "burning-hands",
+            "fire-bolt"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "fireball"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "blight"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "wall-of-stone"
+          ]
+        }
+      ],
+      [
+        {
+          "level": 3,
+          "spells": [
+            "fog-cloud",
+            "hold-person",
+            "ray-of-frost"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "sleet-storm"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "ice-storm"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "cone-of-cold"
+          ]
+        }
+      ],
+      [
+        {
+          "level": 3,
+          "spells": [
+            "misty-step",
+            "shocking-grasp",
+            "sleep"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "lightning-bolt"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "freedom-of-movement"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "tree-stride"
+          ]
+        }
+      ],
+      [
+        {
+          "level": 3,
+          "spells": [
+            "acid-splash",
+            "ray-of-sickness",
+            "web"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "stinking-cloud"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "polymorph"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "insect-plague"
+          ]
+        }
+      ]
+    ]
+  },
+  "Circle of the Moon": {
+    "classId": "druid",
+    "url": "https://dnd2024.wikidot.com/druid:circle-of-the-moon",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "cure-wounds",
+            "moonbeam",
+            "starry-wisp"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "conjure-animals"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "fount-of-moonlight"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "mass-cure-wounds"
+          ]
+        }
+      ]
+    ]
+  },
+  "Circle of the Sea": {
+    "classId": "druid",
+    "url": "https://dnd2024.wikidot.com/druid:circle-of-the-sea",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "fog-cloud",
+            "gust-of-wind",
+            "ray-of-frost",
+            "thunderwave"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "lightning-bolt",
+            "water-breathing"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "control-water",
+            "ice-storm"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "conjure-elemental",
+            "hold-monster"
+          ]
+        }
+      ]
+    ]
+  },
+  "Circle of the Stars": {
+    "classId": "druid",
+    "url": "https://dnd2024.wikidot.com/druid:circle-of-the-stars",
+    "variants": []
+  },
+  "Battle Master": {
+    "classId": "fighter",
+    "url": "https://dnd2024.wikidot.com/fighter:battle-master",
+    "variants": []
+  },
+  "Champion": {
+    "classId": "fighter",
+    "url": "https://dnd2024.wikidot.com/fighter:champion",
+    "variants": []
+  },
+  "Psi Warrior": {
+    "classId": "fighter",
+    "url": "https://dnd2024.wikidot.com/fighter:psi-warrior",
+    "variants": []
+  },
+  "Warrior of Mercy": {
+    "classId": "monk",
+    "url": "https://dnd2024.wikidot.com/monk:warrior-of-mercy",
+    "variants": []
+  },
+  "Warrior of Shadow": {
+    "classId": "monk",
+    "url": "https://dnd2024.wikidot.com/monk:warrior-of-shadow",
+    "variants": []
+  },
+  "Warrior of the Elements": {
+    "classId": "monk",
+    "url": "https://dnd2024.wikidot.com/monk:warrior-of-the-elements",
+    "variants": []
+  },
+  "Warrior of the Open Hand": {
+    "classId": "monk",
+    "url": "https://dnd2024.wikidot.com/monk:warrior-of-the-open-hand",
+    "variants": []
+  },
+  "Oath of Devotion": {
+    "classId": "paladin",
+    "url": "https://dnd2024.wikidot.com/paladin:oath-of-devotion",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "protection-from-evil-and-good",
+            "shield-of-faith"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "aid",
+            "zone-of-truth"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "beacon-of-hope",
+            "dispel-magic"
+          ]
+        },
+        {
+          "level": 13,
+          "spells": [
+            "freedom-of-movement",
+            "guardian-of-faith"
+          ]
+        },
+        {
+          "level": 17,
+          "spells": [
+            "commune",
+            "flame-strike"
+          ]
+        }
+      ]
+    ]
+  },
+  "Oath of Glory": {
+    "classId": "paladin",
+    "url": "https://dnd2024.wikidot.com/paladin:oath-of-glory",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "guiding-bolt",
+            "heroism"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "enhance-ability",
+            "magic-weapon"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "haste",
+            "protection-from-energy"
+          ]
+        },
+        {
+          "level": 13,
+          "spells": [
+            "compulsion",
+            "freedom-of-movement"
+          ]
+        },
+        {
+          "level": 17,
+          "spells": [
+            "legend-lore",
+            "yolande-s-regal-presence"
+          ]
+        }
+      ]
+    ]
+  },
+  "Oath of the Ancients": {
+    "classId": "paladin",
+    "url": "https://dnd2024.wikidot.com/paladin:oath-of-the-ancients",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "ensnaring-strike",
+            "speak-with-animals"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "misty-step",
+            "moonbeam"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "plant-growth",
+            "protection-from-energy"
+          ]
+        },
+        {
+          "level": 13,
+          "spells": [
+            "ice-storm",
+            "stoneskin"
+          ]
+        },
+        {
+          "level": 17,
+          "spells": [
+            "commune-with-nature",
+            "tree-stride"
+          ]
+        }
+      ]
+    ]
+  },
+  "Oath of Vengeance": {
+    "classId": "paladin",
+    "url": "https://dnd2024.wikidot.com/paladin:oath-of-vengeance",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "bane",
+            "hunter-s-mark"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "hold-person",
+            "misty-step"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "haste",
+            "protection-from-energy"
+          ]
+        },
+        {
+          "level": 13,
+          "spells": [
+            "banishment",
+            "dimension-door"
+          ]
+        },
+        {
+          "level": 17,
+          "spells": [
+            "hold-monster",
+            "scrying"
+          ]
+        }
+      ]
+    ]
+  },
+  "Beast Master": {
+    "classId": "ranger",
+    "url": "https://dnd2024.wikidot.com/ranger:beast-master",
+    "variants": []
+  },
+  "Fey Wanderer": {
+    "classId": "ranger",
+    "url": "https://dnd2024.wikidot.com/ranger:fey-wanderer",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "charm-person"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "misty-step"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "summon-fey"
+          ]
+        },
+        {
+          "level": 13,
+          "spells": [
+            "dimension-door"
+          ]
+        },
+        {
+          "level": 17,
+          "spells": [
+            "mislead"
+          ]
+        }
+      ]
+    ]
+  },
+  "Gloom Stalker": {
+    "classId": "ranger",
+    "url": "https://dnd2024.wikidot.com/ranger:gloom-stalker",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "disguise-self"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "rope-trick"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "fear"
+          ]
+        },
+        {
+          "level": 13,
+          "spells": [
+            "greater-invisibility"
+          ]
+        },
+        {
+          "level": 17,
+          "spells": [
+            "seeming"
+          ]
+        }
+      ]
+    ]
+  },
+  "Hunter": {
+    "classId": "ranger",
+    "url": "https://dnd2024.wikidot.com/ranger:hunter",
+    "variants": []
+  },
+  "Assassin": {
+    "classId": "rogue",
+    "url": "https://dnd2024.wikidot.com/rogue:assassin",
+    "variants": []
+  },
+  "Soulknife": {
+    "classId": "rogue",
+    "url": "https://dnd2024.wikidot.com/rogue:soulknife",
+    "variants": []
+  },
+  "Thief": {
+    "classId": "rogue",
+    "url": "https://dnd2024.wikidot.com/rogue:thief",
+    "variants": []
+  },
+  "Aberrant Sorcery": {
+    "classId": "sorcerer",
+    "url": "https://dnd2024.wikidot.com/sorcerer:aberrant-sorcery",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "arms-of-hadar",
+            "calm-emotions",
+            "detect-thoughts",
+            "dissonant-whispers",
+            "mind-sliver"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "hunger-of-hadar",
+            "sending"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "evard-s-black-tentacles",
+            "summon-aberration"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "rary-s-telepathic-bond",
+            "telekinesis"
+          ]
+        }
+      ]
+    ]
+  },
+  "Clockwork Sorcery": {
+    "classId": "sorcerer",
+    "url": "https://dnd2024.wikidot.com/sorcerer:clockwork-sorcery",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "aid",
+            "alarm",
+            "lesser-restoration",
+            "protection-from-evil-and-good"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "dispel-magic",
+            "protection-from-energy"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "freedom-of-movement",
+            "summon-construct"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "greater-restoration",
+            "wall-of-force"
+          ]
+        }
+      ]
+    ]
+  },
+  "Draconic Sorcery": {
+    "classId": "sorcerer",
+    "url": "https://dnd2024.wikidot.com/sorcerer:draconic-sorcery",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "alter-self",
+            "chromatic-orb",
+            "command",
+            "dragon-s-breath"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "fear",
+            "fly"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "arcane-eye",
+            "charm-monster"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "legend-lore",
+            "summon-dragon"
+          ]
+        }
+      ]
+    ]
+  },
+  "Wild Magic Sorcery": {
+    "classId": "sorcerer",
+    "url": "https://dnd2024.wikidot.com/sorcerer:wild-magic-sorcery",
+    "variants": []
+  },
+  "Archfey Patron": {
+    "classId": "warlock",
+    "url": "https://dnd2024.wikidot.com/warlock:archfey-patron",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "calm-emotions",
+            "faerie-fire",
+            "misty-step",
+            "phantasmal-force",
+            "sleep"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "blink",
+            "plant-growth"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "dominate-beast",
+            "greater-invisibility"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "dominate-person",
+            "seeming"
+          ]
+        }
+      ]
+    ]
+  },
+  "Celestial Patron": {
+    "classId": "warlock",
+    "url": "https://dnd2024.wikidot.com/warlock:celestial-patron",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "aid",
+            "cure-wounds",
+            "guiding-bolt",
+            "lesser-restoration",
+            "light",
+            "sacred-flame"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "daylight",
+            "revivify"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "guardian-of-faith",
+            "wall-of-fire"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "greater-restoration",
+            "summon-celestial"
+          ]
+        }
+      ]
+    ]
+  },
+  "Fiend Patron": {
+    "classId": "warlock",
+    "url": "https://dnd2024.wikidot.com/warlock:fiend-patron",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "burning-hands",
+            "command",
+            "scorching-ray",
+            "suggestion"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "fireball",
+            "stinking-cloud"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "fire-shield",
+            "wall-of-fire"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "geas",
+            "insect-plague"
+          ]
+        }
+      ]
+    ]
+  },
+  "Great Old One Patron": {
+    "classId": "warlock",
+    "url": "https://dnd2024.wikidot.com/warlock:great-old-one-patron",
+    "variants": [
+      [
+        {
+          "level": 3,
+          "spells": [
+            "detect-thoughts",
+            "dissonant-whispers",
+            "phantasmal-force",
+            "tasha-s-hideous-laughter"
+          ]
+        },
+        {
+          "level": 5,
+          "spells": [
+            "clairvoyance",
+            "hunger-of-hadar"
+          ]
+        },
+        {
+          "level": 7,
+          "spells": [
+            "confusion",
+            "summon-aberration"
+          ]
+        },
+        {
+          "level": 9,
+          "spells": [
+            "modify-memory",
+            "telekinesis"
+          ]
+        }
+      ]
+    ]
+  },
+  "Abjurer": {
+    "classId": "wizard",
+    "url": "https://dnd2024.wikidot.com/wizard:abjurer",
+    "variants": []
+  },
+  "Diviner": {
+    "classId": "wizard",
+    "url": "https://dnd2024.wikidot.com/wizard:diviner",
+    "variants": []
+  },
+  "Evoker": {
+    "classId": "wizard",
+    "url": "https://dnd2024.wikidot.com/wizard:evoker",
+    "variants": []
+  },
+  "Illusionist": {
+    "classId": "wizard",
+    "url": "https://dnd2024.wikidot.com/wizard:illusionist",
+    "variants": []
+  }
+}

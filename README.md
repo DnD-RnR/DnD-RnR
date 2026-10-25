@@ -2,11 +2,76 @@
 
 ## Statystyki postaci
 
+### Automatyczne wpisy z zasad 2024
+
+Karta wyprowadza z klasy, poziomu, podklasy i pochodzenia biegłości w rzutach
+obronnych, szkolenie w pancerzach i broni, stałe narzędzia, umiejętności
+pochodzenia, atut pochodzenia, kość wytrzymałości, zasoby z tabeli klasy i listę
+dostępnych zdolności (z odnośnikami do zasad). Języki obejmują Common oraz
+klasowe Druidic / Thieves’ Cant. Dwa języki standardowe i dodatkowe języki
+klasowe wybiera gracz; gatunek Elf nie dopisuje automatycznie języka Elvish.
+
+W edycji dostępne są ograniczone listy umiejętności klasy, ekspertyz, narzędzi,
+instrumentów i języków oraz wybory Skilled, Crafter i Musician. Obsługiwane są
+także dodatkowe biegłości Human, Elf, College of Lore, Fey Wanderer i Assassin.
+API sprawdza liczbę wyborów, duplikaty, uprawnienia i zależności ekspertyzy od
+biegłości. Niekompletny wybór można zapisać; karta pokazuje, co zostało do uzupełnienia.
+
+Wyniki testów uwzględniają automatyczne biegłości, wybrane ekspertyzy, Jack of
+All Trades, premie Thaumaturge / Magician i Otherworldly Glamour. Monk na poziomie
+14 otrzymuje wszystkie rzuty obronne, a Rogue na poziomie 15 Mądrość i Charyzmę.
+Alert zwiększa inicjatywę. Na 1. poziomie maksymalne PW mogą być wyliczone
+z klasy i Kondycji, z premiami Dwarf i Tough; ręcznie wpisane maksymalne PW mają
+pierwszeństwo. Szybkość bazowa i podstawowe zmysły / odporności gatunku są pokazane
+osobno od efektów warunkowych i wariantów gatunku.
+
+Stałe dane są wyprowadzane na bieżąco, bez nadpisywania dotychczasowych notatek,
+ręcznych wartości i dodatkowych biegłości. W `character_statistics` zapisywane są
+wybory `traits`, niezależnie od `spells`. Po zmianie klasy lub pochodzenia stary
+niepasujący wybór jest oznaczony i wymaga poprawienia. Atuty przy awansie,
+multiclassing, warianty gatunku i warunkowe efekty wymagają osobnego uzupełnienia.
+
+Metadane: `shared/trait-data.json`, opcje: `shared/trait-options.json`, wspólne
+obliczenia i walidacja: `shared/character-traits.mjs`. Metadane można odtworzyć
+przez `node scripts/build-trait-data.mjs` (wiki i pamięć podręczna jak przy czarach).
+Podstawa zasad: [klasy](https://www.dndbeyond.com/sources/dnd/br-2024/character-classes)
+i [języki](https://www.dndbeyond.com/sources/dnd/br-2024/creating-a-character).
+
 Ekran postaci ma zakładki „Ekwipunek” i „Statystyki”. Statystyki obejmują sześć
 cech, rzuty obronne, 18 umiejętności z biegłością lub ekspertyzą, PW, KP, inicjatywę,
 szybkość, kości wytrzymałości, rzuty przeciw śmierci, wyczerpanie, inspirację,
-doświadczenie i parametry magii. Ataki, czary, zasoby, zdolności, odporności,
+doświadczenie i parametry magii. Ataki, zasoby, zdolności, odporności,
 języki i inne biegłości zapisuje się w polach opisowych.
+
+### Wybór czarów (PHB 2024)
+
+W edycji statystyk sztuczki i czary wybiera się z list rozwijanych. Katalog zawiera
+391 czarów z Player’s Handbook 2024: nazwy angielskie, kręgi, listy klasowe i linki
+do opisów w [wiki](https://dnd2024.wikidot.com/spell:all), bez kopiowania opisów.
+Ten sam moduł sprawdza w przeglądarce i API dostęp do listy, kręgu, duplikaty,
+limit sztuczek i limit czarów przygotowanych na poziomach 1–20.
+
+Obsługiwane są klasy czarujące oraz Eldritch Knight i Arcane Trickster,
+czary przyznane przez podklasy, wybór krainy Circle of the Land, boski/pierwotny
+porządek, Blessed Warrior i Druidic Warrior, Magical Secrets i Magical Discoveries.
+Czary zawsze przygotowane są oddzielone od zwykłego limitu. Czarodziej wybiera
+przygotowane czary z księgi; nie ograniczamy liczby wpisów w księdze, ponieważ
+może kopiować znalezione czary. Spell Mastery i Signature Spells mają osobny wybór.
+Mystic Arcanum czarnoksiężnika ma oddzielne limity dla kręgów 6–9.
+
+Można zapisać niekompletny wybór, ale nie przekroczyć limitów. Aplikacja nie
+śledzi czasu odpoczynków, historii wymiany czarów przy awansie, kosztów kopiowania,
+zużytych komórek ani multiclassingu. Czary z gatunku, atutów, inwokacji i przedmiotów
+nie są jeszcze częścią tego wyboru klasowego. Dotychczasowy tekst czarów pozostaje
+dostępny jako archiwalne notatki; nie jest automatycznie interpretowany jako lista.
+Cecha magii klasy jest ustalana automatycznie. Po zmianie klasy, podklasy lub
+poziomu niepoprawny stary wybór jest oznaczony błędem i wymaga poprawienia przed zapisem.
+
+Dane katalogu i progresji są przechowywane w `shared/`; można je odtworzyć
+poleceniem `node scripts/build-spell-data.mjs` (wymaga internetu). Skrypt korzysta
+z pamięci podręcznej w `.local-preview/spell-sources/`; aktualizacja danych źródłowych
+wymaga odświeżenia odpowiednich plików tej pamięci. Zasady przygotowania i limitów:
+[Character Classes 2024](https://www.dndbeyond.com/sources/dnd/br-2024/character-classes).
 
 Właściciel uzupełnia kartę przez „Uzupełnij / edytuj”. Brakujące wartości są
 oznaczone kreską. Modyfikatory cech, premia z biegłości, rzuty, podstawowa pasywna

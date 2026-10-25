@@ -1,3 +1,4 @@
+import { formatDice } from '../../lib/dice';
 import { useEffect, useState, type FormEvent } from 'react';
 import { api, type CatalogItem } from '../../api';
 import slots from '../../../shared/equipment-slots.json';
@@ -32,6 +33,6 @@ export function ItemCatalog() {
       <label>Miejsce noszenia<select name="slot" defaultValue="backpack"><option value="backpack">Tylko plecak</option>{slots.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}</select></label>
       <button className="primary-button">Dodaj do katalogu</button>
     </fieldset></form></Card>
-    {loading ? <p role="status">Wczytywanie katalogu…</p> : items.length ? <ul>{items.map(i => <li key={i.id}><strong>{i.name}</strong><p>{slots.find(s => s.id === i.slot)?.label ?? 'Tylko plecak'}</p><p className="item-description">{i.description}</p></li>)}</ul> : <p>Katalog jest pusty. Dodaj pierwszy przedmiot.</p>}
+    {loading ? <p role="status">Wczytywanie katalogu…</p> : items.length ? <ul>{items.map(i => <li key={i.id}><strong>{i.name}</strong><p>{slots.find(s => s.id === i.slot)?.label ?? 'Tylko plecak'}</p><p className="item-description">{formatDice(i.description)}</p></li>)}</ul> : <p>Katalog jest pusty. Dodaj pierwszy przedmiot.</p>}
   </section>;
 }

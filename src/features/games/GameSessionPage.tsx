@@ -1,3 +1,4 @@
+import { formatDice } from '../../lib/dice';
 import { GameEditPanel } from './GameEditPanel';
 import { useCallback, useEffect, useState } from 'react';
 import { api, type CatalogItem, type Character, type InventoryItem } from '../../api';
@@ -54,7 +55,7 @@ export function GameSessionPage({ gameId }: { gameId: number }) {
           {m.character && <>
             <p>{[m.character.species, m.character.class, m.character.subclass].filter(Boolean).join(' · ')}</p>
             <p>Poziom <strong>{m.character.level}</strong> · Pochodzenie: {m.character.background || 'Do uzupełnienia'}</p>
-            <details className="session-inventory"><summary>Ekwipunek ({m.items?.length ?? 0})</summary>{m.items?.length ? <ul>{m.items.map(item => <li key={item.id}><strong>{item.name}</strong> × {item.quantity} · {item.equipped ? 'Założony' : 'Plecak'}<p className="item-description">{item.description}</p></li>)}</ul> : <p>Brak przedmiotów.</p>}</details>
+            <details className="session-inventory"><summary>Ekwipunek ({m.items?.length ?? 0})</summary>{m.items?.length ? <ul>{m.items.map(item => <li key={item.id}><strong>{item.name}</strong> × {item.quantity} · {item.equipped ? 'Założony' : 'Plecak'}<p className="item-description">{formatDice(item.description)}</p></li>)}</ul> : <p>Brak przedmiotów.</p>}</details>
             <AssignEquipmentForm gameId={gameId} characterId={m.character.id} characterName={m.name} items={catalog} disabled={pending} onAssigned={load} />
           </>}
         </Card>)}</div> : <Card title="Drużyna czeka na bohaterów"><p>Żadna postać nie zaakceptowała jeszcze udziału w tej grze. Zaproś bohaterów w panelu Edytuj grę.</p></Card>}

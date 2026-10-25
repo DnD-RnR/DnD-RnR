@@ -1,0 +1,3234 @@
+{
+  "bard": {
+    "name": "Bard",
+    "url": "https://dnd2024.wikidot.com/bard:main",
+    "levels": [
+      {
+        "level": 1,
+        "cantrips": 2,
+        "prepared": 4,
+        "slotLevel": 0,
+        "slots": [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 2,
+        "cantrips": 2,
+        "prepared": 5,
+        "slotLevel": 0,
+        "slots": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 3,
+        "cantrips": 2,
+        "prepared": 6,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 4,
+        "cantrips": 3,
+        "prepared": 7,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 5,
+        "cantrips": 3,
+        "prepared": 9,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 6,
+        "cantrips": 3,
+        "prepared": 10,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 7,
+        "cantrips": 3,
+        "prepared": 11,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 8,
+        "cantrips": 3,
+        "prepared": 12,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 9,
+        "cantrips": 3,
+        "prepared": 14,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 10,
+        "cantrips": 4,
+        "prepared": 15,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 11,
+        "cantrips": 4,
+        "prepared": 16,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 12,
+        "cantrips": 4,
+        "prepared": 16,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 13,
+        "cantrips": 4,
+        "prepared": 17,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 14,
+        "cantrips": 4,
+        "prepared": 17,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 15,
+        "cantrips": 4,
+        "prepared": 18,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1,
+          0
+        ]
+      },
+      {
+        "level": 16,
+        "cantrips": 4,
+        "prepared": 18,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1,
+          0
+        ]
+      },
+      {
+        "level": 17,
+        "cantrips": 4,
+        "prepared": 19,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "level": 18,
+        "cantrips": 4,
+        "prepared": 20,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          3,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "level": 19,
+        "cantrips": 4,
+        "prepared": 21,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "level": 20,
+        "cantrips": 4,
+        "prepared": 22,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          3,
+          2,
+          2,
+          1,
+          1
+        ]
+      }
+    ]
+  },
+  "cleric": {
+    "name": "Kleryk (Cleric)",
+    "url": "https://dnd2024.wikidot.com/cleric:main",
+    "levels": [
+      {
+        "level": 1,
+        "cantrips": 3,
+        "prepared": 4,
+        "slotLevel": 0,
+        "slots": [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 2,
+        "cantrips": 3,
+        "prepared": 5,
+        "slotLevel": 0,
+        "slots": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 3,
+        "cantrips": 3,
+        "prepared": 6,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 4,
+        "cantrips": 4,
+        "prepared": 7,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 5,
+        "cantrips": 4,
+        "prepared": 9,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 6,
+        "cantrips": 4,
+        "prepared": 10,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 7,
+        "cantrips": 4,
+        "prepared": 11,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 8,
+        "cantrips": 4,
+        "prepared": 12,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 9,
+        "cantrips": 4,
+        "prepared": 14,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 10,
+        "cantrips": 5,
+        "prepared": 15,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 11,
+        "cantrips": 5,
+        "prepared": 16,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 12,
+        "cantrips": 5,
+        "prepared": 16,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 13,
+        "cantrips": 5,
+        "prepared": 17,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 14,
+        "cantrips": 5,
+        "prepared": 17,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 15,
+        "cantrips": 5,
+        "prepared": 18,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1,
+          0
+        ]
+      },
+      {
+        "level": 16,
+        "cantrips": 5,
+        "prepared": 18,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1,
+          0
+        ]
+      },
+      {
+        "level": 17,
+        "cantrips": 5,
+        "prepared": 19,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "level": 18,
+        "cantrips": 5,
+        "prepared": 20,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          3,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "level": 19,
+        "cantrips": 5,
+        "prepared": 21,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "level": 20,
+        "cantrips": 5,
+        "prepared": 22,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          3,
+          2,
+          2,
+          1,
+          1
+        ]
+      }
+    ]
+  },
+  "druid": {
+    "name": "Druid",
+    "url": "https://dnd2024.wikidot.com/druid:main",
+    "levels": [
+      {
+        "level": 1,
+        "cantrips": 2,
+        "prepared": 4,
+        "slotLevel": 0,
+        "slots": [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 2,
+        "cantrips": 2,
+        "prepared": 5,
+        "slotLevel": 0,
+        "slots": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 3,
+        "cantrips": 2,
+        "prepared": 6,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 4,
+        "cantrips": 3,
+        "prepared": 7,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 5,
+        "cantrips": 3,
+        "prepared": 9,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 6,
+        "cantrips": 3,
+        "prepared": 10,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 7,
+        "cantrips": 3,
+        "prepared": 11,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 8,
+        "cantrips": 3,
+        "prepared": 12,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 9,
+        "cantrips": 3,
+        "prepared": 14,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 10,
+        "cantrips": 4,
+        "prepared": 15,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 11,
+        "cantrips": 4,
+        "prepared": 16,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 12,
+        "cantrips": 4,
+        "prepared": 16,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 13,
+        "cantrips": 4,
+        "prepared": 17,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 14,
+        "cantrips": 4,
+        "prepared": 17,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 15,
+        "cantrips": 4,
+        "prepared": 18,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1,
+          0
+        ]
+      },
+      {
+        "level": 16,
+        "cantrips": 4,
+        "prepared": 18,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1,
+          0
+        ]
+      },
+      {
+        "level": 17,
+        "cantrips": 4,
+        "prepared": 19,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "level": 18,
+        "cantrips": 4,
+        "prepared": 20,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          3,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "level": 19,
+        "cantrips": 4,
+        "prepared": 21,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "level": 20,
+        "cantrips": 4,
+        "prepared": 22,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          3,
+          2,
+          2,
+          1,
+          1
+        ]
+      }
+    ]
+  },
+  "Eldritch Knight": {
+    "name": "Eldritch Knight",
+    "url": "https://dnd2024.wikidot.com/fighter:eldritch-knight",
+    "levels": [
+      {
+        "level": 3,
+        "cantrips": 2,
+        "prepared": 3,
+        "slotLevel": 0,
+        "slots": [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 4,
+        "cantrips": 2,
+        "prepared": 4,
+        "slotLevel": 0,
+        "slots": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 5,
+        "cantrips": 2,
+        "prepared": 4,
+        "slotLevel": 0,
+        "slots": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 6,
+        "cantrips": 2,
+        "prepared": 4,
+        "slotLevel": 0,
+        "slots": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 7,
+        "cantrips": 2,
+        "prepared": 5,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 8,
+        "cantrips": 2,
+        "prepared": 6,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 9,
+        "cantrips": 2,
+        "prepared": 6,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 10,
+        "cantrips": 3,
+        "prepared": 7,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 11,
+        "cantrips": 3,
+        "prepared": 8,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 12,
+        "cantrips": 3,
+        "prepared": 8,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 13,
+        "cantrips": 3,
+        "prepared": 9,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 14,
+        "cantrips": 3,
+        "prepared": 10,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 15,
+        "cantrips": 3,
+        "prepared": 10,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 16,
+        "cantrips": 3,
+        "prepared": 11,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 17,
+        "cantrips": 3,
+        "prepared": 11,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 18,
+        "cantrips": 3,
+        "prepared": 11,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 19,
+        "cantrips": 3,
+        "prepared": 12,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 20,
+        "cantrips": 3,
+        "prepared": 13,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "paladin": {
+    "name": "Paladyn (Paladin)",
+    "url": "https://dnd2024.wikidot.com/paladin:main",
+    "levels": [
+      {
+        "level": 1,
+        "cantrips": 0,
+        "prepared": 2,
+        "slotLevel": 0,
+        "slots": [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 2,
+        "cantrips": 0,
+        "prepared": 3,
+        "slotLevel": 0,
+        "slots": [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 3,
+        "cantrips": 0,
+        "prepared": 4,
+        "slotLevel": 0,
+        "slots": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 4,
+        "cantrips": 0,
+        "prepared": 5,
+        "slotLevel": 0,
+        "slots": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 5,
+        "cantrips": 0,
+        "prepared": 6,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 6,
+        "cantrips": 0,
+        "prepared": 6,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 7,
+        "cantrips": 0,
+        "prepared": 7,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 8,
+        "cantrips": 0,
+        "prepared": 7,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 9,
+        "cantrips": 0,
+        "prepared": 9,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 10,
+        "cantrips": 0,
+        "prepared": 9,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 11,
+        "cantrips": 0,
+        "prepared": 10,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 12,
+        "cantrips": 0,
+        "prepared": 10,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 13,
+        "cantrips": 0,
+        "prepared": 11,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 14,
+        "cantrips": 0,
+        "prepared": 11,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 15,
+        "cantrips": 0,
+        "prepared": 12,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 16,
+        "cantrips": 0,
+        "prepared": 12,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 17,
+        "cantrips": 0,
+        "prepared": 14,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 18,
+        "cantrips": 0,
+        "prepared": 14,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 19,
+        "cantrips": 0,
+        "prepared": 15,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 20,
+        "cantrips": 0,
+        "prepared": 15,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "ranger": {
+    "name": "Łowca (Ranger)",
+    "url": "https://dnd2024.wikidot.com/ranger:main",
+    "levels": [
+      {
+        "level": 1,
+        "cantrips": 0,
+        "prepared": 2,
+        "slotLevel": 0,
+        "slots": [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 2,
+        "cantrips": 0,
+        "prepared": 3,
+        "slotLevel": 0,
+        "slots": [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 3,
+        "cantrips": 0,
+        "prepared": 4,
+        "slotLevel": 0,
+        "slots": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 4,
+        "cantrips": 0,
+        "prepared": 5,
+        "slotLevel": 0,
+        "slots": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 5,
+        "cantrips": 0,
+        "prepared": 6,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 6,
+        "cantrips": 0,
+        "prepared": 6,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 7,
+        "cantrips": 0,
+        "prepared": 7,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 8,
+        "cantrips": 0,
+        "prepared": 7,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 9,
+        "cantrips": 0,
+        "prepared": 9,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 10,
+        "cantrips": 0,
+        "prepared": 9,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 11,
+        "cantrips": 0,
+        "prepared": 10,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 12,
+        "cantrips": 0,
+        "prepared": 10,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 13,
+        "cantrips": 0,
+        "prepared": 11,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 14,
+        "cantrips": 0,
+        "prepared": 11,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 15,
+        "cantrips": 0,
+        "prepared": 12,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 16,
+        "cantrips": 0,
+        "prepared": 12,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 17,
+        "cantrips": 0,
+        "prepared": 14,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 18,
+        "cantrips": 0,
+        "prepared": 14,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 19,
+        "cantrips": 0,
+        "prepared": 15,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 20,
+        "cantrips": 0,
+        "prepared": 15,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "Arcane Trickster": {
+    "name": "Arcane Trickster",
+    "url": "https://dnd2024.wikidot.com/rogue:arcane-trickster",
+    "levels": [
+      {
+        "level": 3,
+        "cantrips": 2,
+        "prepared": 3,
+        "slotLevel": 0,
+        "slots": [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 4,
+        "cantrips": 2,
+        "prepared": 4,
+        "slotLevel": 0,
+        "slots": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 5,
+        "cantrips": 2,
+        "prepared": 4,
+        "slotLevel": 0,
+        "slots": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 6,
+        "cantrips": 2,
+        "prepared": 4,
+        "slotLevel": 0,
+        "slots": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 7,
+        "cantrips": 2,
+        "prepared": 5,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 8,
+        "cantrips": 2,
+        "prepared": 6,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 9,
+        "cantrips": 2,
+        "prepared": 6,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 10,
+        "cantrips": 3,
+        "prepared": 7,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 11,
+        "cantrips": 3,
+        "prepared": 8,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 12,
+        "cantrips": 3,
+        "prepared": 8,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 13,
+        "cantrips": 3,
+        "prepared": 9,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 14,
+        "cantrips": 3,
+        "prepared": 10,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 15,
+        "cantrips": 3,
+        "prepared": 10,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 16,
+        "cantrips": 3,
+        "prepared": 11,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 17,
+        "cantrips": 3,
+        "prepared": 11,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 18,
+        "cantrips": 3,
+        "prepared": 11,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 19,
+        "cantrips": 3,
+        "prepared": 12,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 20,
+        "cantrips": 3,
+        "prepared": 13,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "sorcerer": {
+    "name": "Zaklinacz (Sorcerer)",
+    "url": "https://dnd2024.wikidot.com/sorcerer:main",
+    "levels": [
+      {
+        "level": 1,
+        "cantrips": 4,
+        "prepared": 2,
+        "slotLevel": 0,
+        "slots": [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 2,
+        "cantrips": 4,
+        "prepared": 4,
+        "slotLevel": 0,
+        "slots": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 3,
+        "cantrips": 4,
+        "prepared": 6,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 4,
+        "cantrips": 5,
+        "prepared": 7,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 5,
+        "cantrips": 5,
+        "prepared": 9,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 6,
+        "cantrips": 5,
+        "prepared": 10,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 7,
+        "cantrips": 5,
+        "prepared": 11,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 8,
+        "cantrips": 5,
+        "prepared": 12,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 9,
+        "cantrips": 5,
+        "prepared": 14,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 10,
+        "cantrips": 6,
+        "prepared": 15,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 11,
+        "cantrips": 6,
+        "prepared": 16,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 12,
+        "cantrips": 6,
+        "prepared": 16,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 13,
+        "cantrips": 6,
+        "prepared": 17,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 14,
+        "cantrips": 6,
+        "prepared": 17,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 15,
+        "cantrips": 6,
+        "prepared": 18,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1,
+          0
+        ]
+      },
+      {
+        "level": 16,
+        "cantrips": 6,
+        "prepared": 18,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1,
+          0
+        ]
+      },
+      {
+        "level": 17,
+        "cantrips": 6,
+        "prepared": 19,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "level": 18,
+        "cantrips": 6,
+        "prepared": 20,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          3,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "level": 19,
+        "cantrips": 6,
+        "prepared": 21,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "level": 20,
+        "cantrips": 6,
+        "prepared": 22,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          3,
+          2,
+          2,
+          1,
+          1
+        ]
+      }
+    ]
+  },
+  "warlock": {
+    "name": "Czarnoksiężnik (Warlock)",
+    "url": "https://dnd2024.wikidot.com/warlock:main",
+    "levels": [
+      {
+        "level": 1,
+        "cantrips": 2,
+        "prepared": 2,
+        "slotLevel": 1,
+        "slots": [
+          1
+        ]
+      },
+      {
+        "level": 2,
+        "cantrips": 2,
+        "prepared": 3,
+        "slotLevel": 1,
+        "slots": [
+          2
+        ]
+      },
+      {
+        "level": 3,
+        "cantrips": 2,
+        "prepared": 4,
+        "slotLevel": 2,
+        "slots": [
+          2
+        ]
+      },
+      {
+        "level": 4,
+        "cantrips": 3,
+        "prepared": 5,
+        "slotLevel": 2,
+        "slots": [
+          2
+        ]
+      },
+      {
+        "level": 5,
+        "cantrips": 3,
+        "prepared": 6,
+        "slotLevel": 3,
+        "slots": [
+          2
+        ]
+      },
+      {
+        "level": 6,
+        "cantrips": 3,
+        "prepared": 7,
+        "slotLevel": 3,
+        "slots": [
+          2
+        ]
+      },
+      {
+        "level": 7,
+        "cantrips": 3,
+        "prepared": 8,
+        "slotLevel": 4,
+        "slots": [
+          2
+        ]
+      },
+      {
+        "level": 8,
+        "cantrips": 3,
+        "prepared": 9,
+        "slotLevel": 4,
+        "slots": [
+          2
+        ]
+      },
+      {
+        "level": 9,
+        "cantrips": 3,
+        "prepared": 10,
+        "slotLevel": 5,
+        "slots": [
+          2
+        ]
+      },
+      {
+        "level": 10,
+        "cantrips": 4,
+        "prepared": 10,
+        "slotLevel": 5,
+        "slots": [
+          2
+        ]
+      },
+      {
+        "level": 11,
+        "cantrips": 4,
+        "prepared": 11,
+        "slotLevel": 5,
+        "slots": [
+          3
+        ]
+      },
+      {
+        "level": 12,
+        "cantrips": 4,
+        "prepared": 11,
+        "slotLevel": 5,
+        "slots": [
+          3
+        ]
+      },
+      {
+        "level": 13,
+        "cantrips": 4,
+        "prepared": 12,
+        "slotLevel": 5,
+        "slots": [
+          3
+        ]
+      },
+      {
+        "level": 14,
+        "cantrips": 4,
+        "prepared": 12,
+        "slotLevel": 5,
+        "slots": [
+          3
+        ]
+      },
+      {
+        "level": 15,
+        "cantrips": 4,
+        "prepared": 13,
+        "slotLevel": 5,
+        "slots": [
+          3
+        ]
+      },
+      {
+        "level": 16,
+        "cantrips": 4,
+        "prepared": 13,
+        "slotLevel": 5,
+        "slots": [
+          3
+        ]
+      },
+      {
+        "level": 17,
+        "cantrips": 4,
+        "prepared": 14,
+        "slotLevel": 5,
+        "slots": [
+          4
+        ]
+      },
+      {
+        "level": 18,
+        "cantrips": 4,
+        "prepared": 14,
+        "slotLevel": 5,
+        "slots": [
+          4
+        ]
+      },
+      {
+        "level": 19,
+        "cantrips": 4,
+        "prepared": 15,
+        "slotLevel": 5,
+        "slots": [
+          4
+        ]
+      },
+      {
+        "level": 20,
+        "cantrips": 4,
+        "prepared": 15,
+        "slotLevel": 5,
+        "slots": [
+          4
+        ]
+      }
+    ]
+  },
+  "wizard": {
+    "name": "Czarodziej (Wizard)",
+    "url": "https://dnd2024.wikidot.com/wizard:main",
+    "levels": [
+      {
+        "level": 1,
+        "cantrips": 3,
+        "prepared": 4,
+        "slotLevel": 0,
+        "slots": [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 2,
+        "cantrips": 3,
+        "prepared": 5,
+        "slotLevel": 0,
+        "slots": [
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 3,
+        "cantrips": 3,
+        "prepared": 6,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 4,
+        "cantrips": 4,
+        "prepared": 7,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 5,
+        "cantrips": 4,
+        "prepared": 9,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 6,
+        "cantrips": 4,
+        "prepared": 10,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 7,
+        "cantrips": 4,
+        "prepared": 11,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 8,
+        "cantrips": 4,
+        "prepared": 12,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 9,
+        "cantrips": 4,
+        "prepared": 14,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          1,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 10,
+        "cantrips": 5,
+        "prepared": 15,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 11,
+        "cantrips": 5,
+        "prepared": 16,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 12,
+        "cantrips": 5,
+        "prepared": 16,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 13,
+        "cantrips": 5,
+        "prepared": 17,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 14,
+        "cantrips": 5,
+        "prepared": 18,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          0,
+          0
+        ]
+      },
+      {
+        "level": 15,
+        "cantrips": 5,
+        "prepared": 19,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1,
+          0
+        ]
+      },
+      {
+        "level": 16,
+        "cantrips": 5,
+        "prepared": 21,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1,
+          0
+        ]
+      },
+      {
+        "level": 17,
+        "cantrips": 5,
+        "prepared": 22,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "level": 18,
+        "cantrips": 5,
+        "prepared": 23,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          3,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "level": 19,
+        "cantrips": 5,
+        "prepared": 24,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          3,
+          2,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "level": 20,
+        "cantrips": 5,
+        "prepared": 25,
+        "slotLevel": 0,
+        "slots": [
+          4,
+          3,
+          3,
+          3,
+          3,
+          2,
+          2,
+          1,
+          1
+        ]
+      }
+    ]
+  }
+}

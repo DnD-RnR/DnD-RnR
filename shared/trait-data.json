@@ -1,0 +1,4187 @@
+{
+  "source": "https://dnd2024.wikidot.com",
+  "classes": {
+    "barbarian": {
+      "name": "Barbarzyńca (Barbarian)",
+      "url": "https://dnd2024.wikidot.com/barbarian:main",
+      "core": {
+        "Primary Ability": "Strength",
+        "Hit Point Die": "D12 per Barbarian level",
+        "Saving Throw Proficiencies": "Strength and Constitution",
+        "Skill Proficiencies": "Choose 2: Animal Handling, Athletics, Intimidation, Nature, Perception, or Survival",
+        "Weapon Proficiencies": "Simple and Martial weapons",
+        "Armor Training": "Light and Medium armor and Shields"
+      },
+      "features": [
+        {
+          "level": 1,
+          "name": "Rage",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Rage"
+        },
+        {
+          "level": 1,
+          "name": "Unarmored Defense",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Unarmored-Defense"
+        },
+        {
+          "level": 1,
+          "name": "Weapon Mastery",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Weapon-Mastery"
+        },
+        {
+          "level": 2,
+          "name": "Danger Sense",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Danger-Sense"
+        },
+        {
+          "level": 2,
+          "name": "Reckless Attack",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Reckless-Attack"
+        },
+        {
+          "level": 3,
+          "name": "Primal Knowledge",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Primal-Knowledge"
+        },
+        {
+          "level": 4,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 5,
+          "name": "Extra Attack",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Extra-Attack"
+        },
+        {
+          "level": 5,
+          "name": "Fast Movement",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Fast-Movement"
+        },
+        {
+          "level": 7,
+          "name": "Feral Instinct",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Feral-Instinct"
+        },
+        {
+          "level": 7,
+          "name": "Instinctive Pounce",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Instinctive-Pounce"
+        },
+        {
+          "level": 8,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 9,
+          "name": "Brutal Strike",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Brutal-Strike"
+        },
+        {
+          "level": 11,
+          "name": "Relentless Rage",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Relentless-Rage"
+        },
+        {
+          "level": 12,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 13,
+          "name": "Improved Brutal Strike",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Improved-Brutal-Strike"
+        },
+        {
+          "level": 15,
+          "name": "Persistent Rage",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Persistent-Rage"
+        },
+        {
+          "level": 16,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 17,
+          "name": "Improved Brutal Strike",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Improved-Brutal-Strike-2"
+        },
+        {
+          "level": 18,
+          "name": "Indomitable Might",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Indomitable-Might"
+        },
+        {
+          "level": 19,
+          "name": "Epic Boon",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Epic-Boon"
+        },
+        {
+          "level": 20,
+          "name": "Primal Champion",
+          "url": "https://dnd2024.wikidot.com/barbarian:main#Primal-Champion"
+        }
+      ],
+      "resources": [
+        {
+          "name": "Rages",
+          "levels": [
+            {
+              "level": 1,
+              "value": "2"
+            },
+            {
+              "level": 2,
+              "value": "2"
+            },
+            {
+              "level": 3,
+              "value": "3"
+            },
+            {
+              "level": 4,
+              "value": "3"
+            },
+            {
+              "level": 5,
+              "value": "3"
+            },
+            {
+              "level": 6,
+              "value": "4"
+            },
+            {
+              "level": 7,
+              "value": "4"
+            },
+            {
+              "level": 8,
+              "value": "4"
+            },
+            {
+              "level": 9,
+              "value": "4"
+            },
+            {
+              "level": 10,
+              "value": "4"
+            },
+            {
+              "level": 11,
+              "value": "4"
+            },
+            {
+              "level": 12,
+              "value": "5"
+            },
+            {
+              "level": 13,
+              "value": "5"
+            },
+            {
+              "level": 14,
+              "value": "5"
+            },
+            {
+              "level": 15,
+              "value": "5"
+            },
+            {
+              "level": 16,
+              "value": "5"
+            },
+            {
+              "level": 17,
+              "value": "6"
+            },
+            {
+              "level": 18,
+              "value": "6"
+            },
+            {
+              "level": 19,
+              "value": "6"
+            },
+            {
+              "level": 20,
+              "value": "6"
+            }
+          ]
+        },
+        {
+          "name": "Rage Damage",
+          "levels": [
+            {
+              "level": 1,
+              "value": "+2"
+            },
+            {
+              "level": 2,
+              "value": "+2"
+            },
+            {
+              "level": 3,
+              "value": "+2"
+            },
+            {
+              "level": 4,
+              "value": "+2"
+            },
+            {
+              "level": 5,
+              "value": "+2"
+            },
+            {
+              "level": 6,
+              "value": "+2"
+            },
+            {
+              "level": 7,
+              "value": "+2"
+            },
+            {
+              "level": 8,
+              "value": "+2"
+            },
+            {
+              "level": 9,
+              "value": "+3"
+            },
+            {
+              "level": 10,
+              "value": "+3"
+            },
+            {
+              "level": 11,
+              "value": "+3"
+            },
+            {
+              "level": 12,
+              "value": "+3"
+            },
+            {
+              "level": 13,
+              "value": "+3"
+            },
+            {
+              "level": 14,
+              "value": "+3"
+            },
+            {
+              "level": 15,
+              "value": "+3"
+            },
+            {
+              "level": 16,
+              "value": "+4"
+            },
+            {
+              "level": 17,
+              "value": "+4"
+            },
+            {
+              "level": 18,
+              "value": "+4"
+            },
+            {
+              "level": 19,
+              "value": "+4"
+            },
+            {
+              "level": 20,
+              "value": "+4"
+            }
+          ]
+        },
+        {
+          "name": "Weapon Mastery",
+          "levels": [
+            {
+              "level": 1,
+              "value": "2"
+            },
+            {
+              "level": 2,
+              "value": "2"
+            },
+            {
+              "level": 3,
+              "value": "2"
+            },
+            {
+              "level": 4,
+              "value": "3"
+            },
+            {
+              "level": 5,
+              "value": "3"
+            },
+            {
+              "level": 6,
+              "value": "3"
+            },
+            {
+              "level": 7,
+              "value": "3"
+            },
+            {
+              "level": 8,
+              "value": "3"
+            },
+            {
+              "level": 9,
+              "value": "3"
+            },
+            {
+              "level": 10,
+              "value": "4"
+            },
+            {
+              "level": 11,
+              "value": "4"
+            },
+            {
+              "level": 12,
+              "value": "4"
+            },
+            {
+              "level": 13,
+              "value": "4"
+            },
+            {
+              "level": 14,
+              "value": "4"
+            },
+            {
+              "level": 15,
+              "value": "4"
+            },
+            {
+              "level": 16,
+              "value": "4"
+            },
+            {
+              "level": 17,
+              "value": "4"
+            },
+            {
+              "level": 18,
+              "value": "4"
+            },
+            {
+              "level": 19,
+              "value": "4"
+            },
+            {
+              "level": 20,
+              "value": "4"
+            }
+          ]
+        }
+      ]
+    },
+    "bard": {
+      "name": "Bard",
+      "url": "https://dnd2024.wikidot.com/bard:main",
+      "core": {
+        "Primary Ability": "Charisma",
+        "Hit Point Die": "D8 per Bard level",
+        "Saving Throw Proficiencies": "Dexterity and Charisma",
+        "Skill Proficiencies": "Choose any 3 skills",
+        "Tool Proficiencies": "Choose 3 Musical Instruments",
+        "Weapon Proficiencies": "Simple weapons",
+        "Armor Training": "Light armor"
+      },
+      "features": [
+        {
+          "level": 1,
+          "name": "Bardic Inspiration",
+          "url": "https://dnd2024.wikidot.com/bard:main#Bardic-Inspiration"
+        },
+        {
+          "level": 1,
+          "name": "Spellcasting",
+          "url": "https://dnd2024.wikidot.com/bard:main#Spellcasting"
+        },
+        {
+          "level": 2,
+          "name": "Expertise",
+          "url": "https://dnd2024.wikidot.com/bard:main#Expertise"
+        },
+        {
+          "level": 2,
+          "name": "Jack of all Trades",
+          "url": "https://dnd2024.wikidot.com/bard:main#Jack-of-all-Trades"
+        },
+        {
+          "level": 4,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/bard:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 5,
+          "name": "Font of Inspiration",
+          "url": "https://dnd2024.wikidot.com/bard:main#Font-of-Inspiration"
+        },
+        {
+          "level": 7,
+          "name": "Countercharm",
+          "url": "https://dnd2024.wikidot.com/bard:main#Countercharm"
+        },
+        {
+          "level": 8,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/bard:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 9,
+          "name": "Expertise",
+          "url": "https://dnd2024.wikidot.com/bard:main#Expertise"
+        },
+        {
+          "level": 10,
+          "name": "Magical Secrets",
+          "url": "https://dnd2024.wikidot.com/bard:main#Magical-Secrets"
+        },
+        {
+          "level": 12,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/bard:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 16,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/bard:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 18,
+          "name": "Superior Inspiration",
+          "url": "https://dnd2024.wikidot.com/bard:main#Superior-Inspiration"
+        },
+        {
+          "level": 19,
+          "name": "Epic Boon",
+          "url": "https://dnd2024.wikidot.com/bard:main#Epic-Boon"
+        },
+        {
+          "level": 20,
+          "name": "Words of Creation",
+          "url": "https://dnd2024.wikidot.com/bard:main#Words-of-Creation"
+        }
+      ],
+      "resources": [
+        {
+          "name": "Bardic Die",
+          "levels": [
+            {
+              "level": 1,
+              "value": "D6"
+            },
+            {
+              "level": 2,
+              "value": "D6"
+            },
+            {
+              "level": 3,
+              "value": "D6"
+            },
+            {
+              "level": 4,
+              "value": "D6"
+            },
+            {
+              "level": 5,
+              "value": "D8"
+            },
+            {
+              "level": 6,
+              "value": "D8"
+            },
+            {
+              "level": 7,
+              "value": "D8"
+            },
+            {
+              "level": 8,
+              "value": "D8"
+            },
+            {
+              "level": 9,
+              "value": "D8"
+            },
+            {
+              "level": 10,
+              "value": "D10"
+            },
+            {
+              "level": 11,
+              "value": "D10"
+            },
+            {
+              "level": 12,
+              "value": "D10"
+            },
+            {
+              "level": 13,
+              "value": "D10"
+            },
+            {
+              "level": 14,
+              "value": "D10"
+            },
+            {
+              "level": 15,
+              "value": "D12"
+            },
+            {
+              "level": 16,
+              "value": "D12"
+            },
+            {
+              "level": 17,
+              "value": "D12"
+            },
+            {
+              "level": 18,
+              "value": "D12"
+            },
+            {
+              "level": 19,
+              "value": "D12"
+            },
+            {
+              "level": 20,
+              "value": "D12"
+            }
+          ]
+        }
+      ]
+    },
+    "cleric": {
+      "name": "Kleryk (Cleric)",
+      "url": "https://dnd2024.wikidot.com/cleric:main",
+      "core": {
+        "Primary Ability": "Wisdom",
+        "Hit Point Die": "D8 per Cleric level",
+        "Saving Throw Proficiencies": "Wisdom and Charisma",
+        "Skill Proficiencies": "Choose 2: History, Insight, Medicine, Persuasion, or Religion",
+        "Weapon Proficiencies": "Simple weapons",
+        "Armor Training": "Light and Medium armor and Shields"
+      },
+      "features": [
+        {
+          "level": 1,
+          "name": "Spellcasting",
+          "url": "https://dnd2024.wikidot.com/cleric:main#Spellcasting"
+        },
+        {
+          "level": 1,
+          "name": "Divine Order",
+          "url": "https://dnd2024.wikidot.com/cleric:main#Divine-Order"
+        },
+        {
+          "level": 2,
+          "name": "Channel Divinity",
+          "url": "https://dnd2024.wikidot.com/cleric:main#Channel-Divinity"
+        },
+        {
+          "level": 4,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/cleric:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 5,
+          "name": "Sear Undead",
+          "url": "https://dnd2024.wikidot.com/cleric:main#Sear-Undead"
+        },
+        {
+          "level": 7,
+          "name": "Blessed Strikes",
+          "url": "https://dnd2024.wikidot.com/cleric:main#Blessed-Strikes"
+        },
+        {
+          "level": 8,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/cleric:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 10,
+          "name": "Divine Intervention",
+          "url": "https://dnd2024.wikidot.com/cleric:main#Divine-Intervention"
+        },
+        {
+          "level": 12,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/cleric:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 14,
+          "name": "Improved Blessed Strikes",
+          "url": "https://dnd2024.wikidot.com/cleric:main#Improved-Blessed-Strikes"
+        },
+        {
+          "level": 16,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/cleric:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 19,
+          "name": "Epic Boon",
+          "url": "https://dnd2024.wikidot.com/cleric:main#Epic-Boon"
+        },
+        {
+          "level": 20,
+          "name": "Greater Divine Intervention",
+          "url": "https://dnd2024.wikidot.com/cleric:main#Greater-Divine-Intervention"
+        }
+      ],
+      "resources": [
+        {
+          "name": "Channel Divinity",
+          "levels": [
+            {
+              "level": 1,
+              "value": "-"
+            },
+            {
+              "level": 2,
+              "value": "2"
+            },
+            {
+              "level": 3,
+              "value": "2"
+            },
+            {
+              "level": 4,
+              "value": "2"
+            },
+            {
+              "level": 5,
+              "value": "2"
+            },
+            {
+              "level": 6,
+              "value": "3"
+            },
+            {
+              "level": 7,
+              "value": "3"
+            },
+            {
+              "level": 8,
+              "value": "3"
+            },
+            {
+              "level": 9,
+              "value": "3"
+            },
+            {
+              "level": 10,
+              "value": "3"
+            },
+            {
+              "level": 11,
+              "value": "3"
+            },
+            {
+              "level": 12,
+              "value": "3"
+            },
+            {
+              "level": 13,
+              "value": "3"
+            },
+            {
+              "level": 14,
+              "value": "3"
+            },
+            {
+              "level": 15,
+              "value": "3"
+            },
+            {
+              "level": 16,
+              "value": "3"
+            },
+            {
+              "level": 17,
+              "value": "3"
+            },
+            {
+              "level": 18,
+              "value": "4"
+            },
+            {
+              "level": 19,
+              "value": "4"
+            },
+            {
+              "level": 20,
+              "value": "4"
+            }
+          ]
+        }
+      ]
+    },
+    "druid": {
+      "name": "Druid",
+      "url": "https://dnd2024.wikidot.com/druid:main",
+      "core": {
+        "Primary Ability": "Wisdom",
+        "Hit Point Die": "D8 per Druid level",
+        "Saving Throw Proficiencies": "Intelligence and Wisdom",
+        "Skill Proficiencies": "Choose 2: Arcana, Animal Handling, Insight, Medicine, Nature, Perception, Religion, or Survival",
+        "Weapon Proficiencies": "Simple weapons",
+        "Tool Proficiencies": "Herbalism Kit",
+        "Armor Training": "Light armor and Shields"
+      },
+      "features": [
+        {
+          "level": 1,
+          "name": "Spellcasting",
+          "url": "https://dnd2024.wikidot.com/druid:main#Spellcasting"
+        },
+        {
+          "level": 1,
+          "name": "Druidic",
+          "url": "https://dnd2024.wikidot.com/druid:main#Druidic"
+        },
+        {
+          "level": 1,
+          "name": "Primal Order",
+          "url": "https://dnd2024.wikidot.com/druid:main#Primal-Order"
+        },
+        {
+          "level": 2,
+          "name": "Wild Shape",
+          "url": "https://dnd2024.wikidot.com/druid:main#Wild-Shape"
+        },
+        {
+          "level": 2,
+          "name": "Wild Companion",
+          "url": "https://dnd2024.wikidot.com/druid:main#Wild-Companion"
+        },
+        {
+          "level": 4,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/druid:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 5,
+          "name": "Wild Resurgence",
+          "url": "https://dnd2024.wikidot.com/druid:main#Wild-Resurgence"
+        },
+        {
+          "level": 7,
+          "name": "Elemental Fury",
+          "url": "https://dnd2024.wikidot.com/druid:main#Elemental-Fury"
+        },
+        {
+          "level": 8,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/druid:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 12,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/druid:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 15,
+          "name": "Improved Elemental Fury",
+          "url": "https://dnd2024.wikidot.com/druid:main#Improved-Elemental-Fury"
+        },
+        {
+          "level": 16,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/druid:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 18,
+          "name": "Beast Spells",
+          "url": "https://dnd2024.wikidot.com/druid:main#Beast-Spells"
+        },
+        {
+          "level": 19,
+          "name": "Epic Boon",
+          "url": "https://dnd2024.wikidot.com/druid:main#Epic-Boon"
+        },
+        {
+          "level": 20,
+          "name": "Archdruid",
+          "url": "https://dnd2024.wikidot.com/druid:main#Archdruid"
+        }
+      ],
+      "resources": [
+        {
+          "name": "Wild Shape",
+          "levels": [
+            {
+              "level": 1,
+              "value": "-"
+            },
+            {
+              "level": 2,
+              "value": "2"
+            },
+            {
+              "level": 3,
+              "value": "2"
+            },
+            {
+              "level": 4,
+              "value": "2"
+            },
+            {
+              "level": 5,
+              "value": "2"
+            },
+            {
+              "level": 6,
+              "value": "3"
+            },
+            {
+              "level": 7,
+              "value": "3"
+            },
+            {
+              "level": 8,
+              "value": "3"
+            },
+            {
+              "level": 9,
+              "value": "3"
+            },
+            {
+              "level": 10,
+              "value": "3"
+            },
+            {
+              "level": 11,
+              "value": "3"
+            },
+            {
+              "level": 12,
+              "value": "3"
+            },
+            {
+              "level": 13,
+              "value": "3"
+            },
+            {
+              "level": 14,
+              "value": "3"
+            },
+            {
+              "level": 15,
+              "value": "3"
+            },
+            {
+              "level": 16,
+              "value": "3"
+            },
+            {
+              "level": 17,
+              "value": "4"
+            },
+            {
+              "level": 18,
+              "value": "4"
+            },
+            {
+              "level": 19,
+              "value": "4"
+            },
+            {
+              "level": 20,
+              "value": "4"
+            }
+          ]
+        }
+      ]
+    },
+    "fighter": {
+      "name": "Wojownik (Fighter)",
+      "url": "https://dnd2024.wikidot.com/fighter:main",
+      "core": {
+        "Primary Ability": "Strength or Dexterity",
+        "Hit Point Die": "D10 per Fighter level",
+        "Saving Throw Proficiencies": "Strength and Constitution",
+        "Skill Proficiencies": "Choose 2: Acrobatics, Animal Handling, Athletics, History, Insight, Intimidation, Persuasion, Perception, or Survival",
+        "Weapon Proficiencies": "Simple and Martial weapons",
+        "Armor Training": "Light, Medium and Heavy armor and Shields"
+      },
+      "features": [
+        {
+          "level": 1,
+          "name": "Fighting Style",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Fighting-Style"
+        },
+        {
+          "level": 1,
+          "name": "Second Wind",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Second-Wind"
+        },
+        {
+          "level": 1,
+          "name": "Weapon Mastery",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Weapon-Mastery"
+        },
+        {
+          "level": 2,
+          "name": "Action Surge (One Use)",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Action-Surge"
+        },
+        {
+          "level": 2,
+          "name": "Tactical Mind",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Tactical-Mind"
+        },
+        {
+          "level": 4,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 5,
+          "name": "Extra Attack",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Extra-Attack"
+        },
+        {
+          "level": 5,
+          "name": "Tactical Shift",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Tactical-Shift"
+        },
+        {
+          "level": 6,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 8,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 9,
+          "name": "Indomitable (One Use)",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Indomitable"
+        },
+        {
+          "level": 9,
+          "name": "Tactical Master",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Tactical-Master"
+        },
+        {
+          "level": 11,
+          "name": "Two Extra Attacks",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Two-Extra-Attacks"
+        },
+        {
+          "level": 12,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 13,
+          "name": "Indomitable (Two Uses)",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Indomitable"
+        },
+        {
+          "level": 13,
+          "name": "Studied Attacks",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Studied-Attacks"
+        },
+        {
+          "level": 14,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 16,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 17,
+          "name": "Action Surge (Two Uses)",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Action-Surge"
+        },
+        {
+          "level": 17,
+          "name": "Indomitable (Three Uses)",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Indomitable"
+        },
+        {
+          "level": 19,
+          "name": "Epic Boon",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Epic-Boon"
+        },
+        {
+          "level": 20,
+          "name": "Three Extra Attacks",
+          "url": "https://dnd2024.wikidot.com/fighter:main#Three-Extra-Attacks"
+        }
+      ],
+      "resources": [
+        {
+          "name": "Second Wind",
+          "levels": [
+            {
+              "level": 1,
+              "value": "2"
+            },
+            {
+              "level": 2,
+              "value": "2"
+            },
+            {
+              "level": 3,
+              "value": "2"
+            },
+            {
+              "level": 4,
+              "value": "3"
+            },
+            {
+              "level": 5,
+              "value": "3"
+            },
+            {
+              "level": 6,
+              "value": "3"
+            },
+            {
+              "level": 7,
+              "value": "3"
+            },
+            {
+              "level": 8,
+              "value": "3"
+            },
+            {
+              "level": 9,
+              "value": "3"
+            },
+            {
+              "level": 10,
+              "value": "4"
+            },
+            {
+              "level": 11,
+              "value": "4"
+            },
+            {
+              "level": 12,
+              "value": "4"
+            },
+            {
+              "level": 13,
+              "value": "4"
+            },
+            {
+              "level": 14,
+              "value": "4"
+            },
+            {
+              "level": 15,
+              "value": "4"
+            },
+            {
+              "level": 16,
+              "value": "4"
+            },
+            {
+              "level": 17,
+              "value": "4"
+            },
+            {
+              "level": 18,
+              "value": "4"
+            },
+            {
+              "level": 19,
+              "value": "4"
+            },
+            {
+              "level": 20,
+              "value": "4"
+            }
+          ]
+        },
+        {
+          "name": "Weapon Mastery",
+          "levels": [
+            {
+              "level": 1,
+              "value": "3"
+            },
+            {
+              "level": 2,
+              "value": "3"
+            },
+            {
+              "level": 3,
+              "value": "3"
+            },
+            {
+              "level": 4,
+              "value": "4"
+            },
+            {
+              "level": 5,
+              "value": "4"
+            },
+            {
+              "level": 6,
+              "value": "4"
+            },
+            {
+              "level": 7,
+              "value": "4"
+            },
+            {
+              "level": 8,
+              "value": "4"
+            },
+            {
+              "level": 9,
+              "value": "4"
+            },
+            {
+              "level": 10,
+              "value": "5"
+            },
+            {
+              "level": 11,
+              "value": "5"
+            },
+            {
+              "level": 12,
+              "value": "5"
+            },
+            {
+              "level": 13,
+              "value": "5"
+            },
+            {
+              "level": 14,
+              "value": "5"
+            },
+            {
+              "level": 15,
+              "value": "5"
+            },
+            {
+              "level": 16,
+              "value": "6"
+            },
+            {
+              "level": 17,
+              "value": "6"
+            },
+            {
+              "level": 18,
+              "value": "6"
+            },
+            {
+              "level": 19,
+              "value": "6"
+            },
+            {
+              "level": 20,
+              "value": "6"
+            }
+          ]
+        }
+      ]
+    },
+    "monk": {
+      "name": "Mnich (Monk)",
+      "url": "https://dnd2024.wikidot.com/monk:main",
+      "core": {
+        "Primary Ability": "Dexterity and Wisdom",
+        "Hit Point Die": "D8 per Monk level",
+        "Saving Throw Proficiencies": "Strength and Dexterity",
+        "Skill Proficiencies": "Choose 2 : Acrobatics, Athletics, History, Insight, Religion, or Stealth",
+        "Tool Proficiencies": "Choose one type of Artisan's Tools or Musical Instrument",
+        "Weapon Proficiencies": "Simple weapons and Martial weapons that have the Light property",
+        "Armor Training": "None"
+      },
+      "features": [
+        {
+          "level": 1,
+          "name": "Martial Arts",
+          "url": "https://dnd2024.wikidot.com/monk:main#Martial-Arts"
+        },
+        {
+          "level": 1,
+          "name": "Unarmored Defense",
+          "url": "https://dnd2024.wikidot.com/monk:main#Unarmored-Defense"
+        },
+        {
+          "level": 2,
+          "name": "Monk's Focus",
+          "url": "https://dnd2024.wikidot.com/monk:main#Monks-Focus"
+        },
+        {
+          "level": 2,
+          "name": "Unarmored Movement",
+          "url": "https://dnd2024.wikidot.com/monk:main#Unarmored-Movement"
+        },
+        {
+          "level": 2,
+          "name": "Uncanny Metabolism",
+          "url": "https://dnd2024.wikidot.com/monk:main#Uncanny-Metabolism"
+        },
+        {
+          "level": 3,
+          "name": "Deflect Attacks",
+          "url": "https://dnd2024.wikidot.com/monk:main#Deflect-Attacks"
+        },
+        {
+          "level": 4,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/monk:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 4,
+          "name": "Slow Fall",
+          "url": "https://dnd2024.wikidot.com/monk:main#Slow-Fall"
+        },
+        {
+          "level": 5,
+          "name": "Extra Attack",
+          "url": "https://dnd2024.wikidot.com/monk:main#Extra-Attack"
+        },
+        {
+          "level": 5,
+          "name": "Stunning Strike",
+          "url": "https://dnd2024.wikidot.com/monk:main#Stunning-Strike"
+        },
+        {
+          "level": 6,
+          "name": "Empowered Strikes",
+          "url": "https://dnd2024.wikidot.com/monk:main#Empowered-Strikes"
+        },
+        {
+          "level": 7,
+          "name": "Evasion",
+          "url": "https://dnd2024.wikidot.com/monk:main#Evasion"
+        },
+        {
+          "level": 8,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/monk:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 9,
+          "name": "Acrobatic Movement",
+          "url": "https://dnd2024.wikidot.com/monk:main#Acrobatic-Movement"
+        },
+        {
+          "level": 10,
+          "name": "Heightened Focus",
+          "url": "https://dnd2024.wikidot.com/monk:main#Heightened-Focus"
+        },
+        {
+          "level": 10,
+          "name": "Self-Restoration",
+          "url": "https://dnd2024.wikidot.com/monk:main#Self-Restoration"
+        },
+        {
+          "level": 12,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/monk:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 13,
+          "name": "Deflect Energy",
+          "url": "https://dnd2024.wikidot.com/monk:main#Deflect-Energy"
+        },
+        {
+          "level": 14,
+          "name": "Disciplined Survivor",
+          "url": "https://dnd2024.wikidot.com/monk:main#Disciplined-Survivor"
+        },
+        {
+          "level": 15,
+          "name": "Perfect Focus",
+          "url": "https://dnd2024.wikidot.com/monk:main#Perfect-Focus"
+        },
+        {
+          "level": 16,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/monk:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 18,
+          "name": "Superior Defense",
+          "url": "https://dnd2024.wikidot.com/monk:main#Superior-Defense"
+        },
+        {
+          "level": 19,
+          "name": "Epic Boon",
+          "url": "https://dnd2024.wikidot.com/monk:main#Epic-Boon"
+        },
+        {
+          "level": 20,
+          "name": "Body and Mind",
+          "url": "https://dnd2024.wikidot.com/monk:main#Body-and-Mind"
+        }
+      ],
+      "resources": [
+        {
+          "name": "Martial Arts",
+          "levels": [
+            {
+              "level": 1,
+              "value": "1d6"
+            },
+            {
+              "level": 2,
+              "value": "1d6"
+            },
+            {
+              "level": 3,
+              "value": "1d6"
+            },
+            {
+              "level": 4,
+              "value": "1d6"
+            },
+            {
+              "level": 5,
+              "value": "1d8"
+            },
+            {
+              "level": 6,
+              "value": "1d8"
+            },
+            {
+              "level": 7,
+              "value": "1d8"
+            },
+            {
+              "level": 8,
+              "value": "1d8"
+            },
+            {
+              "level": 9,
+              "value": "1d8"
+            },
+            {
+              "level": 10,
+              "value": "1d8"
+            },
+            {
+              "level": 11,
+              "value": "1d10"
+            },
+            {
+              "level": 12,
+              "value": "1d10"
+            },
+            {
+              "level": 13,
+              "value": "1d10"
+            },
+            {
+              "level": 14,
+              "value": "1d10"
+            },
+            {
+              "level": 15,
+              "value": "1d10"
+            },
+            {
+              "level": 16,
+              "value": "1d10"
+            },
+            {
+              "level": 17,
+              "value": "1d12"
+            },
+            {
+              "level": 18,
+              "value": "1d12"
+            },
+            {
+              "level": 19,
+              "value": "1d12"
+            },
+            {
+              "level": 20,
+              "value": "1d12"
+            }
+          ]
+        },
+        {
+          "name": "Focus Points",
+          "levels": [
+            {
+              "level": 1,
+              "value": "-"
+            },
+            {
+              "level": 2,
+              "value": "2"
+            },
+            {
+              "level": 3,
+              "value": "3"
+            },
+            {
+              "level": 4,
+              "value": "4"
+            },
+            {
+              "level": 5,
+              "value": "5"
+            },
+            {
+              "level": 6,
+              "value": "6"
+            },
+            {
+              "level": 7,
+              "value": "7"
+            },
+            {
+              "level": 8,
+              "value": "8"
+            },
+            {
+              "level": 9,
+              "value": "9"
+            },
+            {
+              "level": 10,
+              "value": "10"
+            },
+            {
+              "level": 11,
+              "value": "11"
+            },
+            {
+              "level": 12,
+              "value": "12"
+            },
+            {
+              "level": 13,
+              "value": "13"
+            },
+            {
+              "level": 14,
+              "value": "14"
+            },
+            {
+              "level": 15,
+              "value": "15"
+            },
+            {
+              "level": 16,
+              "value": "16"
+            },
+            {
+              "level": 17,
+              "value": "17"
+            },
+            {
+              "level": 18,
+              "value": "18"
+            },
+            {
+              "level": 19,
+              "value": "19"
+            },
+            {
+              "level": 20,
+              "value": "20"
+            }
+          ]
+        },
+        {
+          "name": "Unarmored Movement",
+          "levels": [
+            {
+              "level": 1,
+              "value": "-"
+            },
+            {
+              "level": 2,
+              "value": "+10 ft"
+            },
+            {
+              "level": 3,
+              "value": "+10 ft"
+            },
+            {
+              "level": 4,
+              "value": "+10 ft"
+            },
+            {
+              "level": 5,
+              "value": "+10 ft"
+            },
+            {
+              "level": 6,
+              "value": "+15 ft"
+            },
+            {
+              "level": 7,
+              "value": "+15 ft"
+            },
+            {
+              "level": 8,
+              "value": "+15 ft"
+            },
+            {
+              "level": 9,
+              "value": "+15 ft"
+            },
+            {
+              "level": 10,
+              "value": "+20 ft"
+            },
+            {
+              "level": 11,
+              "value": "+20 ft"
+            },
+            {
+              "level": 12,
+              "value": "+20 ft"
+            },
+            {
+              "level": 13,
+              "value": "+20 ft"
+            },
+            {
+              "level": 14,
+              "value": "+25 ft"
+            },
+            {
+              "level": 15,
+              "value": "+25 ft"
+            },
+            {
+              "level": 16,
+              "value": "+25 ft"
+            },
+            {
+              "level": 17,
+              "value": "+25 ft"
+            },
+            {
+              "level": 18,
+              "value": "+30 ft"
+            },
+            {
+              "level": 19,
+              "value": "+30 ft"
+            },
+            {
+              "level": 20,
+              "value": "+30 ft"
+            }
+          ]
+        }
+      ]
+    },
+    "paladin": {
+      "name": "Paladyn (Paladin)",
+      "url": "https://dnd2024.wikidot.com/paladin:main",
+      "core": {
+        "Primary Ability": "Strength and Charisma",
+        "Hit Point Die": "D10 per Paladin level",
+        "Saving Throw Proficiencies": "Wisdom and Charisma",
+        "Skill Proficiencies": "Choose 2: Athletics, Insight, Intimidation, Medicine, Persuasion, or Religion",
+        "Weapon Proficiencies": "Simple and Martial weapons",
+        "Armor Training": "Light, Medium and Heavy armor and Shields"
+      },
+      "features": [
+        {
+          "level": 1,
+          "name": "Lay On Hands",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Lay-On-Hands"
+        },
+        {
+          "level": 1,
+          "name": "Spellcasting",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Spellcasting"
+        },
+        {
+          "level": 1,
+          "name": "Weapon Mastery",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Weapon-Mastery"
+        },
+        {
+          "level": 2,
+          "name": "Fighting Style",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Fighting-style"
+        },
+        {
+          "level": 2,
+          "name": "Paladin's Smite",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Paladins-Smite"
+        },
+        {
+          "level": 3,
+          "name": "Channel Divinity",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Channel-Divinity"
+        },
+        {
+          "level": 4,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 5,
+          "name": "Extra Attack",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Extra-Attack"
+        },
+        {
+          "level": 5,
+          "name": "Faithful Steed",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Faithful-Steed"
+        },
+        {
+          "level": 6,
+          "name": "Aura of Protection",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Aura-of-Protection"
+        },
+        {
+          "level": 8,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 9,
+          "name": "Abjure Foes",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Abjure-Foes"
+        },
+        {
+          "level": 10,
+          "name": "Aura of Courage",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Aura-of-Courage"
+        },
+        {
+          "level": 11,
+          "name": "Radiant Strikes",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Radiant-Strikes"
+        },
+        {
+          "level": 12,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 14,
+          "name": "Restoring Touch",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Restoring-Touch"
+        },
+        {
+          "level": 16,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 18,
+          "name": "Aura Expansion",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Aura-Expansion"
+        },
+        {
+          "level": 19,
+          "name": "Epic Boon",
+          "url": "https://dnd2024.wikidot.com/paladin:main#Epic-Boon"
+        }
+      ],
+      "resources": [
+        {
+          "name": "Channel Divinity",
+          "levels": [
+            {
+              "level": 1,
+              "value": "-"
+            },
+            {
+              "level": 2,
+              "value": "-"
+            },
+            {
+              "level": 3,
+              "value": "2"
+            },
+            {
+              "level": 4,
+              "value": "2"
+            },
+            {
+              "level": 5,
+              "value": "2"
+            },
+            {
+              "level": 6,
+              "value": "2"
+            },
+            {
+              "level": 7,
+              "value": "2"
+            },
+            {
+              "level": 8,
+              "value": "2"
+            },
+            {
+              "level": 9,
+              "value": "2"
+            },
+            {
+              "level": 10,
+              "value": "2"
+            },
+            {
+              "level": 11,
+              "value": "3"
+            },
+            {
+              "level": 12,
+              "value": "3"
+            },
+            {
+              "level": 13,
+              "value": "3"
+            },
+            {
+              "level": 14,
+              "value": "3"
+            },
+            {
+              "level": 15,
+              "value": "3"
+            },
+            {
+              "level": 16,
+              "value": "3"
+            },
+            {
+              "level": 17,
+              "value": "3"
+            },
+            {
+              "level": 18,
+              "value": "3"
+            },
+            {
+              "level": 19,
+              "value": "3"
+            },
+            {
+              "level": 20,
+              "value": "3"
+            }
+          ]
+        }
+      ]
+    },
+    "ranger": {
+      "name": "Łowca (Ranger)",
+      "url": "https://dnd2024.wikidot.com/ranger:main",
+      "core": {
+        "Primary Ability": "Dexterity and Wisdom",
+        "Hit Point Die": "D10 per Ranger level",
+        "Saving Throw Proficiencies": "Strength and Dexterity",
+        "Skill Proficiencies": "Choose 3: Animal Handling, Athletics, Insight, Investigation, Nature, Perception, Stealth, or Survival",
+        "Weapon Proficiencies": "Simple and Martial weapons",
+        "Armor Training": "Light and Medium armor and Shields"
+      },
+      "features": [
+        {
+          "level": 1,
+          "name": "Spellcasting",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Spellcasting"
+        },
+        {
+          "level": 1,
+          "name": "Favored Enemy",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Favored-Enemy"
+        },
+        {
+          "level": 1,
+          "name": "Weapon Mastery",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Weapon-Mastery"
+        },
+        {
+          "level": 2,
+          "name": "Deft Explorer",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Deft-Explorer"
+        },
+        {
+          "level": 2,
+          "name": "Fighting Style",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Fighting-Style"
+        },
+        {
+          "level": 4,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 5,
+          "name": "Extra Attack",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Extra-Attack"
+        },
+        {
+          "level": 6,
+          "name": "Roving",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Roving"
+        },
+        {
+          "level": 8,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 9,
+          "name": "Expertise",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Expertise"
+        },
+        {
+          "level": 10,
+          "name": "Tireless",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Tireless"
+        },
+        {
+          "level": 12,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 13,
+          "name": "Relentless Hunter",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Relentless-Hunter"
+        },
+        {
+          "level": 14,
+          "name": "Nature's Veil",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Natures-Veil"
+        },
+        {
+          "level": 16,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 17,
+          "name": "Precise Hunter",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Precise-Hunter"
+        },
+        {
+          "level": 18,
+          "name": "Feral Senses",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Feral-Senses"
+        },
+        {
+          "level": 19,
+          "name": "Epic Boon",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Epic-Boon"
+        },
+        {
+          "level": 20,
+          "name": "Foe Slayer",
+          "url": "https://dnd2024.wikidot.com/ranger:main#Foe-Slayer"
+        }
+      ],
+      "resources": [
+        {
+          "name": "Favored Enemy",
+          "levels": [
+            {
+              "level": 1,
+              "value": "2"
+            },
+            {
+              "level": 2,
+              "value": "2"
+            },
+            {
+              "level": 3,
+              "value": "2"
+            },
+            {
+              "level": 4,
+              "value": "2"
+            },
+            {
+              "level": 5,
+              "value": "3"
+            },
+            {
+              "level": 6,
+              "value": "3"
+            },
+            {
+              "level": 7,
+              "value": "3"
+            },
+            {
+              "level": 8,
+              "value": "3"
+            },
+            {
+              "level": 9,
+              "value": "4"
+            },
+            {
+              "level": 10,
+              "value": "4"
+            },
+            {
+              "level": 11,
+              "value": "4"
+            },
+            {
+              "level": 12,
+              "value": "4"
+            },
+            {
+              "level": 13,
+              "value": "5"
+            },
+            {
+              "level": 14,
+              "value": "5"
+            },
+            {
+              "level": 15,
+              "value": "5"
+            },
+            {
+              "level": 16,
+              "value": "5"
+            },
+            {
+              "level": 17,
+              "value": "6"
+            },
+            {
+              "level": 18,
+              "value": "6"
+            },
+            {
+              "level": 19,
+              "value": "6"
+            },
+            {
+              "level": 20,
+              "value": "6"
+            }
+          ]
+        }
+      ]
+    },
+    "rogue": {
+      "name": "Łotrzyk (Rogue)",
+      "url": "https://dnd2024.wikidot.com/rogue:main",
+      "core": {
+        "Primary Ability": "Dexterity",
+        "Hit Point Die": "D8 per Rogue level",
+        "Saving Throw Proficiencies": "Dexterity and Intelligence",
+        "Skill Proficiencies": "Choose 4: Acrobatics, Athletics, Deception, Insight, Intimidation, Investigation, Perception, Persuasion, Sleight of Hand, or Stealth.",
+        "Weapon Proficiencies": "Simple weapons and Martial weapons that have the Finesse or Light property",
+        "Tool Proficiencies": "Thieves' Tools",
+        "Armor Training": "Light armor"
+      },
+      "features": [
+        {
+          "level": 1,
+          "name": "Expertise",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Expertise"
+        },
+        {
+          "level": 1,
+          "name": "Sneak Attack",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Sneak-Attack"
+        },
+        {
+          "level": 1,
+          "name": "Thieves' Cant",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Thieves-Cant"
+        },
+        {
+          "level": 1,
+          "name": "Weapon Mastery",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Weapon-Mastery"
+        },
+        {
+          "level": 2,
+          "name": "Cunning Action",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Cunning-Action"
+        },
+        {
+          "level": 3,
+          "name": "Steady Aim",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Steady-Aim"
+        },
+        {
+          "level": 4,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 5,
+          "name": "Cunning Strike",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Cunning-Strike"
+        },
+        {
+          "level": 5,
+          "name": "Uncanny Dodge",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Uncanny-Dodge"
+        },
+        {
+          "level": 6,
+          "name": "Expertise",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Expertise"
+        },
+        {
+          "level": 7,
+          "name": "Evasion",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Evasion"
+        },
+        {
+          "level": 7,
+          "name": "Reliable Talent",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Reliable-Talent"
+        },
+        {
+          "level": 8,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 10,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 11,
+          "name": "Improved Cunning Strike",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Improved-Cunning-Strike"
+        },
+        {
+          "level": 12,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 14,
+          "name": "Devious Strikes",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Devious-Strikes"
+        },
+        {
+          "level": 15,
+          "name": "Slippery Mind",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Slippery-Mind"
+        },
+        {
+          "level": 16,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 18,
+          "name": "Elusive",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Elusive"
+        },
+        {
+          "level": 19,
+          "name": "Epic Boon",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Epic-Boon"
+        },
+        {
+          "level": 20,
+          "name": "Stroke of Luck",
+          "url": "https://dnd2024.wikidot.com/rogue:main#Stroke-of-Luck"
+        }
+      ],
+      "resources": [
+        {
+          "name": "Sneak Attack",
+          "levels": [
+            {
+              "level": 1,
+              "value": "1d6"
+            },
+            {
+              "level": 2,
+              "value": "1d6"
+            },
+            {
+              "level": 3,
+              "value": "2d6"
+            },
+            {
+              "level": 4,
+              "value": "2d6"
+            },
+            {
+              "level": 5,
+              "value": "3d6"
+            },
+            {
+              "level": 6,
+              "value": "3d6"
+            },
+            {
+              "level": 7,
+              "value": "4d6"
+            },
+            {
+              "level": 8,
+              "value": "4d6"
+            },
+            {
+              "level": 9,
+              "value": "5d6"
+            },
+            {
+              "level": 10,
+              "value": "5d6"
+            },
+            {
+              "level": 11,
+              "value": "6d6"
+            },
+            {
+              "level": 12,
+              "value": "6d6"
+            },
+            {
+              "level": 13,
+              "value": "7d6"
+            },
+            {
+              "level": 14,
+              "value": "7d6"
+            },
+            {
+              "level": 15,
+              "value": "8d6"
+            },
+            {
+              "level": 16,
+              "value": "8d6"
+            },
+            {
+              "level": 17,
+              "value": "9d6"
+            },
+            {
+              "level": 18,
+              "value": "9d6"
+            },
+            {
+              "level": 19,
+              "value": "10d6"
+            },
+            {
+              "level": 20,
+              "value": "10d6"
+            }
+          ]
+        }
+      ]
+    },
+    "sorcerer": {
+      "name": "Zaklinacz (Sorcerer)",
+      "url": "https://dnd2024.wikidot.com/sorcerer:main",
+      "core": {
+        "Primary Ability": "Charisma",
+        "Hit Point Die": "D6 per Sorcerer level",
+        "Saving Throw Proficiencies": "Constitution and Charisma",
+        "Skill Proficiencies": "Choose 2: Arcana, Deception, Insight, Intimidation, Persuasion, or Religion",
+        "Weapon Proficiencies": "Simple weapons",
+        "Armor Training": "None"
+      },
+      "features": [
+        {
+          "level": 1,
+          "name": "Spellcasting",
+          "url": "https://dnd2024.wikidot.com/sorcerer:main#Spellcasting"
+        },
+        {
+          "level": 1,
+          "name": "Innate Sorcery",
+          "url": "https://dnd2024.wikidot.com/sorcerer:main#Innate-Sorcery"
+        },
+        {
+          "level": 2,
+          "name": "Font of Magic",
+          "url": "https://dnd2024.wikidot.com/sorcerer:main#Font-of-Magic"
+        },
+        {
+          "level": 2,
+          "name": "Metamagic",
+          "url": "https://dnd2024.wikidot.com/sorcerer:main#Metamagic"
+        },
+        {
+          "level": 4,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/sorcerer:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 5,
+          "name": "Sorcerous Restoration",
+          "url": "https://dnd2024.wikidot.com/sorcerer:main#Sorcerous-Restoration"
+        },
+        {
+          "level": 7,
+          "name": "Sorcery Incarnate",
+          "url": "https://dnd2024.wikidot.com/sorcerer:main#Sorcery-Incarnate"
+        },
+        {
+          "level": 8,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/sorcerer:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 10,
+          "name": "Metamagic",
+          "url": "https://dnd2024.wikidot.com/sorcerer:main#Metamagic"
+        },
+        {
+          "level": 12,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/sorcerer:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 16,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/sorcerer:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 17,
+          "name": "Metamagic",
+          "url": "https://dnd2024.wikidot.com/sorcerer:main#Metamagic"
+        },
+        {
+          "level": 19,
+          "name": "Epic Boon",
+          "url": "https://dnd2024.wikidot.com/sorcerer:main#Epic-Boon"
+        },
+        {
+          "level": 20,
+          "name": "Arcane Apotheosis",
+          "url": "https://dnd2024.wikidot.com/sorcerer:main#Arcane-Apotheosis"
+        }
+      ],
+      "resources": [
+        {
+          "name": "Sorcery Points",
+          "levels": [
+            {
+              "level": 1,
+              "value": "-"
+            },
+            {
+              "level": 2,
+              "value": "2"
+            },
+            {
+              "level": 3,
+              "value": "3"
+            },
+            {
+              "level": 4,
+              "value": "4"
+            },
+            {
+              "level": 5,
+              "value": "5"
+            },
+            {
+              "level": 6,
+              "value": "6"
+            },
+            {
+              "level": 7,
+              "value": "7"
+            },
+            {
+              "level": 8,
+              "value": "8"
+            },
+            {
+              "level": 9,
+              "value": "9"
+            },
+            {
+              "level": 10,
+              "value": "10"
+            },
+            {
+              "level": 11,
+              "value": "11"
+            },
+            {
+              "level": 12,
+              "value": "12"
+            },
+            {
+              "level": 13,
+              "value": "13"
+            },
+            {
+              "level": 14,
+              "value": "14"
+            },
+            {
+              "level": 15,
+              "value": "15"
+            },
+            {
+              "level": 16,
+              "value": "16"
+            },
+            {
+              "level": 17,
+              "value": "17"
+            },
+            {
+              "level": 18,
+              "value": "18"
+            },
+            {
+              "level": 19,
+              "value": "19"
+            },
+            {
+              "level": 20,
+              "value": "20"
+            }
+          ]
+        }
+      ]
+    },
+    "warlock": {
+      "name": "Czarnoksiężnik (Warlock)",
+      "url": "https://dnd2024.wikidot.com/warlock:main",
+      "core": {
+        "Primary Ability": "Charisma",
+        "Hit Point Die": "D8 per Warlock level",
+        "Saving Throw Proficiencies": "Wisdom and Charisma",
+        "Skill Proficiencies": "Choose 2: Arcana, Deception, History, Intimidation, Investigation, Nature, or Religion",
+        "Weapon Proficiencies": "Simple Weapons",
+        "Armor Training": "Light armor"
+      },
+      "features": [
+        {
+          "level": 1,
+          "name": "Eldritch Invocations",
+          "url": "https://dnd2024.wikidot.com/warlock:main#Eldritch-Invocations"
+        },
+        {
+          "level": 1,
+          "name": "Pact Magic",
+          "url": "https://dnd2024.wikidot.com/warlock:main#Pact-Magic"
+        },
+        {
+          "level": 2,
+          "name": "Magical Cunning",
+          "url": "https://dnd2024.wikidot.com/warlock:main#Magical-Cunning"
+        },
+        {
+          "level": 4,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/warlock:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 8,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/warlock:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 9,
+          "name": "Contact Patron",
+          "url": "https://dnd2024.wikidot.com/warlock:main#Contact-Patron"
+        },
+        {
+          "level": 11,
+          "name": "Mystic Arcanum (Level 6 Spell)",
+          "url": "https://dnd2024.wikidot.com/warlock:main#Mystic-Arcanum"
+        },
+        {
+          "level": 12,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/warlock:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 13,
+          "name": "Mystic Arcanum (Level 7 Spell)",
+          "url": "https://dnd2024.wikidot.com/warlock:main#Mystic-Arcanum"
+        },
+        {
+          "level": 15,
+          "name": "Mystic Arcanum (Level 8 Spell)",
+          "url": "https://dnd2024.wikidot.com/warlock:main#Mystic-Arcanum"
+        },
+        {
+          "level": 16,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/warlock:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 17,
+          "name": "Mystic Arcanum (Level 9 Spell)",
+          "url": "https://dnd2024.wikidot.com/warlock:main#Mystic-Arcanum"
+        },
+        {
+          "level": 19,
+          "name": "Epic Boon",
+          "url": "https://dnd2024.wikidot.com/warlock:main#Epic-Boon"
+        },
+        {
+          "level": 20,
+          "name": "Eldritch Master",
+          "url": "https://dnd2024.wikidot.com/warlock:main#Eldritch-Master"
+        }
+      ],
+      "resources": [
+        {
+          "name": "Eldritch Invocations",
+          "levels": [
+            {
+              "level": 1,
+              "value": "1"
+            },
+            {
+              "level": 2,
+              "value": "3"
+            },
+            {
+              "level": 3,
+              "value": "3"
+            },
+            {
+              "level": 4,
+              "value": "3"
+            },
+            {
+              "level": 5,
+              "value": "5"
+            },
+            {
+              "level": 6,
+              "value": "5"
+            },
+            {
+              "level": 7,
+              "value": "6"
+            },
+            {
+              "level": 8,
+              "value": "6"
+            },
+            {
+              "level": 9,
+              "value": "7"
+            },
+            {
+              "level": 10,
+              "value": "7"
+            },
+            {
+              "level": 11,
+              "value": "7"
+            },
+            {
+              "level": 12,
+              "value": "8"
+            },
+            {
+              "level": 13,
+              "value": "8"
+            },
+            {
+              "level": 14,
+              "value": "8"
+            },
+            {
+              "level": 15,
+              "value": "9"
+            },
+            {
+              "level": 16,
+              "value": "9"
+            },
+            {
+              "level": 17,
+              "value": "9"
+            },
+            {
+              "level": 18,
+              "value": "10"
+            },
+            {
+              "level": 19,
+              "value": "10"
+            },
+            {
+              "level": 20,
+              "value": "10"
+            }
+          ]
+        }
+      ]
+    },
+    "wizard": {
+      "name": "Czarodziej (Wizard)",
+      "url": "https://dnd2024.wikidot.com/wizard:main",
+      "core": {
+        "Primary Ability": "Intelligence",
+        "Hit Point Die": "D6 per Wizard level",
+        "Saving Throw Proficiencies": "Intelligence and Wisdom",
+        "Skill Proficiencies": "Choose 2: Arcana, History, Insight, Investigation, Medicine, Nature, or Religion",
+        "Weapon Proficiencies": "Simple weapons",
+        "Armor Training": "None"
+      },
+      "features": [
+        {
+          "level": 1,
+          "name": "Spellcasting",
+          "url": "https://dnd2024.wikidot.com/wizard:main#Spellcasting"
+        },
+        {
+          "level": 1,
+          "name": "Ritual Adept",
+          "url": "https://dnd2024.wikidot.com/wizard:main#Ritual-Adept"
+        },
+        {
+          "level": 1,
+          "name": "Arcane Recovery",
+          "url": "https://dnd2024.wikidot.com/wizard:main#Arcane-Recovery"
+        },
+        {
+          "level": 2,
+          "name": "Scholar",
+          "url": "https://dnd2024.wikidot.com/wizard:main#Scholar"
+        },
+        {
+          "level": 4,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/wizard:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 5,
+          "name": "Memorize Spell",
+          "url": "https://dnd2024.wikidot.com/wizard:main#Memorize-Spell"
+        },
+        {
+          "level": 8,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/wizard:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 12,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/wizard:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 16,
+          "name": "Ability Score Improvement",
+          "url": "https://dnd2024.wikidot.com/wizard:main#Ability-Score-Improvement"
+        },
+        {
+          "level": 18,
+          "name": "Spell Mastery",
+          "url": "https://dnd2024.wikidot.com/wizard:main#Spell-Mastery"
+        },
+        {
+          "level": 19,
+          "name": "Epic Boon",
+          "url": "https://dnd2024.wikidot.com/wizard:main#Epic-Boon"
+        },
+        {
+          "level": 20,
+          "name": "Signature Spells",
+          "url": "https://dnd2024.wikidot.com/wizard:main#Signature-Spells"
+        }
+      ],
+      "resources": []
+    }
+  },
+  "subclasses": {
+    "Path of the Berserker": {
+      "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-berserker",
+      "features": [
+        {
+          "level": 3,
+          "name": "Frenzy",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-berserker"
+        },
+        {
+          "level": 6,
+          "name": "Mindless Rage",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-berserker"
+        },
+        {
+          "level": 10,
+          "name": "Retaliation",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-berserker"
+        },
+        {
+          "level": 14,
+          "name": "Intimidating Presence",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-berserker"
+        }
+      ]
+    },
+    "Path of the Wild Heart": {
+      "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-wild-heart",
+      "features": [
+        {
+          "level": 3,
+          "name": "Animal Speaker",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-wild-heart"
+        },
+        {
+          "level": 3,
+          "name": "Rage of the Wilds",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-wild-heart"
+        },
+        {
+          "level": 6,
+          "name": "Aspect of the Wilds",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-wild-heart"
+        },
+        {
+          "level": 10,
+          "name": "Nature Speaker",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-wild-heart"
+        },
+        {
+          "level": 14,
+          "name": "Power of the Wilds",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-wild-heart"
+        }
+      ]
+    },
+    "Path of the World Tree": {
+      "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-world-tree",
+      "features": [
+        {
+          "level": 3,
+          "name": "Vitality of the Tree",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-world-tree"
+        },
+        {
+          "level": 6,
+          "name": "Branches of the Tree",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-world-tree"
+        },
+        {
+          "level": 10,
+          "name": "Battering Roots",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-world-tree"
+        },
+        {
+          "level": 14,
+          "name": "Travel along the Tree",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-world-tree"
+        }
+      ]
+    },
+    "Path of the Zealot": {
+      "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-zealot",
+      "features": [
+        {
+          "level": 3,
+          "name": "Divine Fury",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-zealot"
+        },
+        {
+          "level": 3,
+          "name": "Warrior of the Gods",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-zealot"
+        },
+        {
+          "level": 6,
+          "name": "Fanatical Focus",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-zealot"
+        },
+        {
+          "level": 10,
+          "name": "Zealous Presence",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-zealot"
+        },
+        {
+          "level": 14,
+          "name": "Rage of the Gods",
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-zealot"
+        }
+      ]
+    },
+    "College of Dance": {
+      "url": "https://dnd2024.wikidot.com/bard:college-of-dance",
+      "features": [
+        {
+          "level": 3,
+          "name": "Dazzling Footwork",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-dance"
+        },
+        {
+          "level": 6,
+          "name": "Inspiring Movement",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-dance"
+        },
+        {
+          "level": 6,
+          "name": "Tandem Footwork",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-dance"
+        },
+        {
+          "level": 14,
+          "name": "Leading Evasion",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-dance"
+        }
+      ]
+    },
+    "College of Glamour": {
+      "url": "https://dnd2024.wikidot.com/bard:college-of-glamour",
+      "features": [
+        {
+          "level": 3,
+          "name": "Beguiling Magic",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-glamour"
+        },
+        {
+          "level": 3,
+          "name": "Mantle of Inspiration",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-glamour"
+        },
+        {
+          "level": 6,
+          "name": "Mantle of Majesty",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-glamour"
+        },
+        {
+          "level": 14,
+          "name": "Unbreakable Majesty",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-glamour"
+        }
+      ]
+    },
+    "College of Lore": {
+      "url": "https://dnd2024.wikidot.com/bard:college-of-lore",
+      "features": [
+        {
+          "level": 3,
+          "name": "Bonus Proficiencies",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-lore"
+        },
+        {
+          "level": 3,
+          "name": "Cutting Words",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-lore"
+        },
+        {
+          "level": 6,
+          "name": "Magical Discoveries",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-lore"
+        },
+        {
+          "level": 14,
+          "name": "Peerless Skill",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-lore"
+        }
+      ]
+    },
+    "College of Valor": {
+      "url": "https://dnd2024.wikidot.com/bard:college-of-valor",
+      "features": [
+        {
+          "level": 3,
+          "name": "Combat Inspiration",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-valor"
+        },
+        {
+          "level": 3,
+          "name": "Martial Training",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-valor"
+        },
+        {
+          "level": 6,
+          "name": "Extra Attack",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-valor"
+        },
+        {
+          "level": 14,
+          "name": "Battle Magic",
+          "url": "https://dnd2024.wikidot.com/bard:college-of-valor"
+        }
+      ]
+    },
+    "Life Domain": {
+      "url": "https://dnd2024.wikidot.com/cleric:life-domain",
+      "features": [
+        {
+          "level": 3,
+          "name": "Disciple of Life",
+          "url": "https://dnd2024.wikidot.com/cleric:life-domain"
+        },
+        {
+          "level": 3,
+          "name": "Life Domain Spells",
+          "url": "https://dnd2024.wikidot.com/cleric:life-domain"
+        },
+        {
+          "level": 3,
+          "name": "Preserve Life",
+          "url": "https://dnd2024.wikidot.com/cleric:life-domain"
+        },
+        {
+          "level": 6,
+          "name": "Blessed Healer",
+          "url": "https://dnd2024.wikidot.com/cleric:life-domain"
+        },
+        {
+          "level": 17,
+          "name": "Supreme Healing",
+          "url": "https://dnd2024.wikidot.com/cleric:life-domain"
+        }
+      ]
+    },
+    "Light Domain": {
+      "url": "https://dnd2024.wikidot.com/cleric:light-domain",
+      "features": [
+        {
+          "level": 3,
+          "name": "Light Domain Spells",
+          "url": "https://dnd2024.wikidot.com/cleric:light-domain"
+        },
+        {
+          "level": 3,
+          "name": "Radiance of the Dawn",
+          "url": "https://dnd2024.wikidot.com/cleric:light-domain"
+        },
+        {
+          "level": 3,
+          "name": "Warding Flare",
+          "url": "https://dnd2024.wikidot.com/cleric:light-domain"
+        },
+        {
+          "level": 6,
+          "name": "Improved Warding Flare",
+          "url": "https://dnd2024.wikidot.com/cleric:light-domain"
+        },
+        {
+          "level": 17,
+          "name": "Corona of Light",
+          "url": "https://dnd2024.wikidot.com/cleric:light-domain"
+        }
+      ]
+    },
+    "Trickery Domain": {
+      "url": "https://dnd2024.wikidot.com/cleric:trickery-domain",
+      "features": [
+        {
+          "level": 3,
+          "name": "Blessing of the Trickster",
+          "url": "https://dnd2024.wikidot.com/cleric:trickery-domain"
+        },
+        {
+          "level": 3,
+          "name": "Trickery Domain Spells",
+          "url": "https://dnd2024.wikidot.com/cleric:trickery-domain"
+        },
+        {
+          "level": 3,
+          "name": "Invoke Duplicity",
+          "url": "https://dnd2024.wikidot.com/cleric:trickery-domain"
+        },
+        {
+          "level": 6,
+          "name": "Trickster's Transposition",
+          "url": "https://dnd2024.wikidot.com/cleric:trickery-domain"
+        },
+        {
+          "level": 17,
+          "name": "Improved Duplicity",
+          "url": "https://dnd2024.wikidot.com/cleric:trickery-domain"
+        }
+      ]
+    },
+    "War Domain": {
+      "url": "https://dnd2024.wikidot.com/cleric:war-domain",
+      "features": [
+        {
+          "level": 3,
+          "name": "Guided Strike",
+          "url": "https://dnd2024.wikidot.com/cleric:war-domain"
+        },
+        {
+          "level": 3,
+          "name": "War Domain Spells",
+          "url": "https://dnd2024.wikidot.com/cleric:war-domain"
+        },
+        {
+          "level": 3,
+          "name": "War Priest",
+          "url": "https://dnd2024.wikidot.com/cleric:war-domain"
+        },
+        {
+          "level": 6,
+          "name": "War God's Blessing",
+          "url": "https://dnd2024.wikidot.com/cleric:war-domain"
+        },
+        {
+          "level": 17,
+          "name": "Avatar of Battle",
+          "url": "https://dnd2024.wikidot.com/cleric:war-domain"
+        }
+      ]
+    },
+    "Circle of the Land": {
+      "url": "https://dnd2024.wikidot.com/druid:circle-of-the-land",
+      "features": [
+        {
+          "level": 3,
+          "name": "Circle of the Land Spells",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-land"
+        },
+        {
+          "level": 3,
+          "name": "Land's Aid",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-land"
+        },
+        {
+          "level": 6,
+          "name": "Natural Recovery",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-land"
+        },
+        {
+          "level": 10,
+          "name": "Nature's Ward",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-land"
+        },
+        {
+          "level": 14,
+          "name": "Nature's Sanctuary",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-land"
+        }
+      ]
+    },
+    "Circle of the Moon": {
+      "url": "https://dnd2024.wikidot.com/druid:circle-of-the-moon",
+      "features": [
+        {
+          "level": 3,
+          "name": "Circle Forms",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-moon"
+        },
+        {
+          "level": 3,
+          "name": "Circle of the Moon Spells",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-moon"
+        },
+        {
+          "level": 6,
+          "name": "Improved Circle Forms",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-moon"
+        },
+        {
+          "level": 10,
+          "name": "Moonlight Step",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-moon"
+        },
+        {
+          "level": 14,
+          "name": "Lunar Form",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-moon"
+        }
+      ]
+    },
+    "Circle of the Sea": {
+      "url": "https://dnd2024.wikidot.com/druid:circle-of-the-sea",
+      "features": [
+        {
+          "level": 3,
+          "name": "Circle of the Sea Spells",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-sea"
+        },
+        {
+          "level": 3,
+          "name": "Wrath of the Sea",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-sea"
+        },
+        {
+          "level": 6,
+          "name": "Aquatic Affinity",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-sea"
+        },
+        {
+          "level": 10,
+          "name": "Stormborn",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-sea"
+        },
+        {
+          "level": 14,
+          "name": "Oceanic Gift",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-sea"
+        }
+      ]
+    },
+    "Circle of the Stars": {
+      "url": "https://dnd2024.wikidot.com/druid:circle-of-the-stars",
+      "features": [
+        {
+          "level": 3,
+          "name": "Star Map",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-stars"
+        },
+        {
+          "level": 3,
+          "name": "Starry Form",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-stars"
+        },
+        {
+          "level": 6,
+          "name": "Cosmic Omen",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-stars"
+        },
+        {
+          "level": 10,
+          "name": "Twinkling Constellations",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-stars"
+        },
+        {
+          "level": 14,
+          "name": "Full of Stars",
+          "url": "https://dnd2024.wikidot.com/druid:circle-of-the-stars"
+        }
+      ]
+    },
+    "Battle Master": {
+      "url": "https://dnd2024.wikidot.com/fighter:battle-master",
+      "features": [
+        {
+          "level": 3,
+          "name": "Combat Superiority",
+          "url": "https://dnd2024.wikidot.com/fighter:battle-master"
+        },
+        {
+          "level": 3,
+          "name": "Student of War",
+          "url": "https://dnd2024.wikidot.com/fighter:battle-master"
+        },
+        {
+          "level": 7,
+          "name": "Know Your Enemy",
+          "url": "https://dnd2024.wikidot.com/fighter:battle-master"
+        },
+        {
+          "level": 10,
+          "name": "Improved Combat Superiority",
+          "url": "https://dnd2024.wikidot.com/fighter:battle-master"
+        },
+        {
+          "level": 15,
+          "name": "Relentless",
+          "url": "https://dnd2024.wikidot.com/fighter:battle-master"
+        },
+        {
+          "level": 18,
+          "name": "Ultimate Combat Superiority",
+          "url": "https://dnd2024.wikidot.com/fighter:battle-master"
+        }
+      ]
+    },
+    "Champion": {
+      "url": "https://dnd2024.wikidot.com/fighter:champion",
+      "features": [
+        {
+          "level": 3,
+          "name": "Improved Critical",
+          "url": "https://dnd2024.wikidot.com/fighter:champion"
+        },
+        {
+          "level": 3,
+          "name": "Remarkable Athlete",
+          "url": "https://dnd2024.wikidot.com/fighter:champion"
+        },
+        {
+          "level": 7,
+          "name": "Additional Fighting Style",
+          "url": "https://dnd2024.wikidot.com/fighter:champion"
+        },
+        {
+          "level": 10,
+          "name": "Heroic Warrior",
+          "url": "https://dnd2024.wikidot.com/fighter:champion"
+        },
+        {
+          "level": 15,
+          "name": "Superior Critical",
+          "url": "https://dnd2024.wikidot.com/fighter:champion"
+        },
+        {
+          "level": 18,
+          "name": "Survivor",
+          "url": "https://dnd2024.wikidot.com/fighter:champion"
+        }
+      ]
+    },
+    "Eldritch Knight": {
+      "url": "https://dnd2024.wikidot.com/fighter:eldritch-knight",
+      "features": [
+        {
+          "level": 3,
+          "name": "Spellcasting",
+          "url": "https://dnd2024.wikidot.com/fighter:eldritch-knight"
+        },
+        {
+          "level": 3,
+          "name": "War Bond",
+          "url": "https://dnd2024.wikidot.com/fighter:eldritch-knight"
+        },
+        {
+          "level": 7,
+          "name": "War Magic",
+          "url": "https://dnd2024.wikidot.com/fighter:eldritch-knight"
+        },
+        {
+          "level": 10,
+          "name": "Eldritch Strike",
+          "url": "https://dnd2024.wikidot.com/fighter:eldritch-knight"
+        },
+        {
+          "level": 15,
+          "name": "Arcane Charge",
+          "url": "https://dnd2024.wikidot.com/fighter:eldritch-knight"
+        },
+        {
+          "level": 18,
+          "name": "Improved War Magic",
+          "url": "https://dnd2024.wikidot.com/fighter:eldritch-knight"
+        }
+      ]
+    },
+    "Psi Warrior": {
+      "url": "https://dnd2024.wikidot.com/fighter:psi-warrior",
+      "features": [
+        {
+          "level": 3,
+          "name": "Psionic Power",
+          "url": "https://dnd2024.wikidot.com/fighter:psi-warrior"
+        },
+        {
+          "level": 7,
+          "name": "Telekinetic Adept",
+          "url": "https://dnd2024.wikidot.com/fighter:psi-warrior"
+        },
+        {
+          "level": 10,
+          "name": "Guarded Mind",
+          "url": "https://dnd2024.wikidot.com/fighter:psi-warrior"
+        },
+        {
+          "level": 15,
+          "name": "Bulwark of Force",
+          "url": "https://dnd2024.wikidot.com/fighter:psi-warrior"
+        },
+        {
+          "level": 18,
+          "name": "Telekinetic Master",
+          "url": "https://dnd2024.wikidot.com/fighter:psi-warrior"
+        }
+      ]
+    },
+    "Warrior of Mercy": {
+      "url": "https://dnd2024.wikidot.com/monk:warrior-of-mercy",
+      "features": [
+        {
+          "level": 3,
+          "name": "Hand of Harm",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-mercy"
+        },
+        {
+          "level": 3,
+          "name": "Hand of Healing",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-mercy"
+        },
+        {
+          "level": 3,
+          "name": "Implements of Mercy",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-mercy"
+        },
+        {
+          "level": 6,
+          "name": "Physician's Touch",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-mercy"
+        },
+        {
+          "level": 11,
+          "name": "Flurry of Healing and Harm",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-mercy"
+        },
+        {
+          "level": 17,
+          "name": "Hand of Ultimate Mercy",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-mercy"
+        }
+      ]
+    },
+    "Warrior of Shadow": {
+      "url": "https://dnd2024.wikidot.com/monk:warrior-of-shadow",
+      "features": [
+        {
+          "level": 3,
+          "name": "Shadow Arts",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-shadow"
+        },
+        {
+          "level": 6,
+          "name": "Shadow Step",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-shadow"
+        },
+        {
+          "level": 11,
+          "name": "Improved Shadow Step",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-shadow"
+        },
+        {
+          "level": 17,
+          "name": "Cloak of Shadows",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-shadow"
+        }
+      ]
+    },
+    "Warrior of the Elements": {
+      "url": "https://dnd2024.wikidot.com/monk:warrior-of-the-elements",
+      "features": [
+        {
+          "level": 3,
+          "name": "Elemental Attunement",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-the-elements"
+        },
+        {
+          "level": 3,
+          "name": "Manipulate Elements",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-the-elements"
+        },
+        {
+          "level": 6,
+          "name": "Elemental Burst",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-the-elements"
+        },
+        {
+          "level": 11,
+          "name": "Stride of the Elements",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-the-elements"
+        },
+        {
+          "level": 17,
+          "name": "Elemental Epitome",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-the-elements"
+        }
+      ]
+    },
+    "Warrior of the Open Hand": {
+      "url": "https://dnd2024.wikidot.com/monk:warrior-of-the-open-hand",
+      "features": [
+        {
+          "level": 3,
+          "name": "Open Hand Technique",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-the-open-hand"
+        },
+        {
+          "level": 6,
+          "name": "Wholeness of Body",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-the-open-hand"
+        },
+        {
+          "level": 11,
+          "name": "Fleet Step",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-the-open-hand"
+        },
+        {
+          "level": 17,
+          "name": "Quivering Palm",
+          "url": "https://dnd2024.wikidot.com/monk:warrior-of-the-open-hand"
+        }
+      ]
+    },
+    "Oath of Devotion": {
+      "url": "https://dnd2024.wikidot.com/paladin:oath-of-devotion",
+      "features": [
+        {
+          "level": 3,
+          "name": "Oath of Devotion Spells",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-devotion"
+        },
+        {
+          "level": 3,
+          "name": "Sacred Weapon",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-devotion"
+        },
+        {
+          "level": 7,
+          "name": "Aura of Devotion",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-devotion"
+        },
+        {
+          "level": 15,
+          "name": "Smite of Protection",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-devotion"
+        },
+        {
+          "level": 20,
+          "name": "Holy Nimbus",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-devotion"
+        }
+      ]
+    },
+    "Oath of Glory": {
+      "url": "https://dnd2024.wikidot.com/paladin:oath-of-glory",
+      "features": [
+        {
+          "level": 3,
+          "name": "Inspiring Smite",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-glory"
+        },
+        {
+          "level": 3,
+          "name": "Oath of Glory Spells.",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-glory"
+        },
+        {
+          "level": 3,
+          "name": "Peerless Athlete",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-glory"
+        },
+        {
+          "level": 7,
+          "name": "Aura of Alacrity",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-glory"
+        },
+        {
+          "level": 15,
+          "name": "Glorious Defense",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-glory"
+        },
+        {
+          "level": 20,
+          "name": "Living Legend",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-glory"
+        }
+      ]
+    },
+    "Oath of the Ancients": {
+      "url": "https://dnd2024.wikidot.com/paladin:oath-of-the-ancients",
+      "features": [
+        {
+          "level": 3,
+          "name": "Nature's Wrath",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-the-ancients"
+        },
+        {
+          "level": 3,
+          "name": "Oath of the Ancients Spells",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-the-ancients"
+        },
+        {
+          "level": 7,
+          "name": "Aura of Warding",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-the-ancients"
+        },
+        {
+          "level": 15,
+          "name": "Undying Sentinel",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-the-ancients"
+        },
+        {
+          "level": 20,
+          "name": "Elder Champion",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-the-ancients"
+        }
+      ]
+    },
+    "Oath of Vengeance": {
+      "url": "https://dnd2024.wikidot.com/paladin:oath-of-vengeance",
+      "features": [
+        {
+          "level": 3,
+          "name": "Oath of Vengeance Spells",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-vengeance"
+        },
+        {
+          "level": 3,
+          "name": "Vow of Enmity",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-vengeance"
+        },
+        {
+          "level": 7,
+          "name": "Relentless Avenger",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-vengeance"
+        },
+        {
+          "level": 15,
+          "name": "Soul of Vengeance",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-vengeance"
+        },
+        {
+          "level": 20,
+          "name": "Avenging Angel",
+          "url": "https://dnd2024.wikidot.com/paladin:oath-of-vengeance"
+        }
+      ]
+    },
+    "Beast Master": {
+      "url": "https://dnd2024.wikidot.com/ranger:beast-master",
+      "features": [
+        {
+          "level": 3,
+          "name": "Primal Companion",
+          "url": "https://dnd2024.wikidot.com/ranger:beast-master"
+        },
+        {
+          "level": 7,
+          "name": "Exceptional Training",
+          "url": "https://dnd2024.wikidot.com/ranger:beast-master"
+        },
+        {
+          "level": 11,
+          "name": "Bestial Fury",
+          "url": "https://dnd2024.wikidot.com/ranger:beast-master"
+        },
+        {
+          "level": 15,
+          "name": "Share Spells",
+          "url": "https://dnd2024.wikidot.com/ranger:beast-master"
+        }
+      ]
+    },
+    "Fey Wanderer": {
+      "url": "https://dnd2024.wikidot.com/ranger:fey-wanderer",
+      "features": [
+        {
+          "level": 3,
+          "name": "Dreadful Strikes",
+          "url": "https://dnd2024.wikidot.com/ranger:fey-wanderer"
+        },
+        {
+          "level": 3,
+          "name": "Fey Wanderer Spells",
+          "url": "https://dnd2024.wikidot.com/ranger:fey-wanderer"
+        },
+        {
+          "level": 3,
+          "name": "Otherworldly Glamour.",
+          "url": "https://dnd2024.wikidot.com/ranger:fey-wanderer"
+        },
+        {
+          "level": 7,
+          "name": "Beguiling Twist",
+          "url": "https://dnd2024.wikidot.com/ranger:fey-wanderer"
+        },
+        {
+          "level": 11,
+          "name": "Fey Reinforcements",
+          "url": "https://dnd2024.wikidot.com/ranger:fey-wanderer"
+        },
+        {
+          "level": 15,
+          "name": "Misty Wanderer",
+          "url": "https://dnd2024.wikidot.com/ranger:fey-wanderer"
+        }
+      ]
+    },
+    "Gloom Stalker": {
+      "url": "https://dnd2024.wikidot.com/ranger:gloom-stalker",
+      "features": [
+        {
+          "level": 3,
+          "name": "Dread Ambusher",
+          "url": "https://dnd2024.wikidot.com/ranger:gloom-stalker"
+        },
+        {
+          "level": 3,
+          "name": "Gloom Stalker Spells",
+          "url": "https://dnd2024.wikidot.com/ranger:gloom-stalker"
+        },
+        {
+          "level": 3,
+          "name": "Umbral Sight",
+          "url": "https://dnd2024.wikidot.com/ranger:gloom-stalker"
+        },
+        {
+          "level": 7,
+          "name": "Iron Mind",
+          "url": "https://dnd2024.wikidot.com/ranger:gloom-stalker"
+        },
+        {
+          "level": 11,
+          "name": "Stalker's Flurry",
+          "url": "https://dnd2024.wikidot.com/ranger:gloom-stalker"
+        },
+        {
+          "level": 15,
+          "name": "Shadowy Dodge",
+          "url": "https://dnd2024.wikidot.com/ranger:gloom-stalker"
+        }
+      ]
+    },
+    "Hunter": {
+      "url": "https://dnd2024.wikidot.com/ranger:hunter",
+      "features": [
+        {
+          "level": 3,
+          "name": "Hunter's Lore",
+          "url": "https://dnd2024.wikidot.com/ranger:hunter"
+        },
+        {
+          "level": 3,
+          "name": "Hunter's Prey",
+          "url": "https://dnd2024.wikidot.com/ranger:hunter"
+        },
+        {
+          "level": 7,
+          "name": "Defensive Tactics",
+          "url": "https://dnd2024.wikidot.com/ranger:hunter"
+        },
+        {
+          "level": 11,
+          "name": "Superior Hunter's Prey",
+          "url": "https://dnd2024.wikidot.com/ranger:hunter"
+        },
+        {
+          "level": 15,
+          "name": "Superior Hunter's Defense",
+          "url": "https://dnd2024.wikidot.com/ranger:hunter"
+        }
+      ]
+    },
+    "Arcane Trickster": {
+      "url": "https://dnd2024.wikidot.com/rogue:arcane-trickster",
+      "features": [
+        {
+          "level": 3,
+          "name": "Spellcasting",
+          "url": "https://dnd2024.wikidot.com/rogue:arcane-trickster"
+        },
+        {
+          "level": 3,
+          "name": "Mage Hand Legerdemain",
+          "url": "https://dnd2024.wikidot.com/rogue:arcane-trickster"
+        },
+        {
+          "level": 9,
+          "name": "Magical Ambush",
+          "url": "https://dnd2024.wikidot.com/rogue:arcane-trickster"
+        },
+        {
+          "level": 13,
+          "name": "Versatile Trickster",
+          "url": "https://dnd2024.wikidot.com/rogue:arcane-trickster"
+        },
+        {
+          "level": 17,
+          "name": "Spell Thief",
+          "url": "https://dnd2024.wikidot.com/rogue:arcane-trickster"
+        }
+      ]
+    },
+    "Assassin": {
+      "url": "https://dnd2024.wikidot.com/rogue:assassin",
+      "features": [
+        {
+          "level": 3,
+          "name": "Assassinate",
+          "url": "https://dnd2024.wikidot.com/rogue:assassin"
+        },
+        {
+          "level": 3,
+          "name": "Assassin's Tools",
+          "url": "https://dnd2024.wikidot.com/rogue:assassin"
+        },
+        {
+          "level": 9,
+          "name": "Infiltration Expertise",
+          "url": "https://dnd2024.wikidot.com/rogue:assassin"
+        },
+        {
+          "level": 13,
+          "name": "Envenom Weapons",
+          "url": "https://dnd2024.wikidot.com/rogue:assassin"
+        },
+        {
+          "level": 17,
+          "name": "Death Strike",
+          "url": "https://dnd2024.wikidot.com/rogue:assassin"
+        }
+      ]
+    },
+    "Soulknife": {
+      "url": "https://dnd2024.wikidot.com/rogue:soulknife",
+      "features": [
+        {
+          "level": 3,
+          "name": "Psionic Power",
+          "url": "https://dnd2024.wikidot.com/rogue:soulknife"
+        },
+        {
+          "level": 3,
+          "name": "Psychic Blades",
+          "url": "https://dnd2024.wikidot.com/rogue:soulknife"
+        },
+        {
+          "level": 9,
+          "name": "Soul Blades",
+          "url": "https://dnd2024.wikidot.com/rogue:soulknife"
+        },
+        {
+          "level": 13,
+          "name": "Psychic Veil",
+          "url": "https://dnd2024.wikidot.com/rogue:soulknife"
+        },
+        {
+          "level": 17,
+          "name": "Rend Mind",
+          "url": "https://dnd2024.wikidot.com/rogue:soulknife"
+        }
+      ]
+    },
+    "Thief": {
+      "url": "https://dnd2024.wikidot.com/rogue:thief",
+      "features": [
+        {
+          "level": 3,
+          "name": "Fast Hands",
+          "url": "https://dnd2024.wikidot.com/rogue:thief"
+        },
+        {
+          "level": 3,
+          "name": "Second Story Work",
+          "url": "https://dnd2024.wikidot.com/rogue:thief"
+        },
+        {
+          "level": 9,
+          "name": "Supreme Sneak",
+          "url": "https://dnd2024.wikidot.com/rogue:thief"
+        },
+        {
+          "level": 13,
+          "name": "Use Magic Device",
+          "url": "https://dnd2024.wikidot.com/rogue:thief"
+        },
+        {
+          "level": 17,
+          "name": "Thief's Reflexes",
+          "url": "https://dnd2024.wikidot.com/rogue:thief"
+        }
+      ]
+    },
+    "Aberrant Sorcery": {
+      "url": "https://dnd2024.wikidot.com/sorcerer:aberrant-sorcery",
+      "features": [
+        {
+          "level": 3,
+          "name": "Psionic Spells",
+          "url": "https://dnd2024.wikidot.com/sorcerer:aberrant-sorcery"
+        },
+        {
+          "level": 3,
+          "name": "Telepathic Speech",
+          "url": "https://dnd2024.wikidot.com/sorcerer:aberrant-sorcery"
+        },
+        {
+          "level": 6,
+          "name": "Psionic Sorcery",
+          "url": "https://dnd2024.wikidot.com/sorcerer:aberrant-sorcery"
+        },
+        {
+          "level": 6,
+          "name": "Psychic Defenses",
+          "url": "https://dnd2024.wikidot.com/sorcerer:aberrant-sorcery"
+        },
+        {
+          "level": 14,
+          "name": "Revelation in Flesh",
+          "url": "https://dnd2024.wikidot.com/sorcerer:aberrant-sorcery"
+        },
+        {
+          "level": 18,
+          "name": "Warping Implosion",
+          "url": "https://dnd2024.wikidot.com/sorcerer:aberrant-sorcery"
+        }
+      ]
+    },
+    "Clockwork Sorcery": {
+      "url": "https://dnd2024.wikidot.com/sorcerer:clockwork-sorcery",
+      "features": [
+        {
+          "level": 3,
+          "name": "Clockwork Spells",
+          "url": "https://dnd2024.wikidot.com/sorcerer:clockwork-sorcery"
+        },
+        {
+          "level": 3,
+          "name": "Restore Balance",
+          "url": "https://dnd2024.wikidot.com/sorcerer:clockwork-sorcery"
+        },
+        {
+          "level": 6,
+          "name": "Bastion of Law",
+          "url": "https://dnd2024.wikidot.com/sorcerer:clockwork-sorcery"
+        },
+        {
+          "level": 14,
+          "name": "Trance of Order",
+          "url": "https://dnd2024.wikidot.com/sorcerer:clockwork-sorcery"
+        },
+        {
+          "level": 18,
+          "name": "Clockwork Cavalcade",
+          "url": "https://dnd2024.wikidot.com/sorcerer:clockwork-sorcery"
+        }
+      ]
+    },
+    "Draconic Sorcery": {
+      "url": "https://dnd2024.wikidot.com/sorcerer:draconic-sorcery",
+      "features": [
+        {
+          "level": 3,
+          "name": "Draconic Resilience",
+          "url": "https://dnd2024.wikidot.com/sorcerer:draconic-sorcery"
+        },
+        {
+          "level": 3,
+          "name": "Draconic Spells",
+          "url": "https://dnd2024.wikidot.com/sorcerer:draconic-sorcery"
+        },
+        {
+          "level": 6,
+          "name": "Elemental Affinity",
+          "url": "https://dnd2024.wikidot.com/sorcerer:draconic-sorcery"
+        },
+        {
+          "level": 14,
+          "name": "Dragon Wings",
+          "url": "https://dnd2024.wikidot.com/sorcerer:draconic-sorcery"
+        },
+        {
+          "level": 18,
+          "name": "Dragon Companion",
+          "url": "https://dnd2024.wikidot.com/sorcerer:draconic-sorcery"
+        }
+      ]
+    },
+    "Wild Magic Sorcery": {
+      "url": "https://dnd2024.wikidot.com/sorcerer:wild-magic-sorcery",
+      "features": [
+        {
+          "level": 3,
+          "name": "Wild Magic Surge",
+          "url": "https://dnd2024.wikidot.com/sorcerer:wild-magic-sorcery"
+        },
+        {
+          "level": 3,
+          "name": "Tides of Chaos",
+          "url": "https://dnd2024.wikidot.com/sorcerer:wild-magic-sorcery"
+        },
+        {
+          "level": 6,
+          "name": "Bend Luck",
+          "url": "https://dnd2024.wikidot.com/sorcerer:wild-magic-sorcery"
+        },
+        {
+          "level": 14,
+          "name": "Controlled Chaos",
+          "url": "https://dnd2024.wikidot.com/sorcerer:wild-magic-sorcery"
+        },
+        {
+          "level": 18,
+          "name": "Tamed Surge",
+          "url": "https://dnd2024.wikidot.com/sorcerer:wild-magic-sorcery"
+        }
+      ]
+    },
+    "Archfey Patron": {
+      "url": "https://dnd2024.wikidot.com/warlock:archfey-patron",
+      "features": [
+        {
+          "level": 3,
+          "name": "Archfey Spells",
+          "url": "https://dnd2024.wikidot.com/warlock:archfey-patron"
+        },
+        {
+          "level": 3,
+          "name": "Steps of the Fey",
+          "url": "https://dnd2024.wikidot.com/warlock:archfey-patron"
+        },
+        {
+          "level": 6,
+          "name": "Misty Escape",
+          "url": "https://dnd2024.wikidot.com/warlock:archfey-patron"
+        },
+        {
+          "level": 10,
+          "name": "Beguiling Defenses",
+          "url": "https://dnd2024.wikidot.com/warlock:archfey-patron"
+        },
+        {
+          "level": 14,
+          "name": "Bewitching Magic",
+          "url": "https://dnd2024.wikidot.com/warlock:archfey-patron"
+        }
+      ]
+    },
+    "Celestial Patron": {
+      "url": "https://dnd2024.wikidot.com/warlock:celestial-patron",
+      "features": [
+        {
+          "level": 3,
+          "name": "Celestial Spells",
+          "url": "https://dnd2024.wikidot.com/warlock:celestial-patron"
+        },
+        {
+          "level": 3,
+          "name": "Healing Light",
+          "url": "https://dnd2024.wikidot.com/warlock:celestial-patron"
+        },
+        {
+          "level": 6,
+          "name": "Radiant Soul",
+          "url": "https://dnd2024.wikidot.com/warlock:celestial-patron"
+        },
+        {
+          "level": 10,
+          "name": "Celestial Resilience",
+          "url": "https://dnd2024.wikidot.com/warlock:celestial-patron"
+        },
+        {
+          "level": 14,
+          "name": "Searing Vengeance",
+          "url": "https://dnd2024.wikidot.com/warlock:celestial-patron"
+        }
+      ]
+    },
+    "Fiend Patron": {
+      "url": "https://dnd2024.wikidot.com/warlock:fiend-patron",
+      "features": [
+        {
+          "level": 3,
+          "name": "Dark One's Blessing",
+          "url": "https://dnd2024.wikidot.com/warlock:fiend-patron"
+        },
+        {
+          "level": 3,
+          "name": "Fiend Spells",
+          "url": "https://dnd2024.wikidot.com/warlock:fiend-patron"
+        },
+        {
+          "level": 6,
+          "name": "Dark One's Own Luck",
+          "url": "https://dnd2024.wikidot.com/warlock:fiend-patron"
+        },
+        {
+          "level": 10,
+          "name": "Fiendish Resilience",
+          "url": "https://dnd2024.wikidot.com/warlock:fiend-patron"
+        },
+        {
+          "level": 14,
+          "name": "Hurl Through Hell",
+          "url": "https://dnd2024.wikidot.com/warlock:fiend-patron"
+        }
+      ]
+    },
+    "Great Old One Patron": {
+      "url": "https://dnd2024.wikidot.com/warlock:great-old-one-patron",
+      "features": [
+        {
+          "level": 3,
+          "name": "Awakened Mind",
+          "url": "https://dnd2024.wikidot.com/warlock:great-old-one-patron"
+        },
+        {
+          "level": 3,
+          "name": "Great Old One Spells",
+          "url": "https://dnd2024.wikidot.com/warlock:great-old-one-patron"
+        },
+        {
+          "level": 3,
+          "name": "Psychic Spells",
+          "url": "https://dnd2024.wikidot.com/warlock:great-old-one-patron"
+        },
+        {
+          "level": 6,
+          "name": "Clairvoyant Combatant",
+          "url": "https://dnd2024.wikidot.com/warlock:great-old-one-patron"
+        },
+        {
+          "level": 10,
+          "name": "Eldritch Hex",
+          "url": "https://dnd2024.wikidot.com/warlock:great-old-one-patron"
+        },
+        {
+          "level": 10,
+          "name": "Thought Shield",
+          "url": "https://dnd2024.wikidot.com/warlock:great-old-one-patron"
+        },
+        {
+          "level": 14,
+          "name": "Create Thrall",
+          "url": "https://dnd2024.wikidot.com/warlock:great-old-one-patron"
+        }
+      ]
+    },
+    "Abjurer": {
+      "url": "https://dnd2024.wikidot.com/wizard:abjurer",
+      "features": [
+        {
+          "level": 3,
+          "name": "Abjuration Savant",
+          "url": "https://dnd2024.wikidot.com/wizard:abjurer"
+        },
+        {
+          "level": 3,
+          "name": "Arcane ward",
+          "url": "https://dnd2024.wikidot.com/wizard:abjurer"
+        },
+        {
+          "level": 6,
+          "name": "Projected Ward",
+          "url": "https://dnd2024.wikidot.com/wizard:abjurer"
+        },
+        {
+          "level": 10,
+          "name": "Spell Breaker",
+          "url": "https://dnd2024.wikidot.com/wizard:abjurer"
+        },
+        {
+          "level": 14,
+          "name": "Spell Resistance",
+          "url": "https://dnd2024.wikidot.com/wizard:abjurer"
+        }
+      ]
+    },
+    "Diviner": {
+      "url": "https://dnd2024.wikidot.com/wizard:diviner",
+      "features": [
+        {
+          "level": 3,
+          "name": "Divination Savant",
+          "url": "https://dnd2024.wikidot.com/wizard:diviner"
+        },
+        {
+          "level": 3,
+          "name": "Portent",
+          "url": "https://dnd2024.wikidot.com/wizard:diviner"
+        },
+        {
+          "level": 6,
+          "name": "Expert Divination",
+          "url": "https://dnd2024.wikidot.com/wizard:diviner"
+        },
+        {
+          "level": 14,
+          "name": "Greater Portent",
+          "url": "https://dnd2024.wikidot.com/wizard:diviner"
+        }
+      ]
+    },
+    "Evoker": {
+      "url": "https://dnd2024.wikidot.com/wizard:evoker",
+      "features": [
+        {
+          "level": 3,
+          "name": "Evocation Savant",
+          "url": "https://dnd2024.wikidot.com/wizard:evoker"
+        },
+        {
+          "level": 3,
+          "name": "Potent Cantrip",
+          "url": "https://dnd2024.wikidot.com/wizard:evoker"
+        },
+        {
+          "level": 6,
+          "name": "Sculpt Spells",
+          "url": "https://dnd2024.wikidot.com/wizard:evoker"
+        },
+        {
+          "level": 10,
+          "name": "Empowered Evocation",
+          "url": "https://dnd2024.wikidot.com/wizard:evoker"
+        },
+        {
+          "level": 14,
+          "name": "Overchannel",
+          "url": "https://dnd2024.wikidot.com/wizard:evoker"
+        }
+      ]
+    },
+    "Illusionist": {
+      "url": "https://dnd2024.wikidot.com/wizard:illusionist",
+      "features": [
+        {
+          "level": 3,
+          "name": "Illusion Savant",
+          "url": "https://dnd2024.wikidot.com/wizard:illusionist"
+        },
+        {
+          "level": 3,
+          "name": "Improved Illusions",
+          "url": "https://dnd2024.wikidot.com/wizard:illusionist"
+        },
+        {
+          "level": 6,
+          "name": "Phantasmal Creatures",
+          "url": "https://dnd2024.wikidot.com/wizard:illusionist"
+        },
+        {
+          "level": 10,
+          "name": "Illusory Self",
+          "url": "https://dnd2024.wikidot.com/wizard:illusionist"
+        },
+        {
+          "level": 14,
+          "name": "Illusory Reality",
+          "url": "https://dnd2024.wikidot.com/wizard:illusionist"
+        }
+      ]
+    }
+  },
+  "backgrounds": {
+    "acolyte": {
+      "name": "Akolita (Acolyte)",
+      "url": "https://dnd2024.wikidot.com/background:acolyte",
+      "Ability Scores": "Intelligence, Wisdom, Charisma",
+      "Feat": "Magic Initiate (Cleric)",
+      "Skill Proficiencies": "Insight and Religion",
+      "Tool Proficiency": "Calligrapher's Supplies"
+    },
+    "artisan": {
+      "name": "Rzemieślnik (Artisan)",
+      "url": "https://dnd2024.wikidot.com/background:artisan",
+      "Ability Scores": "Strength, Dexterity, Intelligence",
+      "Feat": "Crafter",
+      "Skill Proficiencies": "Investigation and Persuasion",
+      "Tool Proficiency": "Choose one kind of Artisan's Tools"
+    },
+    "charlatan": {
+      "name": "Szarlatan (Charlatan)",
+      "url": "https://dnd2024.wikidot.com/background:charlatan",
+      "Ability Scores": "Dexterity, Constitution, Charisma",
+      "Feat": "Skilled",
+      "Skill Proficiencies": "Deception and Sleight of Hand",
+      "Tool Proficiency": "Forgery Kit"
+    },
+    "criminal": {
+      "name": "Przestępca (Criminal)",
+      "url": "https://dnd2024.wikidot.com/background:criminal",
+      "Ability Scores": "Dexterity, Constitution, Intelligence",
+      "Feat": "Alert",
+      "Skill Proficiencies": "Sleight of Hand and Stealth",
+      "Tool Proficiency": "Thieves' Tools"
+    },
+    "entertainer": {
+      "name": "Artysta (Entertainer)",
+      "url": "https://dnd2024.wikidot.com/background:entertainer",
+      "Ability Scores": "Strength, Dexterity, Charisma",
+      "Feat": "Musician",
+      "Skill Proficiencies": "Acrobatics and Performance",
+      "Tool Proficiency": "Choose one kind of Musical Instrument"
+    },
+    "farmer": {
+      "name": "Rolnik (Farmer)",
+      "url": "https://dnd2024.wikidot.com/background:farmer",
+      "Ability Scores": "Strength, Constitution, Wisdom",
+      "Feat": "Tough",
+      "Skill Proficiencies": "Animal Handling and Nature",
+      "Tool Proficiency": "Carpenter's Tools"
+    },
+    "guard": {
+      "name": "Strażnik (Guard)",
+      "url": "https://dnd2024.wikidot.com/background:guard",
+      "Ability Scores": "Strength, Intelligence, Wisdom",
+      "Feat": "Alert",
+      "Skill Proficiencies": "Athletics and Perception",
+      "Tool Proficiency": "Choose one kind of Gaming Set"
+    },
+    "guide": {
+      "name": "Przewodnik (Guide)",
+      "url": "https://dnd2024.wikidot.com/background:guide",
+      "Ability Scores": "Dexterity, Constitution, Wisdom",
+      "Feat": "Magic Initiate (Druid)",
+      "Skill Proficiencies": "Stealth and Survival",
+      "Tool Proficiency": "Cartographer's Tools"
+    },
+    "hermit": {
+      "name": "Pustelnik (Hermit)",
+      "url": "https://dnd2024.wikidot.com/background:hermit",
+      "Ability Scores": "Constitution, Wisdom, Charisma",
+      "Feat": "Healer",
+      "Skill Proficiencies": "Medicine and Religion",
+      "Tool Proficiency": "Herbalism Kit"
+    },
+    "merchant": {
+      "name": "Kupiec (Merchant)",
+      "url": "https://dnd2024.wikidot.com/background:merchant",
+      "Ability Scores": "Constitution, Intelligence, Charisma",
+      "Feat": "Lucky",
+      "Skill Proficiencies": "Animal Handling and Persuasion",
+      "Tool Proficiency": "Navigator's Tools"
+    },
+    "noble": {
+      "name": "Szlachcic (Noble)",
+      "url": "https://dnd2024.wikidot.com/background:noble",
+      "Ability Scores": "Strength, Intelligence, Charisma",
+      "Feat": "Skilled",
+      "Skill Proficiencies": "History and Persuasion",
+      "Tool Proficiency": "Choose one kind of Gaming Set"
+    },
+    "sage": {
+      "name": "Mędrzec (Sage)",
+      "url": "https://dnd2024.wikidot.com/background:sage",
+      "Ability Scores": "Constitution, Intelligence, Wisdom",
+      "Feat": "Magic Initiate (Wizard)",
+      "Skill Proficiencies": "Arcana and History",
+      "Tool Proficiency": "Calligrapher's Supplies"
+    },
+    "sailor": {
+      "name": "Żeglarz (Sailor)",
+      "url": "https://dnd2024.wikidot.com/background:sailor",
+      "Ability Scores": "Strength, Dexterity, Wisdom",
+      "Feat": "Tavern Brawler",
+      "Skill Proficiencies": "Acrobatics and Perception",
+      "Tool Proficiency": "Navigator's Tools"
+    },
+    "scribe": {
+      "name": "Skryba (Scribe)",
+      "url": "https://dnd2024.wikidot.com/background:scribe",
+      "Ability Scores": "Dexterity, Intelligence, Wisdom",
+      "Feat": "Skilled",
+      "Skill Proficiencies": "Investigation and Perception",
+      "Tool Proficiency": "Calligrapher's Supplies"
+    },
+    "soldier": {
+      "name": "Żołnierz (Soldier)",
+      "url": "https://dnd2024.wikidot.com/background:soldier",
+      "Ability Scores": "Strength, Dexterity, Constitution",
+      "Feat": "Savage Attacker",
+      "Skill Proficiencies": "Athletics and Intimidation",
+      "Tool Proficiency": "Choose one kind of Gaming Set"
+    },
+    "wayfarer": {
+      "name": "Wędrowiec (Wayfarer)",
+      "url": "https://dnd2024.wikidot.com/background:wayfarer",
+      "Ability Scores": "Dexterity, Wisdom, Charisma",
+      "Feat": "Lucky",
+      "Skill Proficiencies": "Insight and Stealth",
+      "Tool Proficiency": "Thieves' Tools"
+    }
+  }
+}

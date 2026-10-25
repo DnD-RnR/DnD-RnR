@@ -40,9 +40,25 @@ test('statistics persist, validate values and remain private to the character ow
     stats.skills.persuasion = 2;
     stats.spellAbility = 'cha';
     stats.notes.features = 'Inspiracja barda';
+    stats.spells.selections = { cantrips: ['light', 'vicious-mockery'], prepared: ['cure-wounds', 'healing-word', 'sleep', 'detect-magic'] };
+    stats.traits = { languages: ['elvish', 'dwarvish'], classSkills: ['performance', 'persuasion', 'perception'], classTools: ['Lute', 'Lyre', 'Flute'] };
     assert.equal((await request(endpoint, stats, stranger)).status, 404);
     assert.equal((await request(endpoint, stats, owner)).status, 200);
     assert.deepEqual((await (await request(endpoint, undefined, owner)).json()).statistics, stats);
+    for (const selections of [{ cantrips: ['light', 'vicious-mockery', 'mage-hand'] }, { prepared: ['fireball'] }, { prepared: ['shield'] }, { prepared: ['sleep', 'sleep'] }, { prepared: ['cure-wounds', 'healing-word', 'sleep', 'detect-magic', 'charm-person'] }]) {
+      const invalid = { ...stats, spells: { choices: {}, selections } };
+      assert.equal((await request(endpoint, invalid, owner)).status, 400);
+    }
+    assert.deepEqual((await (await request(endpoint, undefined, owner)).json()).statistics.spells, stats.spells);
+    for (const traits of [{ languages: ['common'] }, { languages: ['elvish', 'dwarvish', 'orc'] }, { classSkills: ['performance', 'persuasion', 'perception', 'athletics'] }, { expertise: ['performance'] }, { classTools: ['Sword'] }]) {
+      assert.equal((await request(endpoint, { ...stats, traits }, owner)).status, 400);
+    }
+    const legacyClient = structuredClone(stats);
+    delete legacyClient.spells;
+    delete legacyClient.traits;
+    assert.equal((await request(endpoint, legacyClient, owner)).status, 200);
+    assert.deepEqual((await (await request(endpoint, undefined, owner)).json()).statistics.spells, stats.spells);
+    assert.deepEqual((await (await request(endpoint, undefined, owner)).json()).statistics.traits, stats.traits);
     for (const [key, value] of [['str', 31], ['dex', 0], ['hp', -1], ['deathFailures', 4], ['exhaustion', 7], ['con', 12.5]]) {
       const invalid = structuredClone(stats); invalid.values[key] = value;
       assert.equal((await request(endpoint, invalid, owner)).status, 400);

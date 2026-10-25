@@ -1,0 +1,30 @@
+{
+  "languages": [
+    { "id": "common", "label": "Wspólny (Common)", "standard": true },
+    { "id": "common-sign", "label": "Wspólny migowy (Common Sign Language)", "standard": true },
+    { "id": "draconic", "label": "Smoczy (Draconic)", "standard": true },
+    { "id": "dwarvish", "label": "Krasnoludzki (Dwarvish)", "standard": true },
+    { "id": "elvish", "label": "Elfi (Elvish)", "standard": true },
+    { "id": "giant", "label": "Olbrzymi (Giant)", "standard": true },
+    { "id": "gnomish", "label": "Gnomi (Gnomish)", "standard": true },
+    { "id": "goblin", "label": "Gobliński (Goblin)", "standard": true },
+    { "id": "halfling", "label": "Niziołczy (Halfling)", "standard": true },
+    { "id": "orc", "label": "Orczy (Orc)", "standard": true },
+    { "id": "abyssal", "label": "Otchłanny (Abyssal)", "standard": false },
+    { "id": "celestial", "label": "Niebiański (Celestial)", "standard": false },
+    { "id": "deep-speech", "label": "Mowa Głębin (Deep Speech)", "standard": false },
+    { "id": "druidic", "label": "Druidyczny (Druidic)", "standard": false },
+    { "id": "infernal", "label": "Piekielny (Infernal)", "standard": false },
+    { "id": "primordial", "label": "Pierwotny (Primordial)", "standard": false },
+    { "id": "sylvan", "label": "Leśny (Sylvan)", "standard": false },
+    { "id": "thieves-cant", "label": "Złodziejska grypsera (Thieves’ Cant)", "standard": false },
+    { "id": "undercommon", "label": "Podwspólny (Undercommon)", "standard": false }
+  ],
+  "artisanTools": ["Alchemist's Supplies", "Brewer's Supplies", "Calligrapher's Supplies", "Carpenter's Tools", "Cartographer's Tools", "Cobbler's Tools", "Cook's Utensils", "Glassblower's Tools", "Jeweler's Tools", "Leatherworker's Tools", "Mason's Tools", "Painter's Supplies", "Potter's Tools", "Smith's Tools", "Tinker's Tools", "Weaver's Tools", "Woodcarver's Tools"],
+  "instruments": ["Bagpipes", "Drum", "Dulcimer", "Flute", "Horn", "Lute", "Lyre", "Pan Flute", "Shawm", "Viol"],
+  "gamingSets": ["Dice", "Dragonchess", "Playing Cards", "Three-Dragon Ante"],
+  "otherTools": ["Disguise Kit", "Forgery Kit", "Herbalism Kit", "Navigator's Tools", "Poisoner's Kit", "Thieves' Tools"],
+  "skillNames": { "Acrobatics": "acrobatics", "Animal Handling": "animalHandling", "Arcana": "arcana", "Athletics": "athletics", "Deception": "deception", "History": "history", "Insight": "insight", "Intimidation": "intimidation", "Investigation": "investigation", "Medicine": "medicine", "Nature": "nature", "Perception": "perception", "Performance": "performance", "Persuasion": "persuasion", "Religion": "religion", "Sleight of Hand": "sleightOfHand", "Stealth": "stealth", "Survival": "survival" },
+  "abilityNames": { "Strength": "str", "Dexterity": "dex", "Constitution": "con", "Intelligence": "int", "Wisdom": "wis", "Charisma": "cha" },
+  "originFeats": ["Alert", "Crafter", "Healer", "Lucky", "Magic Initiate (Cleric)", "Magic Initiate (Druid)", "Magic Initiate (Wizard)", "Musician", "Savage Attacker", "Skilled", "Tavern Brawler", "Tough"]
+}

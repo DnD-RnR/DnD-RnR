@@ -3,6 +3,8 @@ export type Character = { id: number; name: string; class: string; level: number
 export type InventoryItem = { id: number; name: string; description: string; quantity: number; slot: string; equipped: number };
 export type CatalogItem = { id: number; name: string; description: string; slot: string };
 export type CharacterStatistics = {
+  traits: import('../shared/character-traits.mjs').TraitSelection;
+  spells: import('../shared/spellcasting.mjs').SpellSelection;
   values: Record<string, number | null>;
   savingThrows: string[];
   skills: Record<string, number>;

@@ -1,0 +1,84 @@
+// Run with `node scripts/build-spell-data.mjs` to refresh factual PHB 2024 metadata.
+// No spell descriptions are included in the generated catalog.
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import characterOptions from '../shared/character-options.json' with { type: 'json' };
+
+const origin = 'https://dnd2024.wikidot.com';
+const cache = new URL('../.local-preview/spell-sources/', import.meta.url);
+mkdirSync(cache, { recursive: true });
+const text = html => html.replace(/<[^>]*>/g, ' ').replace(/&#0?39;|&apos;|&#8217;|’/g, "'").replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+const rows = table => [...table.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/g)].map(row => [...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/g)].map(cell => text(cell[1])));
+const tables = html => [...html.matchAll(/<table\b[^>]*>([\s\S]*?)<\/table>/g)].map(match => rows(match[1]));
+async function page(path) {
+  const file = new URL(`${path.replaceAll(':', '-')}.html`, cache);
+  if (existsSync(file)) return readFileSync(file, 'utf8');
+  const response = await fetch(`${origin}/${path}`);
+  if (!response.ok) throw new Error(`${path}: ${response.status}`);
+  const html = await response.text();
+  if (!html.includes('id="page-content"')) throw new Error(`Missing content: ${path}`);
+  writeFileSync(file, html);
+  return html;
+}
+async function mapLimited(entries, fn) {
+  let next = 0;
+  await Promise.all(Array.from({ length: 8 }, async () => { while (next < entries.length) { const index = next++; await fn(entries[index], index); } }));
+}
+const catalog = new Map();
+const all = await page('spell:all');
+for (const section of all.split(/<div id="wiki-tab-0-/).slice(1)) {
+  const level = Number(section.match(/^(\d+)"/)[1]);
+  for (const row of section.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/g)) {
+    const link = row[1].match(/href="\/(spell:[^"]+)"[^>]*>(.*?)<\/a>/);
+    if (!link) continue;
+    const cells = [...row[1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].map(cell => text(cell[1]));
+    const id = link[1].slice(6);
+    catalog.set(id, { id, name: text(link[2]), level, classes: cells[2].toLowerCase().split(',').map(value => value.trim()), castingTime: cells[3], url: `${origin}/${link[1]}` });
+  }
+}
+await mapLimited([...catalog.values()], async spell => {
+  const html = await page(`spell:${spell.id}`);
+  const source = text(html.slice(html.indexOf('id="page-content"'))).match(/Source:\s*(.*?)(?:Cantrip|Level \d|\d(?:st|nd|rd|th)[ -]level)/i)?.[1] ?? '';
+  spell.phb = source.includes("Player's Handbook");
+});
+const spells = [...catalog.values()].filter(spell => spell.phb).map(({ phb, ...spell }) => spell).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+if (spells.length < 380) throw new Error(`Incomplete PHB catalog: ${spells.length}`);
+const classes = {};
+const subclasses = {};
+const normalize = value => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+const spellByName = new Map(spells.map(spell => [normalize(spell.name), spell.id]));
+for (const entry of characterOptions.classes) {
+  const id = entry.name.match(/\(([^)]+)\)/)?.[1].toLowerCase() ?? entry.name.toLowerCase();
+  const html = await page(`${id}:main`);
+  const progression = tables(html).find(table => table[0]?.includes('Prepared Spells'));
+  if (progression) {
+    const header = progression[0];
+    classes[id] = { name: entry.name, url: `${origin}/${id}:main`, levels: progression.slice(1).map(row => {
+      const get = label => { const i = header.indexOf(label); return i < 0 ? 0 : Number(row[i]) || 0; };
+      return { level: Number(row[0]), cantrips: get('Cantrips'), prepared: get('Prepared Spells'), slotLevel: get('Slot Level'), slots: id === 'warlock' ? [get('Spell Slots')] : ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th'].map(get) };
+    }) };
+  }
+  for (const name of entry.subclasses) {
+    const link = [...html.matchAll(/href="\/([^"#]+)"[^>]*>(.*?)<\/a>/g)].find(match => text(match[2]) === name);
+    if (!link) throw new Error(`Missing subclass link: ${name}`);
+    const subHtml = await page(link[1]);
+    const subTables = tables(subHtml).filter(table => table[0]?.some(cell => /Spell|Cantrip/.test(cell)));
+    if (['Eldritch Knight', 'Arcane Trickster'].includes(name)) {
+      const table = subTables[0];
+      classes[name] = { name, url: `${origin}/${link[1]}`, levels: table.slice(1).map(row => ({ level: Number(row[0]), cantrips: Number(row[0]) >= 10 ? 3 : 2, prepared: Number(row[1]), slotLevel: 0, slots: [...row.slice(2).map(value => Number(value) || 0), 0, 0, 0, 0, 0] })) };
+    } else {
+      const variants = subTables.map(table => table.slice(1).map(row => {
+        const spellIds = row[1].split(' , ').map(spellName => {
+          const spellId = spellByName.get(normalize(spellName));
+          if (!spellId) throw new Error(`Unknown spell: ${name}: ${spellName}`);
+          return spellId;
+        });
+        return { level: Number(row[0]), spells: spellIds };
+      }));
+      subclasses[name] = { classId: id, url: `${origin}/${link[1]}`, variants };
+    }
+  }
+}
+writeFileSync(new URL('../shared/spell-catalog.json', import.meta.url), JSON.stringify({ source: origin, edition: 'Player’s Handbook 2024', spells }, null, 2) + '\n');
+writeFileSync(new URL('../shared/spell-progression.json', import.meta.url), JSON.stringify(classes, null, 2) + '\n');
+writeFileSync(new URL('../shared/subclass-spells.json', import.meta.url), JSON.stringify(subclasses, null, 2) + '\n');
+console.log(`${spells.length} PHB spells; ${Object.keys(classes).length} class progressions`);
