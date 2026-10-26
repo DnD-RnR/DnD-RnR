@@ -1,5 +1,5 @@
 // Run with `node scripts/build-spell-data.mjs` to refresh factual PHB 2024 metadata.
-// No spell descriptions are included in the generated catalog.
+// English spell descriptions and upgrade text are included in the generated catalog.
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import characterOptions from '../shared/character-options.json' with { type: 'json' };
 
@@ -7,6 +7,53 @@ const origin = 'https://dnd2024.wikidot.com';
 const cache = new URL('../.local-preview/spell-sources/', import.meta.url);
 mkdirSync(cache, { recursive: true });
 const text = html => html.replace(/<[^>]*>/g, ' ').replace(/&#0?39;|&apos;|&#8217;|’/g, "'").replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+const polishRange = value => value
+  .replace(/\bfeet\b/gi, 'stóp')
+  .replace(/(\d+)\s+foot\b/gi, '$1 stóp')
+  .replace(/\bmiles\b/gi, 'mil')
+  .replace(/\bmile\b/gi, 'milę')
+  .replace(/\bSelf\b/gi, 'własny')
+  .replace(/\bTouch\b/gi, 'dotyk')
+  .replace(/\bUnlimited\b/gi, 'nieograniczony')
+  .replace(/\bSight\b/gi, 'w zasięgu wzroku')
+  .replace(/\bSpecial\b/gi, 'specjalny');
+const polishDuration = value => value
+  .replace(/^Instantaneous$/i, 'Natychmiastowy')
+  .replace(/^Special$/i, 'Specjalny')
+  .replace(/\bup to 1 round\b/gi, 'do 1 rundy')
+  .replace(/\bup to 1 minute\b/gi, 'do 1 minuty')
+  .replace(/\bup to 1 hour\b/gi, 'do 1 godziny')
+  .replace(/\bup to 1 day\b/gi, 'do 1 dnia')
+  .replace(/\b1 round\b/gi, '1 runda')
+  .replace(/\b1 minute\b/gi, '1 minuta')
+  .replace(/\b1 hour\b/gi, '1 godzina')
+  .replace(/\b1 day\b/gi, '1 dzień')
+  .replace(/\b24 hours\b/gi, '24 godziny')
+  .replace(/\brounds?\b/gi, 'rund')
+  .replace(/\bminutes?\b/gi, 'minut')
+  .replace(/\bhours?\b/gi, 'godzin')
+  .replace(/\bdays?\b/gi, 'dni')
+  .replace(/\buntil dispelled\b/gi, 'do rozproszenia')
+  .replace(/\bor triggered\b/gi, 'lub do wystąpienia warunku')
+  .replace(/\bConcentration\b/gi, 'Koncentracja')
+  .replace(/\bup to\b/gi, 'do');
+const metadata = (html, label, transform = value => value) => {
+  const match = html.match(new RegExp(`<strong>${label}:<\\/strong>\\s*([\\s\\S]*?)(?:<br\\s*\\/?\\s*>|<\\/p>)`, 'i'));
+  if (!match) throw new Error(`Missing ${label}`);
+  return transform(text(match[1]));
+};
+function spellText(html) {
+  const content = html.slice(html.indexOf('<div id="page-content">'));
+  const paragraphs = [...content.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)].map(match => match[1]);
+  const metadataIndex = paragraphs.findIndex(paragraph => paragraph.includes('<strong>Duration:</strong>'));
+  const body = paragraphs.slice(metadataIndex + 1);
+  const upgrade = body.find(paragraph => /<strong>[^<]*(?:Upgrade|Higher Levels)[^<]*<\/strong>/i.test(paragraph));
+  const descriptionParagraphs = body.filter(paragraph => paragraph !== upgrade && !paragraph.includes('<strong>'));
+  return {
+    description: descriptionParagraphs.map(text).filter(Boolean).join('\n\n'),
+    upgrade: upgrade ? text(upgrade).replace(/^(Cantrip Upgrade|At Higher Levels)\.\s*/i, '') : ''
+  };
+}
 const rows = table => [...table.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/g)].map(row => [...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/g)].map(cell => text(cell[1])));
 const tables = html => [...html.matchAll(/<table\b[^>]*>([\s\S]*?)<\/table>/g)].map(match => rows(match[1]));
 async function page(path) {
@@ -39,6 +86,9 @@ await mapLimited([...catalog.values()], async spell => {
   const html = await page(`spell:${spell.id}`);
   const source = text(html.slice(html.indexOf('id="page-content"'))).match(/Source:\s*(.*?)(?:Cantrip|Level \d|\d(?:st|nd|rd|th)[ -]level)/i)?.[1] ?? '';
   spell.phb = source.includes("Player's Handbook");
+  spell.range = metadata(html, 'Range', polishRange);
+  spell.duration = metadata(html, 'Duration', polishDuration);
+  Object.assign(spell, spellText(html));
 });
 const spells = [...catalog.values()].filter(spell => spell.phb).map(({ phb, ...spell }) => spell).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
 if (spells.length < 380) throw new Error(`Incomplete PHB catalog: ${spells.length}`);

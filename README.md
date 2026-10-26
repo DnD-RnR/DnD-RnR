@@ -348,12 +348,6 @@ Projekt korzysta z React, TypeScript i Vite. Każdy moduł zawiera swój widok;
 związane z nim komponenty, hooki i typy należy dodawać w jego katalogu w miarę rozwoju.
 Elementy współdzielone trafiają do `components/`.
 
-## Firebase
-
-Aplikacja jest połączona z projektem Firebase `dnd-rnr`. Inicjalizacja SDK znajduje
-się w [src/lib/firebase.ts](src/lib/firebase.ts); kolejne usługi Firebase można
-dodawać przez import z tego modułu.
-
 ## Zakres szkieletu
 
 - Responsywny układ: panel boczny na komputerze i rozwijane menu na telefonie.

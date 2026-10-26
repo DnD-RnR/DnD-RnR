@@ -40,6 +40,17 @@ main { width: 100%; max-width: 1280px; padding: 60px clamp(24px, 5vw, 80px); mar
 .empty-state { text-align: center; padding: 30px 8px; }
 .empty-symbol { display: block; font-size: 2.5rem; color: var(--accent); margin-bottom: 20px; }
 .empty-state p { font-size: .9rem; margin: 0 auto; max-width: 400px; }
+.combat-tab { display: grid; gap: 24px; }
+.combat-tab > .inventory-section-heading { margin-bottom: 0; }
+.combat-sections { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.combat-sections .card { min-width: 0; }
+.combat-sections .empty-state { padding-inline: 0; }
+.combat-action-list { list-style: none; padding: 0; margin: 0; }
+.combat-action-list li { padding: 16px 0; border-top: 1px solid var(--border); }
+.combat-action-list li:first-child { padding-top: 0; border-top: 0; }
+.combat-action-list summary { cursor: pointer; color: var(--accent); font-weight: 650; }
+.combat-action-list summary::marker { color: var(--muted); }
+.combat-action-list p { margin: 4px 0 0; font-size: .85rem; }
 .text-button { border: 0; padding: 8px 0; color: var(--accent); background: none; text-align: left; }
 .text-button:hover { text-decoration: underline; }
 .mobile-header { display: none; }
@@ -236,6 +247,7 @@ button:disabled { cursor: wait; opacity: .6; }
   .statistics-fields { grid-template-columns: 1fr; }
   .statistics-editor { padding: 20px; }
   .game-tab { padding: 12px 16px; }
+  .combat-sections { grid-template-columns: 1fr; }
 }
 .equipment-section, .backpack-section { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 28px; margin-bottom: 28px; }
 .inventory-section-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }

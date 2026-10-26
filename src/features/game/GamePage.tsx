@@ -5,9 +5,10 @@ import { useEffect, useRef, useState } from 'react';
 import { api, type Character, type InventoryItem } from '../../api';
 import slots from '../../../shared/equipment-slots.json';
 import { TransferItemDialog } from './TransferItemDialog';
+import { CombatTab } from './CombatTab';
 
 export function GamePage({ character, onBack }: { character: Character; onBack: () => void }) {
-  const [activeTab, setActiveTab] = useState<'equipment' | 'statistics'>('equipment');
+  const [activeTab, setActiveTab] = useState<'equipment' | 'statistics' | 'combat'>('equipment');
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
@@ -59,8 +60,9 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
   return <>
     <button className="text-button" onClick={onBack}>← Moje postacie</button>
     <header className="page-heading game-heading"><div><p className="eyebrow">TWOJA PRZYGODA</p><h1 ref={heading} tabIndex={-1}>{character.name}</h1><p>{[character.species, character.class, character.subclass].filter(Boolean).join(' · ')}</p><CharacterGameInfo character={character} /></div><span className="level-badge">Poziom <strong>{character.level}</strong></span></header>
-    <nav className="game-tabs" aria-label="Zakładki postaci">{([{ id: 'equipment', label: 'Ekwipunek', symbol: '⛨' }, { id: 'statistics', label: 'Statystyki', symbol: '◈' }] as const).map(tab => <button key={tab.id} className={`game-tab ${activeTab === tab.id ? 'is-active' : ''}`} aria-current={activeTab === tab.id ? 'page' : undefined} aria-controls={`character-${tab.id}`} onClick={() => setActiveTab(tab.id)}><span aria-hidden="true">{tab.symbol}</span> {tab.label}</button>)}</nav>
+    <nav className="game-tabs" aria-label="Zakładki postaci">{([{ id: 'equipment', label: 'Ekwipunek', symbol: '⛨' }, { id: 'statistics', label: 'Statystyki', symbol: '◈' }, { id: 'combat', label: 'Walka', symbol: '⚔' }] as const).map(tab => <button key={tab.id} className={`game-tab ${activeTab === tab.id ? 'is-active' : ''}`} aria-current={activeTab === tab.id ? 'page' : undefined} aria-controls={`character-${tab.id}`} onClick={() => setActiveTab(tab.id)}><span aria-hidden="true">{tab.symbol}</span> {tab.label}</button>)}</nav>
     <div id="character-statistics" hidden={activeTab !== 'statistics'}><StatisticsTab character={character} /></div>
+    <div id="character-combat" hidden={activeTab !== 'combat'}><CombatTab /></div>
     <div id="character-equipment" hidden={activeTab !== 'equipment'}>
     {error && <p role="alert" className="form-error">{error}</p>}
     {message && <p role="status" className="inventory-message">{message}</p>}
