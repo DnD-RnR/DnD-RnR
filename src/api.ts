@@ -1,8 +1,13 @@
 export type User = { id: number; username: string; name: string; role: 'admin' | 'player' | 'gm' };
 export type Character = { id: number; name: string; class: string; level: number; species: string; background: string; subclass: string; gameName?: string | null; activeSessionId?: number | null; participating?: number };
 export type CharacterSession = { game: { id: number; name: string } | null; activeSession: { id: number; startedAt: number; participating: boolean } | null };
-export type InventoryItem = { id: number; name: string; description: string; quantity: number; slot: string; equipped: number };
+export type InventoryItem = { id: number; name: string; description: string; quantity: number; slot: string; equipped: number; grip: 'one' | 'two' | 'none'; weapon?: Weapon | null };
 export type CatalogItem = { id: number; name: string; description: string; slot: string };
+export type Weapon = {
+  id: string; name: string; category: 'simple' | 'martial'; type: 'wręczna' | 'dystansowa';
+  damage: string; damageType: string; range: string; weight: number | null; cost: string;
+  properties: string[]; mastery: string;
+};
 export type StatisticsSummary = {
   hp: number | null; maxHp: number | null; tempHp: number | null; ac: number | null;
   speed: number | null; proficiency: number; initiative: number | null; passivePerception: number | null;

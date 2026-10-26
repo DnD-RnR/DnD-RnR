@@ -2,6 +2,7 @@ import { handleGames } from './games.mjs';
 import { createGameEvents } from './game-events.mjs';
 import { handleGameSessions } from './game-sessions.mjs';
 import { handleItems } from './items.mjs';
+import { handleWeapons } from './weapons.mjs';
 import { handleStatistics } from './statistics.mjs';
 import options from '../shared/character-options.json' with { type: 'json' };
 import { createServer } from 'node:http';
@@ -63,6 +64,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         return send(200, { user: publicUser(found) });
       }
       if (!user) return send(401, { error: 'Zaloguj się, aby kontynuować.' });
+      if (handleWeapons(db, user, path, req.method, body, send)) return;
       const eventsRoute = path.match(/^\/api\/games\/([1-9]\d*)\/events$/);
       if (eventsRoute && req.method === 'GET') {
         const gameId = Number(eventsRoute[1]);
@@ -109,10 +111,28 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         const [, rawCharacterId, rawItemId, action] = inventoryRoute;
         const characterId = Number(rawCharacterId);
         if (!db.prepare('SELECT id FROM characters WHERE id = ? AND user_id = ?').get(characterId, user.id)) return send(404, { error: 'Nie znaleziono postaci.' });
-        if (!action && req.method === 'GET') return send(200, { items: db.prepare('SELECT id, name, description, quantity, slot, equipped FROM character_items WHERE character_id = ? ORDER BY id DESC').all(characterId) });
+        if (!action && req.method === 'GET') {
+          const items = db.prepare(`SELECT i.id, i.name, i.description, i.quantity, i.slot, i.equipped, i.grip,
+            w.id AS weaponId, w.type AS weaponType, w.damage AS weaponDamage, w.damage_type AS weaponDamageType,
+            w.range AS weaponRange, w.properties AS weaponProperties, w.mastery AS weaponMastery
+            FROM character_items i LEFT JOIN weapon_catalog w ON w.id = i.weapon_id
+            WHERE i.character_id = ? ORDER BY i.id DESC`).all(characterId);
+          return send(200, { items: items.map(item => ({
+            id: item.id, name: item.name, description: item.description, quantity: item.quantity,
+            slot: item.slot, equipped: item.equipped,
+            ...(item.weaponId ? { grip: item.grip, weapon: {
+              id: item.weaponId, type: item.weaponType, damage: item.weaponDamage,
+              damageType: item.weaponDamageType, range: item.weaponRange,
+              properties: JSON.parse(item.weaponProperties), mastery: item.weaponMastery,
+            } } : {}),
+          })) });
+        }
         if (action && req.method === 'POST') {
           const itemId = Number(rawItemId);
-          const item = db.prepare('SELECT id, slot FROM character_items WHERE id = ? AND character_id = ?').get(itemId, characterId);
+          const item = db.prepare(`SELECT i.id, i.slot, i.weapon_id AS weaponId, i.grip,
+            w.properties AS weaponProperties FROM character_items i
+            LEFT JOIN weapon_catalog w ON w.id = i.weapon_id
+            WHERE i.id = ? AND i.character_id = ?`).get(itemId, characterId);
           if (!item) return send(404, { error: 'Nie znaleziono przedmiotu.' });
           if (action === 'transfer') {
             const { recipientId, quantity } = body;
@@ -132,7 +152,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
                 db.prepare('UPDATE character_items SET character_id = ? WHERE id = ?').run(recipientId, itemId);
               } else {
                 db.prepare('UPDATE character_items SET quantity = quantity - ? WHERE id = ?').run(quantity, itemId);
-                db.prepare('INSERT INTO character_items (character_id, name, description, quantity, slot, equipped) VALUES (?, ?, ?, ?, ?, 0)').run(recipientId, source.name, source.description, quantity, source.slot);
+                db.prepare('INSERT INTO character_items (character_id, name, description, quantity, slot, equipped, weapon_id, grip) VALUES (?, ?, ?, ?, ?, 0, ?, ?)').run(recipientId, source.name, source.description, quantity, source.slot, source.weapon_id, source.grip);
               }
               db.exec('COMMIT');
             } catch (error) { db.exec('ROLLBACK'); throw error; }
@@ -140,6 +160,29 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
           if (action === 'delete') db.prepare('DELETE FROM character_items WHERE id = ? AND character_id = ?').run(itemId, characterId);
           if (action === 'unequip') db.prepare('UPDATE character_items SET equipped = 0 WHERE id = ? AND character_id = ?').run(itemId, characterId);
           if (action === 'equip') {
+            const isWeapon = Boolean(item.weaponId);
+            if (isWeapon) {
+              const weapon = db.prepare('SELECT type, properties FROM weapon_catalog WHERE id = ?').get(item.weaponId);
+              const grip = body.grip === 'two' ? 'two' : 'one';
+              const properties = weapon;
+              const weaponProperties = JSON.parse(properties.properties);
+              const requiresTwoHands = weaponProperties.some(property => property.startsWith('dwuręczna'));
+              const isRanged = weapon.type === 'dystansowa';
+              if (!isRanged && requiresTwoHands && grip !== 'two') return send(400, { error: 'Ta broń wymaga dwóch rąk.' });
+              if (!isRanged && grip === 'two' && !requiresTwoHands && !weaponProperties.some(property => property.startsWith('wszechstronna'))) return send(400, { error: 'Ta broń nie może być trzymana w dwóch rękach.' });
+              db.exec('BEGIN');
+              try {
+                const targetSlot = isRanged ? 'belt' : 'main-hand';
+                const targetGrip = isRanged ? 'none' : requiresTwoHands ? 'two' : grip;
+                db.prepare("UPDATE character_items SET equipped = 0, slot = 'backpack' WHERE character_id = ? AND slot = ?").run(characterId, targetSlot);
+                if (!isRanged && targetGrip === 'two') {
+                  db.prepare("UPDATE character_items SET equipped = 0, slot = 'backpack' WHERE character_id = ? AND slot = 'off-hand'").run(characterId);
+                }
+                db.prepare("UPDATE character_items SET equipped = 1, slot = ?, grip = ? WHERE id = ? AND character_id = ?").run(targetSlot, targetGrip, itemId, characterId);
+                db.exec('COMMIT');
+              } catch (error) { db.exec('ROLLBACK'); throw error; }
+              return send(200, { ok: true });
+            }
             if (item.slot === 'backpack') return send(400, { error: 'Ten przedmiot jest przeznaczony do plecaka.' });
             db.exec('BEGIN');
             try {

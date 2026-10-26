@@ -6,6 +6,7 @@ import { api, type Character, type InventoryItem } from '../../api';
 import slots from '../../../shared/equipment-slots.json';
 import { TransferItemDialog } from './TransferItemDialog';
 import { CombatTab } from './CombatTab';
+import { weaponDamage } from '../../lib/weapons';
 
 export function GamePage({ character, onBack }: { character: Character; onBack: () => void }) {
   const [activeTab, setActiveTab] = useState<'equipment' | 'statistics' | 'combat'>('equipment');
@@ -40,10 +41,11 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
     finally { setPending(false); }
     return false;
   }
-  function itemAction(item: InventoryItem, action: 'equip' | 'unequip' | 'delete') {
+  function itemAction(item: InventoryItem, action: 'equip' | 'unequip' | 'delete', grip?: 'one' | 'two' | 'none') {
     if (action === 'delete' && !window.confirm(`Usunąć „${item.name}” z ekwipunku?`)) return;
-    if (action === 'equip') setSelectedSlot(item.slot);
-    void mutate(`${inventoryPath}/${item.id}/${action}`, {}, action === 'equip' ? 'Przedmiot założony. Poprzedni przedmiot z tego slotu wrócił do plecaka.' : action === 'unequip' ? 'Przedmiot przeniesiony do plecaka.' : 'Przedmiot usunięty.').then(success => { if (success) equipmentDialog.current?.close(); });
+    if (action === 'equip') setSelectedSlot(item.weapon ? item.weapon.type === 'dystansowa' ? 'belt' : 'main-hand' : item.slot);
+    const requestedGrip = item.weapon?.type === 'dystansowa' ? 'none' : grip ?? 'one';
+    void mutate(`${inventoryPath}/${item.id}/${action}`, action === 'equip' ? { grip: requestedGrip } : {}, action === 'equip' ? 'Przedmiot założony. Poprzedni przedmiot z tego slotu wrócił do plecaka.' : action === 'unequip' ? 'Przedmiot przeniesiony do plecaka.' : 'Przedmiot usunięty.').then(success => { if (success) equipmentDialog.current?.close(); });
   }
   function selectSlot(slotId: string) {
     setSelectedSlot(slotId);
@@ -54,15 +56,15 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
   const equipped = items.filter(item => item.equipped);
   const backpack = items.filter(item => !item.equipped);
   const selectedItem = equipped.find(item => item.slot === selectedSlot);
-  const availableItems = backpack.filter(item => item.slot === selectedSlot);
-  const slot = slots.find(entry => entry.id === selectedSlot)!;
+  const availableItems = backpack.filter(item => item.weapon ? (item.weapon.type === 'dystansowa' ? selectedSlot === 'belt' : selectedSlot === 'main-hand') : item.slot === selectedSlot);
+  const slot = slots.find(entry => entry.id === selectedSlot) ?? slots.find(entry => entry.id === 'main-hand')!;
 
   return <>
     <button className="text-button" onClick={onBack}>← Moje postacie</button>
     <header className="page-heading game-heading"><div><p className="eyebrow">TWOJA PRZYGODA</p><h1 ref={heading} tabIndex={-1}>{character.name}</h1><p>{[character.species, character.class, character.subclass].filter(Boolean).join(' · ')}</p><CharacterGameInfo character={character} /></div><span className="level-badge">Poziom <strong>{character.level}</strong></span></header>
     <nav className="game-tabs" aria-label="Zakładki postaci">{([{ id: 'equipment', label: 'Ekwipunek', symbol: '⛨' }, { id: 'statistics', label: 'Statystyki', symbol: '◈' }, { id: 'combat', label: 'Walka', symbol: '⚔' }] as const).map(tab => <button key={tab.id} className={`game-tab ${activeTab === tab.id ? 'is-active' : ''}`} aria-current={activeTab === tab.id ? 'page' : undefined} aria-controls={`character-${tab.id}`} onClick={() => setActiveTab(tab.id)}><span aria-hidden="true">{tab.symbol}</span> {tab.label}</button>)}</nav>
     <div id="character-statistics" hidden={activeTab !== 'statistics'}><StatisticsTab character={character} /></div>
-    <div id="character-combat" hidden={activeTab !== 'combat'}><CombatTab /></div>
+    <div id="character-combat" hidden={activeTab !== 'combat'}><CombatTab character={character} active={activeTab === 'combat'} equippedWeapons={equipped.filter(item => item.weapon)} /></div>
     <div id="character-equipment" hidden={activeTab !== 'equipment'}>
     {error && <p role="alert" className="form-error">{error}</p>}
     {message && <p role="status" className="inventory-message">{message}</p>}
@@ -87,14 +89,14 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
         <div className="slot-details">
           <button type="button" className="text-button dialog-close" aria-label="Zamknij wybór wyposażenia" onClick={() => equipmentDialog.current?.close()}>Zamknij ×</button>
           {error && <p role="alert" className="form-error">{error}</p>}
-          {pending && <p role="status">Zapisywanie wyposażenia…</p>}<p className="eyebrow">WYBRANY SLOT</p><span className="detail-symbol" aria-hidden="true">{slot.symbol}</span><h2 id="selected-slot-heading">{slot.label}</h2>{selectedItem ? <><h2>{selectedItem.name}</h2><p>{formatDice(selectedItem.description || 'Brak dodatkowego opisu.')}</p><p>Ilość: {selectedItem.quantity}</p><button className="text-button" disabled={pending} onClick={() => itemAction(selectedItem, 'unequip')}>Zdejmij do plecaka ↓</button></> : <p>Ten slot jest pusty.</p>}
+          {pending && <p role="status">Zapisywanie wyposażenia…</p>}<p className="eyebrow">WYBRANY SLOT</p><span className="detail-symbol" aria-hidden="true">{slot.symbol}</span><h2 id="selected-slot-heading">{slot.label}</h2>{selectedItem ? <><h2>{selectedItem.name}</h2>{selectedItem.weapon && <p><strong>Obrażenia: {weaponDamage(selectedItem)}</strong> · {selectedItem.grip === 'none' ? 'slot zasięgowy' : selectedItem.grip === 'two' ? 'dwie ręce' : 'jedna ręka'}</p>}<p>{formatDice(selectedItem.description || 'Brak dodatkowego opisu.')}</p><p>Ilość: {selectedItem.quantity}</p><button className="text-button" disabled={pending} onClick={() => itemAction(selectedItem, 'unequip')}>Zdejmij do plecaka ↓</button></> : <p>Ten slot jest pusty.</p>}
           <div className="slot-picker"><h4>{selectedItem ? 'Zamień na przedmiot z plecaka' : 'Załóż z plecaka'}</h4>
-            {availableItems.length ? <ul className="slot-picker-list">{availableItems.map(item => <li key={item.id}><button className="slot-picker-option" disabled={pending} onClick={() => itemAction(item, 'equip')} aria-label={`Załóż ${item.name}: ${slot.label}`}><span className="slot-picker-name">{item.name} <small>×{item.quantity}</small></span>{item.description && <span className="slot-picker-description">{formatDice(item.description)}</span>}<span className="slot-picker-action">{selectedItem ? 'Zamień →' : 'Załóż →'}</span></button></li>)}</ul> : <p>W plecaku nie ma przedmiotów pasujących do tego slotu.</p>}
+            {availableItems.length ? <ul className="slot-picker-list">{availableItems.map(item => <li key={item.id}><span className="slot-picker-option"><span className="slot-picker-name">{item.name} <small>×{item.quantity}</small></span>{item.weapon && <span className="slot-picker-description">Obrażenia: {item.weapon.damage} · {item.weapon.properties.join(', ') || 'brak właściwości'}</span>}{item.description && <span className="slot-picker-description">{formatDice(item.description)}</span>}<span className="slot-picker-action">{item.weapon?.properties.some(property => property.startsWith('wszechstronna (')) ? <><button className="text-button" disabled={pending} onClick={() => itemAction(item, 'equip', 'one')}>Jedna ręka</button><button className="text-button" disabled={pending} onClick={() => itemAction(item, 'equip', 'two')}>Dwie ręce</button></> : <button className="text-button" disabled={pending} onClick={() => itemAction(item, 'equip', item.weapon?.type === 'dystansowa' ? 'none' : item.weapon?.properties.some(property => property.startsWith('dwuręczna')) ? 'two' : 'one')}>Załóż →</button>}</span></span></li>)}</ul> : <p>W plecaku nie ma przedmiotów pasujących do tego slotu.</p>}
           </div>
         </div></dialog>
       </section>
       <section className="backpack-section" aria-labelledby="backpack-heading"><div className="inventory-section-heading"><div><p className="eyebrow">WSZYSTKO POD RĘKĄ</p><h2 id="backpack-heading">Plecak <span className="item-count">{backpack.length}</span></h2></div></div>
-        {backpack.length ? <ul className="inventory-list">{backpack.map(item => <li key={item.id}><div className="inventory-item-icon" aria-hidden="true">{slots.find(entry => entry.id === item.slot)?.symbol ?? '▣'}</div><div className="inventory-item-info"><h3>{item.name} <span>×{item.quantity}</span></h3><p>{formatDice(item.description || (slots.find(entry => entry.id === item.slot)?.label ?? 'Przedmiot w plecaku'))}</p></div><div className="admin-actions">{item.slot !== 'backpack' && <button className="text-button" disabled={pending} onClick={() => itemAction(item, 'equip')}>Załóż ↑</button>}<button className="text-button" disabled={pending} onClick={() => setTransferItem(item)} aria-haspopup="dialog" aria-label={`Przekaż ${item.name} innej postaci`}>Przekaż →</button><button className="text-button danger-button" disabled={pending} onClick={() => itemAction(item, 'delete')} aria-label={`Usuń ${item.name}`}>Usuń</button></div></li>)}</ul> : <div className="inventory-empty"><span aria-hidden="true">▣</span><h3>Plecak jest pusty</h3><p>Tutaj pojawią się przedmioty przydzielone postaci.</p></div>}
+        {backpack.length ? <ul className="inventory-list">{backpack.map(item => <li key={item.id}><div className="inventory-item-icon" aria-hidden="true">{slots.find(entry => entry.id === item.slot)?.symbol ?? '▣'}</div>                <div className="inventory-item-info"><h3>{item.name} <span>×{item.quantity}</span></h3><p>{item.weapon ? `Broń ${item.weapon.type} · Obrażenia ${item.weapon.damage}` : formatDice(item.description || (slots.find(entry => entry.id === item.slot)?.label ?? 'Przedmiot w plecaku'))}</p></div><div className="admin-actions">{(item.weapon || item.slot !== 'backpack') && <button className="text-button" disabled={pending} onClick={() => itemAction(item, 'equip', item.weapon?.properties.some(property => property.includes('dwuręczna')) ? 'two' : 'one')}>Załóż ↑</button>}<button className="text-button" disabled={pending} onClick={() => setTransferItem(item)} aria-haspopup="dialog" aria-label={`Przekaż ${item.name} innej postaci`}>Przekaż →</button><button className="text-button danger-button" disabled={pending} onClick={() => itemAction(item, 'delete')} aria-label={`Usuń ${item.name}`}>Usuń</button></div></li>)}</ul> : <div className="inventory-empty"><span aria-hidden="true">▣</span><h3>Plecak jest pusty</h3><p>Tutaj pojawią się przedmioty przydzielone postaci.</p></div>}
       </section>
     </>}
     </div>

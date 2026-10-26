@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import slots from '../shared/equipment-slots.json' with { type: 'json' };
+import weapons from '../shared/weapon-catalog.json' with { type: 'json' };
 
 const derive = promisify(scrypt);
 export async function hashPassword(password, salt = randomBytes(16).toString('hex')) {
@@ -83,12 +84,99 @@ export function openDatabase(path = process.env.DB_PATH || 'data/dnd.sqlite') {
     equipped INTEGER NOT NULL DEFAULT 0 CHECK(equipped IN (0, 1))
   );
   CREATE UNIQUE INDEX IF NOT EXISTS one_item_per_slot ON character_items(character_id, slot) WHERE equipped = 1;`);
+  const itemColumns = new Set(db.prepare('PRAGMA table_info(character_items)').all().map(column => column.name));
+  if (!itemColumns.has('weapon_id')) db.exec('ALTER TABLE character_items ADD COLUMN weapon_id TEXT REFERENCES weapon_catalog(id)');
+  if (!itemColumns.has('grip')) db.exec("ALTER TABLE character_items ADD COLUMN grip TEXT NOT NULL DEFAULT 'one' CHECK(grip IN ('one', 'two'))");
   db.exec(`CREATE TABLE IF NOT EXISTS item_catalog (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL CHECK(length(trim(name)) BETWEEN 1 AND 80),
     description TEXT NOT NULL DEFAULT '' CHECK(length(description) <= 2000),
     slot TEXT NOT NULL CHECK(slot IN ('backpack', ${slots.map(slot => `'${slot.id}'`).join(', ')}))
   );`);
+  db.exec(`CREATE TABLE IF NOT EXISTS weapon_catalog (
+    id TEXT PRIMARY KEY CHECK(length(trim(id)) BETWEEN 1 AND 80),
+    name TEXT NOT NULL CHECK(length(trim(name)) BETWEEN 1 AND 80),
+    category TEXT NOT NULL CHECK(category IN ('simple', 'martial')),
+    damage TEXT NOT NULL CHECK(length(trim(damage)) BETWEEN 1 AND 40),
+    damage_type TEXT NOT NULL CHECK(length(trim(damage_type)) BETWEEN 1 AND 40),
+    type TEXT NOT NULL DEFAULT 'wręczna' CHECK(type IN ('wręczna', 'dystansowa')),
+    range TEXT NOT NULL CHECK(length(trim(range)) BETWEEN 0 AND 80),
+    weight REAL CHECK(weight IS NULL OR weight >= 0),
+    cost TEXT NOT NULL CHECK(length(trim(cost)) BETWEEN 1 AND 40),
+    properties TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(properties)),
+    mastery TEXT NOT NULL DEFAULT '' CHECK(length(mastery) <= 40)
+  );`);
+  const weaponSchema = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'weapon_catalog'").get()?.sql || '';
+  if (weaponSchema.includes('length(trim(range)) BETWEEN 1 AND 80') || weaponSchema.includes("type IN ('melee', 'ranged')")) {
+    db.exec(`PRAGMA foreign_keys = OFF;
+      BEGIN;
+      CREATE TABLE weapon_catalog_new (
+        id TEXT PRIMARY KEY CHECK(length(trim(id)) BETWEEN 1 AND 80),
+        name TEXT NOT NULL CHECK(length(trim(name)) BETWEEN 1 AND 80),
+        category TEXT NOT NULL CHECK(category IN ('simple', 'martial')),
+        damage TEXT NOT NULL CHECK(length(trim(damage)) BETWEEN 1 AND 40),
+        damage_type TEXT NOT NULL CHECK(length(trim(damage_type)) BETWEEN 1 AND 40),
+        type TEXT NOT NULL DEFAULT 'wręczna' CHECK(type IN ('wręczna', 'dystansowa')),
+        range TEXT NOT NULL CHECK(length(trim(range)) BETWEEN 0 AND 80),
+        weight REAL CHECK(weight IS NULL OR weight >= 0),
+        cost TEXT NOT NULL CHECK(length(trim(cost)) BETWEEN 1 AND 40),
+        properties TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(properties)),
+        mastery TEXT NOT NULL DEFAULT '' CHECK(length(mastery) <= 40)
+      );
+      INSERT INTO weapon_catalog_new (id, name, category, type, damage, damage_type, range, weight, cost, properties, mastery)
+        SELECT id, name, category,
+          CASE type WHEN 'ranged' THEN 'dystansowa' ELSE 'wręczna' END,
+          damage, damage_type, range, weight, cost, properties, mastery FROM weapon_catalog;
+      DROP TABLE weapon_catalog;
+      ALTER TABLE weapon_catalog_new RENAME TO weapon_catalog;
+      COMMIT;
+      PRAGMA foreign_keys = ON;`);
+  }
+  const weaponColumns = new Set(db.prepare('PRAGMA table_info(weapon_catalog)').all().map(column => column.name));
+  if (!weaponColumns.has('type')) db.exec("ALTER TABLE weapon_catalog ADD COLUMN type TEXT NOT NULL DEFAULT 'wręczna' CHECK(type IN ('wręczna', 'dystansowa'))");
+  if (!weaponColumns.has('mastery')) db.exec("ALTER TABLE weapon_catalog ADD COLUMN mastery TEXT NOT NULL DEFAULT '' CHECK(length(mastery) <= 40)");
+  const addWeapon = db.prepare(`INSERT INTO weapon_catalog
+    (id, name, category, type, damage, damage_type, range, weight, cost, properties, mastery)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET name=excluded.name, category=excluded.category,
+      type=excluded.type, damage=excluded.damage, damage_type=excluded.damage_type,
+      range=excluded.range, weight=excluded.weight, cost=excluded.cost,
+      properties=excluded.properties, mastery=excluded.mastery`);
+  for (const weapon of weapons) {
+    addWeapon.run(weapon.id, weapon.name, weapon.category, weapon.type, weapon.damage,
+      weapon.damageType, weapon.range, weapon.weight, weapon.cost, JSON.stringify(weapon.properties), weapon.mastery);
+  }
+  const itemSchema = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'character_items'").get()?.sql || '';
+  if (itemSchema.includes("grip IN ('one', 'two')")) {
+    db.exec(`PRAGMA foreign_keys = OFF;
+      BEGIN;
+      CREATE TABLE character_items_new (
+        id INTEGER PRIMARY KEY,
+        character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        quantity INTEGER NOT NULL CHECK(quantity BETWEEN 1 AND 9999),
+        slot TEXT NOT NULL,
+        equipped INTEGER NOT NULL DEFAULT 0 CHECK(equipped IN (0, 1)),
+        weapon_id TEXT REFERENCES weapon_catalog(id),
+        grip TEXT NOT NULL DEFAULT 'none' CHECK(grip IN ('one', 'two', 'none'))
+      );
+      INSERT INTO character_items_new (id, character_id, name, description, quantity, slot, equipped, weapon_id, grip)
+        SELECT id, character_id, name, description, quantity, slot, equipped, weapon_id,
+          CASE WHEN EXISTS (
+            SELECT 1 FROM weapon_catalog w WHERE w.id = character_items.weapon_id AND w.type = 'dystansowa'
+          ) THEN 'none' ELSE grip END
+        FROM character_items;
+      DROP TABLE character_items;
+      ALTER TABLE character_items_new RENAME TO character_items;
+      CREATE UNIQUE INDEX one_item_per_slot ON character_items(character_id, slot) WHERE equipped = 1;
+      COMMIT;
+      PRAGMA foreign_keys = ON;`);
+  }
+  db.prepare(`DELETE FROM weapon_catalog WHERE id NOT IN (${weapons.map(() => '?').join(', ')})`).run(...weapons.map(weapon => weapon.id));
+  db.prepare(`UPDATE character_items SET weapon_id = (
+    SELECT w.id FROM weapon_catalog w WHERE w.name = character_items.name
+  ) WHERE weapon_id IS NULL`).run();
   db.exec(`CREATE TABLE IF NOT EXISTS character_statistics (
     character_id INTEGER PRIMARY KEY REFERENCES characters(id) ON DELETE CASCADE,
     data TEXT NOT NULL

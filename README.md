@@ -234,6 +234,17 @@ Dozwolone sloty: `backpack` oraz identyfikatory z `shared/equipment-slots.json`.
 Zmiana katalogu nie wymaga restartu API. Pierwsze uruchomienie nowej wersji API
 automatycznie tworzy tabelę katalogu bez zmieniania istniejącego ekwipunku.
 
+## Katalog broni
+
+Dane broni są przechowywane w tabeli `weapon_catalog`, która jest tworzona
+i synchronizowana przy uruchomieniu API na podstawie pliku
+`shared/weapon-catalog.json`. Katalog odpowiada tabeli ze źródła i obejmuje
+nazwę, kategorię (simple/martial), typ (wręczna/dystansowa), kość obrażeń, typ obrażeń,
+zasięg, wagę, koszt, właściwości oraz Mastery.
+Endpoint `GET /api/weapons` udostępnia te dane każdemu zalogowanemu użytkownikowi;
+właściwości są zwracane jako tablica. Przy starcie wpisy istniejące w bazie są
+aktualizowane, a wpisy usunięte ze źródła są usuwane z tabeli.
+
 ## Konta GM i gry
 
 Administrator tworzy konto GM w panelu Administracja, wybierając typ konta
