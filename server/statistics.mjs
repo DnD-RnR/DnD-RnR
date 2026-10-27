@@ -1,6 +1,7 @@
 import definitions from '../shared/statistics.json' with { type: 'json' };
 import { emptySpellSelection, spellcastingProfile, validateSpellSelection } from '../shared/spellcasting.mjs';
-import { emptyTraitSelection, validateTraitSelection } from '../shared/character-traits.mjs';
+import { characterTraits, emptyTraitSelection, validateTraitSelection } from '../shared/character-traits.mjs';
+import { armorClassFromEquipment, armorSpeedPenalty, armorTrainingEffects, hasArmorTraining, hasStealthDisadvantage, speedFromEquipment } from './armor-class.mjs';
 
 export function emptyStatistics() {
   return {
@@ -40,6 +41,14 @@ export function handleStatistics(db, user, path, method, body, send) {
     statistics.spells ??= emptySpellSelection();
     statistics.traits ??= emptyTraitSelection();
     statistics.spellAbility = spellcastingProfile(character, statistics.spells).ability || statistics.spellAbility;
+    const equipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.armor_class AS armorClass, a.strength,
+      a.stealth_disadvantage AS stealthDisadvantage
+      FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(characterId);
+    const trainingEffects = armorTrainingEffects(characterTraits(character, statistics), equipment);
+    statistics.values.ac = armorClassFromEquipment(statistics, equipment.map(item => ({ ...item, trained: hasArmorTraining(characterTraits(character, statistics), item.armorCategory) })));
+    statistics.values.speed = speedFromEquipment(statistics, equipment, statistics.values.speed);
+    if (hasStealthDisadvantage(equipment)) statistics.stealthDisadvantage = true;
+    Object.entries(trainingEffects).forEach(([key, value]) => { if (value) statistics[key] = true; });
     send(200, { statistics });
   } else if (method === 'POST') {
     if (!validStatistics(body)) { send(400, { error: 'Sprawdź statystyki: cechy 1–30, zakresy liczb i długość notatek (do 1500 znaków).' }); return true; }
@@ -59,7 +68,19 @@ export function handleStatistics(db, user, path, method, body, send) {
     stats.spells = spells;
     stats.traits = traits;
     stats.spellAbility = spellcastingProfile(character, spells).ability || body.spellAbility;
+    const equipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.strength
+      FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(characterId);
+    if (stats.values.speed !== null) stats.values.speed += armorSpeedPenalty(stats, equipment);
     db.prepare('INSERT INTO character_statistics (character_id, data) VALUES (?, ?) ON CONFLICT(character_id) DO UPDATE SET data = excluded.data').run(characterId, JSON.stringify(stats));
+    const outputEquipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.armor_class AS armorClass, a.strength,
+      a.stealth_disadvantage AS stealthDisadvantage
+      FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(characterId);
+    const outputTraits = characterTraits(character, stats);
+    const outputEffects = armorTrainingEffects(outputTraits, outputEquipment);
+    stats.values.ac = armorClassFromEquipment(stats, outputEquipment.map(item => ({ ...item, trained: hasArmorTraining(outputTraits, item.armorCategory) })));
+    stats.values.speed = speedFromEquipment(stats, outputEquipment, stats.values.speed);
+    if (hasStealthDisadvantage(outputEquipment)) stats.stealthDisadvantage = true;
+    Object.entries(outputEffects).forEach(([key, value]) => { if (value) stats[key] = true; });
     send(200, { statistics: stats });
   } else send(405, { error: 'Niedozwolona metoda.' });
   return true;

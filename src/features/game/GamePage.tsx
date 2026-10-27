@@ -43,7 +43,7 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
   }
   function itemAction(item: InventoryItem, action: 'equip' | 'unequip' | 'delete', grip?: 'one' | 'two' | 'none') {
     if (action === 'delete' && !window.confirm(`Usunąć „${item.name}” z ekwipunku?`)) return;
-    if (action === 'equip') setSelectedSlot(item.weapon ? item.weapon.type === 'dystansowa' ? 'belt' : 'main-hand' : item.slot);
+    if (action === 'equip') setSelectedSlot(item.weapon ? item.weapon.type === 'dystansowa' ? 'belt' : 'main-hand' : item.armor?.category === 'shield' ? 'off-hand' : item.armor ? 'armor' : item.slot);
     const requestedGrip = item.weapon?.type === 'dystansowa' ? 'none' : grip ?? 'one';
     void mutate(`${inventoryPath}/${item.id}/${action}`, action === 'equip' ? { grip: requestedGrip } : {}, action === 'equip' ? 'Przedmiot założony. Poprzedni przedmiot z tego slotu wrócił do plecaka.' : action === 'unequip' ? 'Przedmiot przeniesiony do plecaka.' : 'Przedmiot usunięty.').then(success => { if (success) equipmentDialog.current?.close(); });
   }
@@ -56,7 +56,7 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
   const equipped = items.filter(item => item.equipped);
   const backpack = items.filter(item => !item.equipped);
   const selectedItem = equipped.find(item => item.slot === selectedSlot);
-  const availableItems = backpack.filter(item => item.weapon ? (item.weapon.type === 'dystansowa' ? selectedSlot === 'belt' : selectedSlot === 'main-hand') : item.slot === selectedSlot);
+  const availableItems = backpack.filter(item => item.weapon ? (item.weapon.type === 'dystansowa' ? selectedSlot === 'belt' : selectedSlot === 'main-hand') : item.armor ? (item.armor.category === 'shield' ? selectedSlot === 'off-hand' : selectedSlot === 'armor') : item.slot === selectedSlot);
   const slot = slots.find(entry => entry.id === selectedSlot) ?? slots.find(entry => entry.id === 'main-hand')!;
 
   return <>

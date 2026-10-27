@@ -63,14 +63,22 @@ export function handleGames(db, user, path, method, body, send) {
     const game = db.prepare('SELECT * FROM games WHERE id = ? AND gm_id = ?').get(Number(route[1]), user.id);
     if (!game || user.role !== 'gm') return reply(404, { error: 'Nie znaleziono gry.' });
     if (route[2] === 'equipment' && method === 'POST') {
-      const { characterId, itemId, quantity } = body;
-      if (!Number.isSafeInteger(characterId) || characterId < 1 || !Number.isSafeInteger(itemId) || itemId < 1 || !Number.isInteger(quantity) || quantity < 1 || quantity > 9999) return reply(400, { error: 'Wybierz bohatera, przedmiot z katalogu i liczbę sztuk 1–9999.' });
+      const { characterId, itemId, armorId, quantity } = body;
+      const hasItem = Number.isSafeInteger(itemId) && itemId > 0;
+      const hasArmor = typeof armorId === 'string' && armorId.length > 0;
+      if (!Number.isSafeInteger(characterId) || characterId < 1 || hasItem === hasArmor || !Number.isInteger(quantity) || quantity < 1 || quantity > 9999) return reply(400, { error: 'Wybierz bohatera, przedmiot z katalogu i liczbę sztuk 1–9999.' });
       if (!db.prepare("SELECT id FROM game_members WHERE game_id = ? AND character_id = ? AND status = 'accepted'").get(game.id, characterId)) return reply(404, { error: 'Bohater nie uczestniczy w tej grze.' });
       // Copy catalog data into the backpack; future catalog changes do not change awarded items.
-      const result = db.prepare(`INSERT INTO character_items (character_id, name, description, quantity, slot, equipped)
-        SELECT ?, i.name, i.description, ?, i.slot, 0 FROM item_catalog i
+      const result = db.prepare(`INSERT INTO character_items (character_id, name, description, quantity, slot, equipped, armor_id)
+        SELECT ?, a.name, '', ?, CASE WHEN a.category = 'shield' THEN 'off-hand' ELSE 'armor' END, 0, a.id FROM armor_catalog a
+        WHERE ? IS NOT NULL AND a.id = ? AND EXISTS (SELECT 1 FROM game_members m JOIN games g ON g.id = m.game_id
+          WHERE m.game_id = ? AND g.gm_id = ? AND m.character_id = ? AND m.status = 'accepted')
+        UNION ALL
+        SELECT ?, i.name, i.description, ?, i.slot, 0, i.armor_id FROM item_catalog i
         WHERE i.id = ? AND EXISTS (SELECT 1 FROM game_members m JOIN games g ON g.id = m.game_id
-          WHERE m.game_id = ? AND g.gm_id = ? AND m.character_id = ? AND m.status = 'accepted')`).run(characterId, quantity, itemId, game.id, user.id, characterId);
+          WHERE m.game_id = ? AND g.gm_id = ? AND m.character_id = ? AND m.status = 'accepted')`).run(
+        characterId, quantity, armorId ?? null, armorId ?? '', game.id, user.id, characterId,
+        characterId, quantity, itemId ?? 0, game.id, user.id, characterId);
       return result.changes ? reply(201, { ok: true }) : reply(404, { error: 'Przedmiot lub uczestnik gry jest już niedostępny.' });
     }
     if (route[2] === 'candidates' && method === 'GET') return reply(200, { characters: db.prepare(`SELECT c.id, c.name, u.name AS playerName FROM characters c JOIN users u ON u.id = c.user_id
@@ -89,8 +97,11 @@ export function handleGames(db, user, path, method, body, send) {
         member.participating = Boolean(activeSession && db.prepare('SELECT 1 FROM session_participants WHERE session_id = ? AND member_id = ?').get(activeSession.id, member.id));
         member.character = db.prepare('SELECT id, name, class, level, species, background, subclass FROM characters WHERE id = ?').get(member.characterId);
         const saved = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(member.characterId);
-        member.statistics = statisticsSummary(member.character, saved ? JSON.parse(saved.data) : null);
-        member.items = db.prepare('SELECT id, name, description, quantity, slot, equipped FROM character_items WHERE character_id = ? ORDER BY id').all(member.characterId);
+        const equipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.armor_class AS armorClass, a.strength,
+          a.stealth_disadvantage AS stealthDisadvantage
+          FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(member.characterId);
+        member.statistics = statisticsSummary(member.character, saved ? JSON.parse(saved.data) : null, equipment);
+        member.items = db.prepare('SELECT id, name, description, quantity, slot, equipped, armor_id AS armorId FROM character_items WHERE character_id = ? ORDER BY id').all(member.characterId);
       }
       return reply(200, { game, members, activeSession });
     }

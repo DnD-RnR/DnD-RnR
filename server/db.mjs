@@ -5,6 +5,7 @@ import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import slots from '../shared/equipment-slots.json' with { type: 'json' };
 import weapons from '../shared/weapon-catalog.json' with { type: 'json' };
+import armors from '../shared/armor-catalog.json' with { type: 'json' };
 
 const derive = promisify(scrypt);
 export async function hashPassword(password, salt = randomBytes(16).toString('hex')) {
@@ -86,6 +87,7 @@ export function openDatabase(path = process.env.DB_PATH || 'data/dnd.sqlite') {
   CREATE UNIQUE INDEX IF NOT EXISTS one_item_per_slot ON character_items(character_id, slot) WHERE equipped = 1;`);
   const itemColumns = new Set(db.prepare('PRAGMA table_info(character_items)').all().map(column => column.name));
   if (!itemColumns.has('weapon_id')) db.exec('ALTER TABLE character_items ADD COLUMN weapon_id TEXT REFERENCES weapon_catalog(id)');
+  if (!itemColumns.has('armor_id')) db.exec('ALTER TABLE character_items ADD COLUMN armor_id TEXT REFERENCES armor_catalog(id)');
   if (!itemColumns.has('grip')) db.exec("ALTER TABLE character_items ADD COLUMN grip TEXT NOT NULL DEFAULT 'one' CHECK(grip IN ('one', 'two'))");
   db.exec(`CREATE TABLE IF NOT EXISTS item_catalog (
     id INTEGER PRIMARY KEY,
@@ -159,10 +161,11 @@ export function openDatabase(path = process.env.DB_PATH || 'data/dnd.sqlite') {
         slot TEXT NOT NULL,
         equipped INTEGER NOT NULL DEFAULT 0 CHECK(equipped IN (0, 1)),
         weapon_id TEXT REFERENCES weapon_catalog(id),
+        armor_id TEXT REFERENCES armor_catalog(id),
         grip TEXT NOT NULL DEFAULT 'none' CHECK(grip IN ('one', 'two', 'none'))
       );
-      INSERT INTO character_items_new (id, character_id, name, description, quantity, slot, equipped, weapon_id, grip)
-        SELECT id, character_id, name, description, quantity, slot, equipped, weapon_id,
+      INSERT INTO character_items_new (id, character_id, name, description, quantity, slot, equipped, weapon_id, armor_id, grip)
+        SELECT id, character_id, name, description, quantity, slot, equipped, weapon_id, armor_id,
           CASE WHEN EXISTS (
             SELECT 1 FROM weapon_catalog w WHERE w.id = character_items.weapon_id AND w.type = 'dystansowa'
           ) THEN 'none' ELSE grip END
@@ -174,6 +177,33 @@ export function openDatabase(path = process.env.DB_PATH || 'data/dnd.sqlite') {
       PRAGMA foreign_keys = ON;`);
   }
   db.prepare(`DELETE FROM weapon_catalog WHERE id NOT IN (${weapons.map(() => '?').join(', ')})`).run(...weapons.map(weapon => weapon.id));
+  db.exec(`CREATE TABLE IF NOT EXISTS armor_catalog (
+    id TEXT PRIMARY KEY CHECK(length(trim(id)) BETWEEN 1 AND 80),
+    name TEXT NOT NULL CHECK(length(trim(name)) BETWEEN 1 AND 80),
+    category TEXT NOT NULL CHECK(category IN ('light', 'medium', 'heavy', 'shield')),
+    armor_class TEXT NOT NULL CHECK(length(trim(armor_class)) BETWEEN 1 AND 80),
+    strength INTEGER CHECK(strength IS NULL OR strength >= 1),
+    stealth_disadvantage INTEGER NOT NULL CHECK(stealth_disadvantage IN (0, 1)),
+    weight REAL CHECK(weight IS NULL OR weight >= 0),
+    cost TEXT NOT NULL CHECK(length(trim(cost)) BETWEEN 1 AND 40),
+    don_time INTEGER NOT NULL CHECK(don_time >= 0),
+    doff_time INTEGER NOT NULL CHECK(doff_time >= 0)
+  );`);
+  const addArmor = db.prepare(`INSERT INTO armor_catalog
+    (id, name, category, armor_class, strength, stealth_disadvantage, weight, cost, don_time, doff_time)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET name=excluded.name, category=excluded.category,
+      armor_class=excluded.armor_class, strength=excluded.strength,
+      stealth_disadvantage=excluded.stealth_disadvantage, weight=excluded.weight,
+      cost=excluded.cost, don_time=excluded.don_time, doff_time=excluded.doff_time`);
+  for (const armor of armors) {
+    addArmor.run(armor.id, armor.name, armor.category, armor.armorClass, armor.strength,
+      armor.stealthDisadvantage ? 1 : 0, armor.weight, armor.cost, armor.donTime, armor.doffTime);
+  }
+  db.prepare(`DELETE FROM armor_catalog WHERE id NOT IN (${armors.map(() => '?').join(', ')})`).run(...armors.map(armor => armor.id));
+  const catalogColumns = new Set(db.prepare('PRAGMA table_info(item_catalog)').all().map(column => column.name));
+  if (!catalogColumns.has('armor_id')) db.exec('ALTER TABLE item_catalog ADD COLUMN armor_id TEXT REFERENCES armor_catalog(id)');
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS one_catalog_entry_per_armor ON item_catalog(armor_id) WHERE armor_id IS NOT NULL');
   db.prepare(`UPDATE character_items SET weapon_id = (
     SELECT w.id FROM weapon_catalog w WHERE w.name = character_items.name
   ) WHERE weapon_id IS NULL`).run();

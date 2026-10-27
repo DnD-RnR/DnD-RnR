@@ -5,7 +5,9 @@ export function handleItems(db, user, path, method, body, send) {
   const reply = (status, data) => { send(status, data); return true; };
   if (method === 'GET') {
     if (!['admin', 'gm'].includes(user.role)) return reply(403, { error: 'Katalog jest dostępny dla administratora i GM.' });
-    return reply(200, { items: db.prepare('SELECT id, name, description, slot FROM item_catalog ORDER BY name, id').all() });
+    return reply(200, { items: db.prepare(`SELECT i.id, i.name, i.description, i.slot, i.armor_id AS armorId,
+      a.category AS armorCategory FROM item_catalog i LEFT JOIN armor_catalog a ON a.id = i.armor_id
+      ORDER BY i.name, i.id`).all() });
   }
   if (method === 'POST') {
     if (user.role !== 'admin') return reply(403, { error: 'Tylko administrator może dodawać przedmioty do katalogu.' });

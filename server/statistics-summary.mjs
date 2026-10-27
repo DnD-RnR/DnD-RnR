@@ -2,13 +2,16 @@ import definitions from '../shared/statistics.json' with { type: 'json' };
 import { characterTraits } from '../shared/character-traits.mjs';
 import { spellcastingProfile } from '../shared/spellcasting.mjs';
 import { emptyStatistics } from './statistics.mjs';
+import { armorClassFromEquipment, armorTrainingEffects, hasArmorTraining, hasStealthDisadvantage, speedFromEquipment } from './armor-class.mjs';
 
-export function statisticsSummary(character, stored) {
+export function statisticsSummary(character, stored, equipment = []) {
   const defaults = emptyStatistics();
   const stats = { ...defaults, ...stored, values: { ...defaults.values, ...stored?.values }, skills: { ...defaults.skills, ...stored?.skills } };
   stats.spells ??= defaults.spells;
   stats.traits ??= defaults.traits;
   const traits = characterTraits(character, stats);
+  const trainingEquipment = equipment.map(item => ({ ...item, trained: hasArmorTraining(traits, item.armorCategory) }));
+  const trainingEffects = armorTrainingEffects(traits, equipment);
   const proficiency = 2 + Math.floor((character.level - 1) / 4);
   const modifier = id => stats.values[id] == null ? null : Math.floor((stats.values[id] - 10) / 2);
   const skills = Object.fromEntries(definitions.skills.map(skill => {
@@ -21,7 +24,7 @@ export function statisticsSummary(character, stored) {
   const dex = modifier('dex');
   return {
     hp: stats.values.hp, maxHp: stats.values.maxHp ?? traits.firstLevelMaxHp, tempHp: stats.values.tempHp,
-    ac: stats.values.ac, speed: stats.values.speed ?? traits.baseSpeed, proficiency,
+    ac: armorClassFromEquipment(stats, trainingEquipment), speed: speedFromEquipment(stats, equipment, stats.values.speed ?? traits.baseSpeed), stealthDisadvantage: hasStealthDisadvantage(equipment), ...trainingEffects, proficiency,
     initiative: dex === null ? null : dex + traits.initiativeBonus + (stats.values.initiativeBonus ?? 0),
     passivePerception: skills.perception === null ? null : 10 + skills.perception,
     deathSuccesses: stats.values.deathSuccesses, deathFailures: stats.values.deathFailures,
