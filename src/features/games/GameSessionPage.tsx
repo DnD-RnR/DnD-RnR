@@ -19,9 +19,9 @@ export function GameSessionPage({ gameId }: { gameId: number }) {
     const [data, i, a] = await Promise.all([
       api<Session>(`/games/${gameId}`),
       api<{ items: CatalogItem[] }>('/items'),
-      api<{ armors: Array<{ id: string; name: string; category: 'light' | 'medium' | 'heavy' | 'shield' }> }>('/armors'),
+      api<{ armors: Array<{ id: string; name: string; category: 'light' | 'medium' | 'heavy' | 'shield'; weight: number | null; cost: string }> }>('/armors'),
     ]);
-    setSession(data); setCatalog([...i.items, ...a.armors.map((armor, index) => ({ id: -(index + 1), name: armor.name, description: '', slot: armor.category === 'shield' ? 'off-hand' : 'armor', armorId: armor.id, armorCategory: armor.category }))]);
+    setSession(data); setCatalog([...i.items, ...a.armors.map((armor, index) => ({ id: -(index + 1), name: armor.name, description: '', slot: armor.category === 'shield' ? 'off-hand' : 'armor', weight: armor.weight, cost: armor.cost, armorId: armor.id, armorCategory: armor.category }))]);
   }, [gameId]);
   useEffect(() => {
     if (editing) return;

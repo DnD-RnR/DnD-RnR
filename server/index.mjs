@@ -121,7 +121,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         const characterId = Number(rawCharacterId);
         if (!db.prepare('SELECT id FROM characters WHERE id = ? AND user_id = ?').get(characterId, user.id)) return send(404, { error: 'Nie znaleziono postaci.' });
         if (!action && req.method === 'GET') {
-          const items = db.prepare(`SELECT i.id, i.name, i.description, i.quantity, i.slot, i.equipped, i.grip,
+          const items = db.prepare(`SELECT i.id, i.name, i.description, i.quantity, i.slot, i.equipped, i.grip, i.weight, i.cost,
             i.armor_id AS armorId, a.category AS armorCategory,
             w.id AS weaponId, w.type AS weaponType, w.damage AS weaponDamage, w.damage_type AS weaponDamageType,
             w.range AS weaponRange, w.properties AS weaponProperties, w.mastery AS weaponMastery
@@ -131,6 +131,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
           return send(200, { items: items.map(item => ({
             id: item.id, name: item.name, description: item.description, quantity: item.quantity,
             slot: item.slot, equipped: item.equipped,
+            ...(item.weight !== null || item.cost ? { weight: item.weight, cost: item.cost } : {}),
             ...(item.armorId ? { armor: { id: item.armorId, category: item.armorCategory } } : {}),
             ...(item.weaponId ? { grip: item.grip, weapon: {
               id: item.weaponId, type: item.weaponType, damage: item.weaponDamage,
@@ -164,7 +165,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
                 db.prepare('UPDATE character_items SET character_id = ? WHERE id = ?').run(recipientId, itemId);
               } else {
                 db.prepare('UPDATE character_items SET quantity = quantity - ? WHERE id = ?').run(quantity, itemId);
-                db.prepare('INSERT INTO character_items (character_id, name, description, quantity, slot, equipped, weapon_id, armor_id, grip) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)').run(recipientId, source.name, source.description, quantity, source.slot, source.weapon_id, source.armor_id, source.grip);
+                db.prepare('INSERT INTO character_items (character_id, name, description, quantity, slot, equipped, weapon_id, armor_id, grip, weight, cost) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)').run(recipientId, source.name, source.description, quantity, source.slot, source.weapon_id, source.armor_id, source.grip, source.weight, source.cost);
               }
               db.exec('COMMIT');
             } catch (error) { db.exec('ROLLBACK'); throw error; }

@@ -16,7 +16,8 @@ export function ItemCatalog() {
     event.preventDefault();
     if (pending) return;
     const form = event.currentTarget;
-    const body = Object.fromEntries(new FormData(form));
+    const formData = Object.fromEntries(new FormData(form));
+    const body = { ...formData, weight: formData.weight ? Number(formData.weight) : null };
     setPending(true); setError(''); setMessage('');
     try {
       await api('/items', body); form.reset();
@@ -30,9 +31,11 @@ export function ItemCatalog() {
     <Card title="Nowy przedmiot"><form className="stack-form" onSubmit={create}><fieldset disabled={pending || loading}>
       <label>Nazwa<input name="name" required maxLength={80} /></label>
       <label>Opis<textarea name="description" rows={3} maxLength={2000} /></label>
+      <label>Waga (lb)<input name="weight" type="number" min={0} step="any" /></label>
+      <label>Wartość<input name="cost" maxLength={40} placeholder="np. 25 GP" /></label>
       <label>Miejsce noszenia<select name="slot" defaultValue="backpack"><option value="backpack">Tylko plecak</option>{slots.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}</select></label>
       <button className="primary-button">Dodaj do katalogu</button>
     </fieldset></form></Card>
-    {loading ? <p role="status">Wczytywanie katalogu…</p> : items.length ? <ul>{items.map(i => <li key={i.id}><strong>{i.name}</strong><p>{slots.find(s => s.id === i.slot)?.label ?? 'Tylko plecak'}</p><p className="item-description">{formatDice(i.description)}</p></li>)}</ul> : <p>Katalog jest pusty. Dodaj pierwszy przedmiot.</p>}
+    {loading ? <p role="status">Wczytywanie katalogu…</p> : items.length ? <ul>{items.map(i => <li key={i.id}><strong>{i.name}</strong><p>{i.weight == null ? 'Waga: —' : `Waga: ${i.weight} lb`} · Wartość: {i.cost || '—'}</p><p>{slots.find(s => s.id === i.slot)?.label ?? 'Tylko plecak'}</p><p className="item-description">{formatDice(i.description)}</p></li>)}</ul> : <p>Katalog jest pusty. Dodaj pierwszy przedmiot.</p>}
   </section>;
 }

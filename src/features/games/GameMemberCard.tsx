@@ -17,7 +17,7 @@ export function GameMemberCard({ member: m, gameId, catalog, pending, onAssigned
       {m.statistics && <MemberStatistics stats={m.statistics} />}
       <details className="session-inventory"><summary>Postać i ekwipunek ({m.items?.length ?? 0})</summary>
         <p>{[m.character.species, m.character.subclass].filter(Boolean).join(' · ')}</p><p>Pochodzenie: {m.character.background || 'Do uzupełnienia'}</p>
-        {m.items?.length ? <ul>{m.items.map(item => <li key={item.id}><strong>{item.name}</strong> × {item.quantity} · {item.equipped ? 'Założony' : 'Plecak'}<p className="item-description">{formatDice(item.description)}</p><RemoveEquipmentForm gameId={gameId} characterId={m.character!.id} characterName={m.name} item={item} disabled={pending} onRemoved={onAssigned} /></li>)}</ul> : <p>Brak przedmiotów.</p>}
+        {m.items?.length ? <ul>{m.items.map(item => <li key={item.id}><strong>{item.name}</strong> × {item.quantity} · {item.equipped ? 'Założony' : 'Plecak'}<p>{item.weight == null ? 'Waga: —' : `Waga: ${item.weight} lb`} · Wartość: {item.cost || '—'}</p><p className="item-description">{formatDice(item.description)}</p><RemoveEquipmentForm gameId={gameId} characterId={m.character!.id} characterName={m.name} item={item} disabled={pending} onRemoved={onAssigned} /></li>)}</ul> : <p>Brak przedmiotów.</p>}
         <AssignEquipmentForm gameId={gameId} characterId={m.character.id} characterName={m.name} items={catalog} disabled={pending} onAssigned={onAssigned} />
       </details>
     </>}

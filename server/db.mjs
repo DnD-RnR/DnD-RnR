@@ -6,6 +6,7 @@ import { promisify } from 'node:util';
 import slots from '../shared/equipment-slots.json' with { type: 'json' };
 import weapons from '../shared/weapon-catalog.json' with { type: 'json' };
 import armors from '../shared/armor-catalog.json' with { type: 'json' };
+import items from '../shared/item-catalog.json' with { type: 'json' };
 
 const derive = promisify(scrypt);
 export async function hashPassword(password, salt = randomBytes(16).toString('hex')) {
@@ -89,12 +90,30 @@ export function openDatabase(path = process.env.DB_PATH || 'data/dnd.sqlite') {
   if (!itemColumns.has('weapon_id')) db.exec('ALTER TABLE character_items ADD COLUMN weapon_id TEXT REFERENCES weapon_catalog(id)');
   if (!itemColumns.has('armor_id')) db.exec('ALTER TABLE character_items ADD COLUMN armor_id TEXT REFERENCES armor_catalog(id)');
   if (!itemColumns.has('grip')) db.exec("ALTER TABLE character_items ADD COLUMN grip TEXT NOT NULL DEFAULT 'one' CHECK(grip IN ('one', 'two'))");
+  if (!itemColumns.has('weight')) db.exec('ALTER TABLE character_items ADD COLUMN weight REAL CHECK(weight IS NULL OR weight >= 0)');
+  if (!itemColumns.has('cost')) db.exec("ALTER TABLE character_items ADD COLUMN cost TEXT NOT NULL DEFAULT ''");
   db.exec(`CREATE TABLE IF NOT EXISTS item_catalog (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL CHECK(length(trim(name)) BETWEEN 1 AND 80),
     description TEXT NOT NULL DEFAULT '' CHECK(length(description) <= 2000),
-    slot TEXT NOT NULL CHECK(slot IN ('backpack', ${slots.map(slot => `'${slot.id}'`).join(', ')}))
+    slot TEXT NOT NULL CHECK(slot IN ('backpack', ${slots.map(slot => `'${slot.id}'`).join(', ')})),
+    weight REAL CHECK(weight IS NULL OR weight >= 0),
+    cost TEXT NOT NULL DEFAULT '',
+    source_id TEXT UNIQUE
   );`);
+  const catalogItemColumns = new Set(db.prepare('PRAGMA table_info(item_catalog)').all().map(column => column.name));
+  if (!catalogItemColumns.has('weight')) db.exec('ALTER TABLE item_catalog ADD COLUMN weight REAL CHECK(weight IS NULL OR weight >= 0)');
+  if (!catalogItemColumns.has('cost')) db.exec("ALTER TABLE item_catalog ADD COLUMN cost TEXT NOT NULL DEFAULT ''");
+  if (!catalogItemColumns.has('source_id')) db.exec('ALTER TABLE item_catalog ADD COLUMN source_id TEXT');
+  db.exec('DROP INDEX IF EXISTS one_catalog_entry_per_source; CREATE UNIQUE INDEX one_catalog_entry_per_source ON item_catalog(source_id)');
+  const setItemSource = db.prepare('UPDATE item_catalog SET source_id = ? WHERE name = ? AND source_id IS NULL');
+  for (const item of items) setItemSource.run(item.id, item.name);
+  const addItem = db.prepare(`INSERT INTO item_catalog
+    (name, description, slot, weight, cost, source_id)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(source_id) DO UPDATE SET name=excluded.name, description=excluded.description,
+      slot=excluded.slot, weight=excluded.weight, cost=excluded.cost`);
+  for (const item of items) addItem.run(item.name, item.description, item.slot, item.weight, item.cost, item.id);
   db.exec(`CREATE TABLE IF NOT EXISTS weapon_catalog (
     id TEXT PRIMARY KEY CHECK(length(trim(id)) BETWEEN 1 AND 80),
     name TEXT NOT NULL CHECK(length(trim(name)) BETWEEN 1 AND 80),
@@ -162,13 +181,15 @@ export function openDatabase(path = process.env.DB_PATH || 'data/dnd.sqlite') {
         equipped INTEGER NOT NULL DEFAULT 0 CHECK(equipped IN (0, 1)),
         weapon_id TEXT REFERENCES weapon_catalog(id),
         armor_id TEXT REFERENCES armor_catalog(id),
-        grip TEXT NOT NULL DEFAULT 'none' CHECK(grip IN ('one', 'two', 'none'))
+        grip TEXT NOT NULL DEFAULT 'none' CHECK(grip IN ('one', 'two', 'none')),
+        weight REAL CHECK(weight IS NULL OR weight >= 0),
+        cost TEXT NOT NULL DEFAULT ''
       );
-      INSERT INTO character_items_new (id, character_id, name, description, quantity, slot, equipped, weapon_id, armor_id, grip)
+      INSERT INTO character_items_new (id, character_id, name, description, quantity, slot, equipped, weapon_id, armor_id, grip, weight, cost)
         SELECT id, character_id, name, description, quantity, slot, equipped, weapon_id, armor_id,
           CASE WHEN EXISTS (
             SELECT 1 FROM weapon_catalog w WHERE w.id = character_items.weapon_id AND w.type = 'dystansowa'
-          ) THEN 'none' ELSE grip END
+          ) THEN 'none' ELSE grip END, weight, cost
         FROM character_items;
       DROP TABLE character_items;
       ALTER TABLE character_items_new RENAME TO character_items;

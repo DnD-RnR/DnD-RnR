@@ -270,6 +270,11 @@ Zmiana właściciela postaci przez administratora usuwa jej dotychczasowe
 zaproszenia i udziały w grach, aby nowy właściciel mógł sam wyrazić zgodę.
 Migracja SQLite przy starcie API zachowuje istniejące konta, postacie i sesje.
 
+Katalog podstawowego wyposażenia znajduje się w `shared/item-catalog.json` i jest
+synchronizowany do tabeli `item_catalog` przy uruchomieniu API. Wpisy dodane
+ręcznie przez administratora pozostają w lokalnej bazie obok danych z katalogu
+wersjonowanego.
+
 Projekt DnD-RnR.
 I am reading 
 

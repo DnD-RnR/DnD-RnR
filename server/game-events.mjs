@@ -11,7 +11,7 @@ export function createGameEvents(db) {
   function fingerprint(client) {
     let snapshot;
     handleGames(db, { id: client.userId, role: 'gm' }, `/api/games/${client.gameId}`, 'GET', {}, (_status, data) => { snapshot = data; });
-    const catalog = db.prepare('SELECT id, name, description, slot, armor_id FROM item_catalog ORDER BY name, id').all();
+    const catalog = db.prepare('SELECT id, name, description, slot, weight, cost, armor_id, source_id FROM item_catalog ORDER BY name, id').all();
     return createHash('sha256').update(JSON.stringify({ snapshot, catalog })).digest('hex');
   }
   function publish() {

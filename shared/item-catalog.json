@@ -1,0 +1,706 @@
+[
+  {
+    "id": "acid",
+    "name": "Kwas",
+    "description": "Kiedy wykonujesz akcję Atak, możesz zastąpić nim jeden ze swoich ataków, rzucając fiolką kwasu w jedno widoczne stworzenie lub obiekt w promieniu 20 stóp. Cel musi wykonać rzut obronny na Zręczność (ST 8 + modyfikator Zręczności + premia z biegłości); przy nieudanym rzucie otrzymuje 2k6 obrażeń od kwasu.",
+    "slot": "backpack",
+    "weight": 1,
+    "cost": "25 GP"
+  },
+  {
+    "id": "alchemists-fire",
+    "name": "Ogień alchemiczny",
+    "description": "Kiedy wykonujesz akcję Atak, możesz zastąpić nim jeden ze swoich ataków, rzucając flakonem w jedno widoczne stworzenie lub obiekt w promieniu 20 stóp. Cel musi wykonać rzut obronny na Zręczność (ST 8 + modyfikator Zręczności + premia z biegłości); przy nieudanym rzucie otrzymuje 1k4 obrażeń od ognia i zaczyna płonąć.",
+    "slot": "backpack",
+    "weight": 1,
+    "cost": "50 GP"
+  },
+  {
+    "id": "ammunition",
+    "name": "Amunicja",
+    "description": "Amunicja jest wymagana przez broń z właściwością Amunicja. Opis broni wskazuje rodzaj używanej amunicji, a tabela amunicji określa jej rodzaj i liczbę sztuk w zakupionym pakiecie.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "Zależna od rodzaju"
+  },
+  {
+    "id": "antitoxin",
+    "name": "Antytoksyna",
+    "description": "Jako akcję dodatkową możesz wypić fiolkę antitoksyny, aby przez 1 godzinę mieć ułatwienie w rzutach obronnych mających zapobiec zatruciu lub zakończyć stan Zatruty.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "50 GP"
+  },
+  {
+    "id": "arcane-focus",
+    "name": "Tajemny Fokus",
+    "description": "Tajemny Fokus może mieć jedną z form wskazanych w tabeli fokusów tajemnych. Jest ozdobiony klejnotami lub rzeźbiony i służy do skupiania magii. Czarodziej, czarownik lub zaklinacz może używać go jako fokusu czarowania.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "Zależna od formy"
+  },
+  {
+    "id": "backpack",
+    "name": "Plecak",
+    "description": "Plecak mieści do 30 funtów zawartości w jednej stopie sześciennej. Może także służyć jako sakwa juczna.",
+    "slot": "backpack",
+    "weight": 5,
+    "cost": "2 GP"
+  },
+  {
+    "id": "ball-bearings",
+    "name": "Kulki metalowe",
+    "description": "Jako akcję Użycie możesz wysypać kulki z woreczka. Rozsypują się na równym obszarze 10 × 10 stóp w odległości do 10 stóp od ciebie. Stworzenie, które po raz pierwszy w turze wejdzie na ten obszar, musi wykonać rzut obronny na Zręczność ST 10 albo otrzymuje stan Powalony. Zebranie kulek zajmuje 10 minut.",
+    "slot": "backpack",
+    "weight": 2,
+    "cost": "1 GP"
+  },
+  {
+    "id": "barrel",
+    "name": "Beczka",
+    "description": "Beczka mieści do 40 galonów płynu albo do 4 stóp sześciennych suchych towarów.",
+    "slot": "backpack",
+    "weight": 70,
+    "cost": "2 GP"
+  },
+  {
+    "id": "basket",
+    "name": "Kosz",
+    "description": "Kosz mieści do 40 funtów zawartości w dwóch stopach sześciennych.",
+    "slot": "backpack",
+    "weight": 2,
+    "cost": "4 SP"
+  },
+  {
+    "id": "bedroll",
+    "name": "Posłanie",
+    "description": "Posłanie zapewnia miejsce do spania jednej istocie Małej lub Średniej. Podczas spania w posłaniu automatycznie zdajesz rzuty obronne przeciwko ekstremalnemu zimnu.",
+    "slot": "backpack",
+    "weight": 7,
+    "cost": "1 GP"
+  },
+  {
+    "id": "bell",
+    "name": "Dzwonek",
+    "description": "Użyty jako akcja Użycie dzwonek wydaje dźwięk słyszalny z odległości do 60 stóp.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "1 GP"
+  },
+  {
+    "id": "blanket",
+    "name": "Koc",
+    "description": "Owinięcie się kocem daje ułatwienie w rzutach obronnych przeciwko ekstremalnemu zimnu.",
+    "slot": "backpack",
+    "weight": 3,
+    "cost": "5 SP"
+  },
+  {
+    "id": "block-and-tackle",
+    "name": "Blok i wciągarka",
+    "description": "Blok i wciągarka pozwalają podnosić ciężar do czterokrotności twojego normalnego udźwigu.",
+    "slot": "backpack",
+    "weight": 5,
+    "cost": "1 GP"
+  },
+  {
+    "id": "bright-fungal-cloak",
+    "name": "Jasny płaszcz grzybowy",
+    "description": "Możesz jako akcję dodatkową rozłożyć lub zwinąć płaszcz. Rozłożony świeci jasnym światłem w promieniu 5 stóp i przyćmionym światłem na kolejnych 5 stóp. Wszyty grzyb waży 1 funt i może służyć jako żywność; po zjedzeniu grzyba płaszcz staje się zwykłym kompletem ubrań podróżnych.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "25 GP"
+  },
+  {
+    "id": "book",
+    "name": "Księga",
+    "description": "Księga może zawierać fikcję lub treści faktograficzne. Konsultacja z wiarygodną księgą faktograficzną daje premię +5 do testów Inteligencji dotyczących jej tematu.",
+    "slot": "backpack",
+    "weight": 5,
+    "cost": "25 GP"
+  },
+  {
+    "id": "glass-bottle",
+    "name": "Szklana butelka",
+    "description": "Szklana butelka mieści do półtorej pinty płynu.",
+    "slot": "backpack",
+    "weight": 2,
+    "cost": "2 GP"
+  },
+  {
+    "id": "bucket",
+    "name": "Wiadro",
+    "description": "Wiadro mieści do pół stopy sześciennej zawartości.",
+    "slot": "backpack",
+    "weight": 2,
+    "cost": "5 CP"
+  },
+  {
+    "id": "burglars-pack",
+    "name": "Plecak złodzieja",
+    "description": "Zawiera plecak, kulki metalowe, dzwonek, 10 świec, łom, latarnię osłoniętą, 7 flakonów oliwy, racje na 5 dni, linę, hubkę i krzesiwo oraz bukłak.",
+    "slot": "backpack",
+    "weight": 42,
+    "cost": "16 GP"
+  },
+  {
+    "id": "caltrops",
+    "name": "Kolce kotwiczne",
+    "description": "Jako akcję Użycie możesz rozsypać kolce na obszarze 5 × 5 stóp w odległości do 5 stóp. Stworzenie, które pierwszy raz w turze wejdzie na ten obszar, wykonuje rzut obronny na Zręczność ST 15; przy porażce otrzymuje 1 obrażenie kłute, a jego Szybkość spada do 0 do początku następnej tury. Zebranie kolców zajmuje 10 minut.",
+    "slot": "backpack",
+    "weight": 2,
+    "cost": "1 GP"
+  },
+  {
+    "id": "candle",
+    "name": "Świeca",
+    "description": "Zapalona świeca przez 1 godzinę roztacza jasne światło w promieniu 5 stóp i przyćmione światło na kolejnych 5 stóp.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "1 CP"
+  },
+  {
+    "id": "crossbow-bolt-case",
+    "name": "Pojemnik na bełty",
+    "description": "Pojemnik mieści do 20 bełtów do kuszy.",
+    "slot": "backpack",
+    "weight": 1,
+    "cost": "1 GP"
+  },
+  {
+    "id": "map-or-scroll-case",
+    "name": "Pojemnik na mapę lub zwój",
+    "description": "Pojemnik mieści do 10 arkuszy papieru albo 5 arkuszy pergaminu.",
+    "slot": "backpack",
+    "weight": 1,
+    "cost": "1 GP"
+  },
+  {
+    "id": "chain",
+    "name": "Łańcuch",
+    "description": "Jako akcję Użycie możesz założyć łańcuch na niechętne stworzenie w odległości do 5 stóp, jeśli jest Chwycone, Obezwładnione lub Unieruchomione i zdasz test Siły (Atletyka) ST 13. Ucieczka wymaga testu Zręczności (Akrobatyka) ST 18, a rozerwanie testu Siły (Atletyka) ST 20.",
+    "slot": "backpack",
+    "weight": 10,
+    "cost": "5 GP"
+  },
+  {
+    "id": "chest",
+    "name": "Skrzynia",
+    "description": "Skrzynia mieści do 12 stóp sześciennych zawartości.",
+    "slot": "backpack",
+    "weight": 25,
+    "cost": "5 GP"
+  },
+  {
+    "id": "climbers-kit",
+    "name": "Zestaw wspinaczkowy",
+    "description": "Zawiera nakładki na buty, rękawice, haki i uprząż. Jako akcję Użycie możesz się zakotwiczyć; nie możesz wtedy spaść dalej niż 25 stóp od punktu kotwiczenia ani oddalić się od niego na więcej niż 25 stóp bez odpięcia uprzęży akcją dodatkową.",
+    "slot": "backpack",
+    "weight": 12,
+    "cost": "25 GP"
+  },
+  {
+    "id": "fine-clothes",
+    "name": "Eleganckie ubrania",
+    "description": "Ubrania z drogich tkanin, ozdobione misternymi detalami. Niektóre wydarzenia i miejsca wymagają ich noszenia.",
+    "slot": "backpack",
+    "weight": 6,
+    "cost": "15 GP"
+  },
+  {
+    "id": "travelers-clothes",
+    "name": "Ubrania podróżne",
+    "description": "Wytrzymałe ubrania przeznaczone do podróżowania w różnych warunkach.",
+    "slot": "backpack",
+    "weight": 4,
+    "cost": "2 GP"
+  },
+  {
+    "id": "component-pouch",
+    "name": "Sakiewka na komponenty",
+    "description": "Wodoodporna sakiewka z przegródkami na wszystkie bezpłatne materialne komponenty czarów.",
+    "slot": "backpack",
+    "weight": 2,
+    "cost": "25 GP"
+  },
+  {
+    "id": "costume",
+    "name": "Kostium",
+    "description": "Podczas noszenia kostiumu masz ułatwienie w testach cech wykonywanych, aby udawać przedstawianą osobę lub typ osoby.",
+    "slot": "backpack",
+    "weight": 4,
+    "cost": "5 GP"
+  },
+  {
+    "id": "crowbar",
+    "name": "Łom",
+    "description": "Użycie łomu daje ułatwienie w testach Siły, gdy można wykorzystać jego dźwignię.",
+    "slot": "backpack",
+    "weight": 5,
+    "cost": "2 GP"
+  },
+  {
+    "id": "desert-clothing",
+    "name": "Ubrania pustynne",
+    "description": "Podczas noszenia tych ubrań i bez średniego lub ciężkiego pancerza automatycznie zdajesz rzuty obronne przeciwko efektom ekstremalnego gorąca.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "5 GP"
+  },
+  {
+    "id": "devil-mask",
+    "name": "Maska diabła",
+    "description": "Inne stworzenia mają utrudnienie w testach Inteligencji (Śledztwo) i Mądrości (Wnikliwość), aby rozpoznać twoją prawdziwą tożsamość lub zamiary.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "25 GP"
+  },
+  {
+    "id": "diplomats-pack",
+    "name": "Plecak dyplomaty",
+    "description": "Zawiera skrzynię, eleganckie ubrania, atrament, 5 piór, lampę, 2 pojemniki na mapy lub zwoje, 4 flakony oliwy, 5 arkuszy papieru, 5 arkuszy pergaminu, perfumy oraz hubkę i krzesiwo.",
+    "slot": "backpack",
+    "weight": 39,
+    "cost": "39 GP"
+  },
+  {
+    "id": "druidic-focus",
+    "name": "Fokus druidyczny",
+    "description": "Fokus druidyczny może mieć jedną z form wskazanych w tabeli fokusów druidycznych. Druid lub tropiciel może używać go jako fokusu czarowania.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "Zależna od formy"
+  },
+  {
+    "id": "dungeoneers-pack",
+    "name": "Plecak podziemnego eksploratora",
+    "description": "Zawiera plecak, kolce kotwiczne, łom, 2 flakony oliwy, racje na 10 dni, linę, hubkę i krzesiwo, 10 pochodni oraz bukłak.",
+    "slot": "backpack",
+    "weight": 55,
+    "cost": "12 GP"
+  },
+  {
+    "id": "entertainers-pack",
+    "name": "Plecak artysty",
+    "description": "Zawiera plecak, posłanie, dzwonek, latarnię tarczową, 3 kostiumy, lusterko, 8 flakonów oliwy, racje na 9 dni, hubkę i krzesiwo oraz bukłak.",
+    "slot": "backpack",
+    "weight": 58.5,
+    "cost": "40 GP"
+  },
+  {
+    "id": "explorers-pack",
+    "name": "Plecak podróżnika",
+    "description": "Zawiera plecak, posłanie, 2 flakony oliwy, racje na 10 dni, linę, hubkę i krzesiwo, 10 pochodni oraz bukłak.",
+    "slot": "backpack",
+    "weight": 55,
+    "cost": "10 GP"
+  },
+  {
+    "id": "flask",
+    "name": "Flakon",
+    "description": "Flakon mieści do 1 pinty płynu.",
+    "slot": "backpack",
+    "weight": 1,
+    "cost": "2 CP"
+  },
+  {
+    "id": "garb-of-light-and-shadow",
+    "name": "Strój światła i cienia",
+    "description": "Strój przyciąga istoty Fey z jednego Domeny Rozkoszy. Podczas jego noszenia masz ułatwienie w testach cech służących wpływaniu na związane z tą domeną istoty Fey.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "50 GP"
+  },
+  {
+    "id": "genie-robe",
+    "name": "Szata dżina",
+    "description": "Szata przyciąga żywiołaki związane z konkretną Sferą Żywiołów. Podczas jej noszenia masz ułatwienie w testach cech służących wpływaniu na te żywiołaki.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "50 GP"
+  },
+  {
+    "id": "grappling-hook",
+    "name": "Hak z liną",
+    "description": "Jako akcję Użycie możesz rzucić hak do poręczy, krawędzi lub innego zaczepu w odległości do 50 stóp. Hak chwyta zaczep, jeśli zdasz odpowiedni test.",
+    "slot": "backpack",
+    "weight": 4,
+    "cost": "5 GP"
+  },
+  {
+    "id": "hunting-trap",
+    "name": "Pułapka myśliwska",
+    "description": "Pułapka ma zębaty stalowy pierścień zamykający się, gdy stworzenie nastąpi na płytę naciskową. Stworzenie wykonuje rzut obronny na Zręczność ST 13; przy porażce otrzymuje 1k4 obrażeń kłutych, a jego Szybkość spada do 0 do początku następnej tury.",
+    "slot": "backpack",
+    "weight": 25,
+    "cost": "5 GP"
+  },
+  {
+    "id": "ink",
+    "name": "Atrament",
+    "description": "Butelka o pojemności 1 uncji zawiera wystarczająco dużo atramentu, aby zapisać około 500 stron.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "10 GP"
+  },
+  {
+    "id": "ink-pen",
+    "name": "Pióro",
+    "description": "Pióro służy do pisania lub rysowania przy użyciu atramentu.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "2 CP"
+  },
+  {
+    "id": "jug",
+    "name": "Dzban",
+    "description": "Dzban mieści do 1 galona płynu.",
+    "slot": "backpack",
+    "weight": 4,
+    "cost": "2 CP"
+  },
+  {
+    "id": "ladder",
+    "name": "Drabina",
+    "description": "Drabina ma 10 stóp wysokości. Aby się po niej poruszać, trzeba się wspinać.",
+    "slot": "backpack",
+    "weight": 25,
+    "cost": "1 SP"
+  },
+  {
+    "id": "lamp",
+    "name": "Lampa",
+    "description": "Lampa spala oliwę jako paliwo i roztacza jasne światło w promieniu 15 stóp oraz przyćmione światło na kolejnych 30 stóp.",
+    "slot": "backpack",
+    "weight": 1,
+    "cost": "5 SP"
+  },
+  {
+    "id": "bullseye-lantern",
+    "name": "Latarnia tarczowa",
+    "description": "Spala oliwę jako paliwo, roztaczając jasne światło w stożku długości 60 stóp i przyćmione światło na kolejnych 60 stóp.",
+    "slot": "backpack",
+    "weight": 2,
+    "cost": "10 GP"
+  },
+  {
+    "id": "hooded-lantern",
+    "name": "Latarnia osłonięta",
+    "description": "Spala oliwę, roztaczając jasne światło w promieniu 30 stóp i przyćmione światło na kolejnych 30 stóp. Akcją dodatkową możesz opuścić osłonę, ograniczając światło do przyćmionego w promieniu 5 stóp.",
+    "slot": "backpack",
+    "weight": 2,
+    "cost": "5 GP"
+  },
+  {
+    "id": "lock",
+    "name": "Zamek",
+    "description": "Zamek ma klucz. Bez klucza można otworzyć go narzędziami złodziejskimi testem Zręczności (Zręczne dłonie) ST 15.",
+    "slot": "backpack",
+    "weight": 1,
+    "cost": "10 GP"
+  },
+  {
+    "id": "locking-spellbook",
+    "name": "Zamykana księga czarów",
+    "description": "Stu-stronicowa skórzana księga może służyć jako księga czarów. Ma zamek z kluczem; można go otworzyć narzędziami złodziejskimi testem Zręczności (Zręczne dłonie) ST 15.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "35 GP"
+  },
+  {
+    "id": "magnifying-glass",
+    "name": "Szkło powiększające",
+    "description": "Daje ułatwienie w testach cech służących do wyceny lub oględzin bardzo szczegółowego przedmiotu. Skupienie światła słonecznego w celu rozpalenia ognia trwa około 5 minut.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "100 GP"
+  },
+  {
+    "id": "manacles",
+    "name": "Kajdany",
+    "description": "Jako akcję Użycie możesz skuć niechętne Małe lub Średnie stworzenie w odległości do 5 stóp, jeśli jest Chwycone, Obezwładnione lub Unieruchomione i zdasz test Zręczności (Zręczne dłonie) ST 13. Kajdany mają klucz.",
+    "slot": "backpack",
+    "weight": 6,
+    "cost": "2 GP"
+  },
+  {
+    "id": "map",
+    "name": "Mapa",
+    "description": "Konsultacja z wiarygodną mapą daje premię +5 do testów Mądrości (Sztuka przetrwania), aby odnaleźć drogę w przedstawionym miejscu.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "1 GP"
+  },
+  {
+    "id": "mirror",
+    "name": "Lusterko",
+    "description": "Stalowe lusterko służy do pielęgnacji, zaglądania za rogi i odbijania światła jako sygnału.",
+    "slot": "backpack",
+    "weight": 0.5,
+    "cost": "5 GP"
+  },
+  {
+    "id": "monster-camouflage",
+    "name": "Kamuflaż potwora",
+    "description": "Strój przypomina Bestię lub Monstrum. Aby rozpoznać przebranie, stworzenie musi zbadać wygląd akcją Studium i zdać test Inteligencji (Śledztwo lub Przyroda) ST 10.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "50 GP"
+  },
+  {
+    "id": "net",
+    "name": "Sieć",
+    "description": "Możesz zastąpić nią jeden z ataków akcją Atak, celując w widoczne stworzenie w odległości do 15 stóp. Cel wykonuje rzut obronny na Zręczność (ST 8 + modyfikator Zręczności + premia z biegłości), a przy porażce otrzymuje stan Unieruchomiony do czasu ucieczki.",
+    "slot": "backpack",
+    "weight": 3,
+    "cost": "1 GP"
+  },
+  {
+    "id": "oil",
+    "name": "Oliwa",
+    "description": "Flakon oliwy może pokryć stworzenie, obiekt lub obszar. Oliwa służy też jako paliwo do lamp i latarni; zapalona pali się w nich łącznie przez 6 godzin.",
+    "slot": "backpack",
+    "weight": 1,
+    "cost": "1 SP"
+  },
+  {
+    "id": "paper",
+    "name": "Papier",
+    "description": "Jedna kartka papieru mieści około 250 odręcznie zapisanych słów.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "2 SP"
+  },
+  {
+    "id": "parchment",
+    "name": "Pergamin",
+    "description": "Jedna karta pergaminu mieści około 250 odręcznie zapisanych słów.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "1 SP"
+  },
+  {
+    "id": "perfume",
+    "name": "Perfumy",
+    "description": "Fiolka perfum ma pojemność 4 uncji. Przez 1 godzinę po użyciu masz ułatwienie w testach Charyzmy (Perswazja) wpływających na Obojętnego humanoida w odległości do 5 stóp.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "5 GP"
+  },
+  {
+    "id": "basic-poison",
+    "name": "Podstawowa trucizna",
+    "description": "Jako akcję dodatkową możesz pokryć nią jedną broń lub do trzech sztuk amunicji. Trafienie zadające obrażenia kłute lub cięte zadaje dodatkowo 1k4 obrażeń od trucizny.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "100 GP"
+  },
+  {
+    "id": "pole",
+    "name": "Drąg",
+    "description": "Drąg ma 10 stóp długości i pozwala dotknąć czegoś w odległości do 10 stóp. Możesz użyć go do akrobatycznego wybicia podczas skoku, uzyskując ułatwienie w odpowiednim teście Siły (Atletyka).",
+    "slot": "backpack",
+    "weight": 7,
+    "cost": "5 CP"
+  },
+  {
+    "id": "iron-pot",
+    "name": "Żelazny garnek",
+    "description": "Żelazny garnek mieści do 1 galona zawartości.",
+    "slot": "backpack",
+    "weight": 10,
+    "cost": "2 GP"
+  },
+  {
+    "id": "potion-of-healing",
+    "name": "Mikstura leczenia",
+    "description": "To magiczny przedmiot. Jako akcję dodatkową możesz ją wypić lub podać stworzeniu w odległości do 5 stóp. Pijące stworzenie odzyskuje 2k4 + 2 punkty wytrzymałości.",
+    "slot": "backpack",
+    "weight": 0.5,
+    "cost": "50 GP"
+  },
+  {
+    "id": "pouch",
+    "name": "Sakiewka",
+    "description": "Sakiewka mieści do 6 funtów zawartości w jednej piątej stopy sześciennej.",
+    "slot": "backpack",
+    "weight": 1,
+    "cost": "5 SP"
+  },
+  {
+    "id": "priests-pack",
+    "name": "Plecak kapłana",
+    "description": "Zawiera plecak, koc, wodę święconą, lampę, racje na 7 dni, szatę oraz hubkę i krzesiwo.",
+    "slot": "backpack",
+    "weight": 29,
+    "cost": "33 GP"
+  },
+  {
+    "id": "quiver",
+    "name": "Kołczan",
+    "description": "Kołczan mieści do 20 strzał.",
+    "slot": "backpack",
+    "weight": 1,
+    "cost": "1 GP"
+  },
+  {
+    "id": "portable-ram",
+    "name": "Przenośny taran",
+    "description": "Możesz użyć go do wyważania drzwi, zyskując premię +4 do testu Siły. Inna postać może pomagać, dając ci ułatwienie w tym teście.",
+    "slot": "backpack",
+    "weight": 35,
+    "cost": "4 GP"
+  },
+  {
+    "id": "rations",
+    "name": "Racje żywnościowe",
+    "description": "Racje to gotowe do podróży jedzenie, w tym suszone mięso, suszone owoce, suchary i orzechy.",
+    "slot": "backpack",
+    "weight": 2,
+    "cost": "5 SP"
+  },
+  {
+    "id": "robe",
+    "name": "Szata",
+    "description": "Szata ma znaczenie zawodowe lub ceremonialne. Niektóre wydarzenia i miejsca wymagają szaty z określonymi kolorami lub symbolami.",
+    "slot": "backpack",
+    "weight": 4,
+    "cost": "1 GP"
+  },
+  {
+    "id": "rope",
+    "name": "Lina",
+    "description": "Jako akcję Użycie możesz zawiązać węzeł testem Zręczności (Zręczne dłonie) ST 10. Linę można rozerwać testem Siły (Atletyka) ST 20. Można nią związać Chwycone, Obezwładnione lub Unieruchomione stworzenie.",
+    "slot": "backpack",
+    "weight": 5,
+    "cost": "1 GP"
+  },
+  {
+    "id": "sack",
+    "name": "Worek",
+    "description": "Worek mieści do 30 funtów zawartości w jednej stopie sześciennej.",
+    "slot": "backpack",
+    "weight": 0.5,
+    "cost": "1 CP"
+  },
+  {
+    "id": "scholars-pack",
+    "name": "Plecak uczonego",
+    "description": "Zawiera plecak, księgę, atrament, pióro, lampę, 10 flakonów oliwy, 10 arkuszy pergaminu oraz hubkę i krzesiwo.",
+    "slot": "backpack",
+    "weight": 22,
+    "cost": "40 GP"
+  },
+  {
+    "id": "shovel",
+    "name": "Łopata",
+    "description": "Pracując przez 1 godzinę, możesz wykopać otwór o bokach długości 5 stóp w ziemi lub podobnym materiale.",
+    "slot": "backpack",
+    "weight": 5,
+    "cost": "2 GP"
+  },
+  {
+    "id": "signal-whistle",
+    "name": "Gwizdek sygnałowy",
+    "description": "Użyty jako akcja Użycie wydaje dźwięk słyszalny z odległości do 600 stóp.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "5 CP"
+  },
+  {
+    "id": "spell-scroll-cantrip",
+    "name": "Zwój czaru (sztuczka)",
+    "description": "Magiczny zwój zawierający sztuczkę ustaloną przez twórcę. Jeśli czar znajduje się na liście twojej klasy, możesz go odczytać i rzucić bez komponentów materialnych. Po rzuceniu zwój rozpada się.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "30 GP"
+  },
+  {
+    "id": "spell-scroll-level-1",
+    "name": "Zwój czaru (poziom 1)",
+    "description": "Magiczny zwój zawierający czar 1. poziomu ustalony przez twórcę. Jeśli czar znajduje się na liście twojej klasy, możesz go odczytać i rzucić bez komponentów materialnych. Po rzuceniu zwój rozpada się.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "50 GP"
+  },
+  {
+    "id": "iron-spikes",
+    "name": "Żelazne haki",
+    "description": "Dziesięć żelaznych haków. Jako akcję Użycie możesz wbić hak tępym narzędziem w drewno, ziemię lub podobny materiał, aby zablokować drzwi albo przywiązać do niego linę lub łańcuch.",
+    "slot": "backpack",
+    "weight": 5,
+    "cost": "1 GP"
+  },
+  {
+    "id": "spyglass",
+    "name": "Luneta",
+    "description": "Obiekty oglądane przez lunetę wydają się dwa razy większe.",
+    "slot": "backpack",
+    "weight": 1,
+    "cost": "1,000 GP"
+  },
+  {
+    "id": "string",
+    "name": "Sznurek",
+    "description": "Sznurek ma 10 stóp długości. Jako akcję Użycie możesz zawiązać na nim węzeł.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "1 SP"
+  },
+  {
+    "id": "tent",
+    "name": "Namiot",
+    "description": "Namiot zapewnia miejsce do spania maksymalnie dwóm istotom Małym lub Średnim.",
+    "slot": "backpack",
+    "weight": 20,
+    "cost": "2 GP"
+  },
+  {
+    "id": "tinderbox",
+    "name": "Hubka i krzesiwo",
+    "description": "Mały pojemnik z krzemieniem, stalą i hubką służący do rozpalania ognia. Rozpalanie świecy, lampy, latarni, pochodni lub innego odsłoniętego paliwa jest akcją dodatkową; rozpalanie innego ognia trwa 1 minutę.",
+    "slot": "backpack",
+    "weight": 1,
+    "cost": "5 SP"
+  },
+  {
+    "id": "torch",
+    "name": "Pochodnia",
+    "description": "Pochodnia pali się przez 1 godzinę, roztaczając jasne światło w promieniu 20 stóp i przyćmione światło na kolejnych 20 stóp. Możesz zaatakować nią jako prostą bronią wręcz; przy trafieniu zadaje 1 obrażenie od ognia.",
+    "slot": "backpack",
+    "weight": 1,
+    "cost": "1 CP"
+  },
+  {
+    "id": "vial",
+    "name": "Fiolka",
+    "description": "Fiolka mieści do 4 uncji płynu.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "1 GP"
+  },
+  {
+    "id": "warm-fungal-clothing",
+    "name": "Ciepłe ubrania grzybowe",
+    "description": "Podczas noszenia automatycznie zdajesz rzuty obronne przeciwko efektom ekstremalnego zimna. Wszyty grzyb waży 1 funt i może służyć jako żywność; po zjedzeniu grzyba ubrania stają się zwykłymi ubraniami podróżnymi.",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "15 GP"
+  },
+  {
+    "id": "waterskin",
+    "name": "Bukłak",
+    "description": "Bukłak mieści do 4 pint płynu. Podana waga dotyczy pełnego bukłaka; brak odpowiedniej ilości wody grozi odwodnieniem.",
+    "slot": "backpack",
+    "weight": 5,
+    "cost": "2 SP"
+  },
+  {
+    "id": "winter-camouflage",
+    "name": "Zimowy kamuflaż",
+    "description": "Podczas noszenia w odpowiednim środowisku masz ułatwienie w testach Zręczności (Skradanie się).",
+    "slot": "backpack",
+    "weight": null,
+    "cost": "50 GP"
+  }
+]

@@ -69,12 +69,12 @@ export function handleGames(db, user, path, method, body, send) {
       if (!Number.isSafeInteger(characterId) || characterId < 1 || hasItem === hasArmor || !Number.isInteger(quantity) || quantity < 1 || quantity > 9999) return reply(400, { error: 'Wybierz bohatera, przedmiot z katalogu i liczbę sztuk 1–9999.' });
       if (!db.prepare("SELECT id FROM game_members WHERE game_id = ? AND character_id = ? AND status = 'accepted'").get(game.id, characterId)) return reply(404, { error: 'Bohater nie uczestniczy w tej grze.' });
       // Copy catalog data into the backpack; future catalog changes do not change awarded items.
-      const result = db.prepare(`INSERT INTO character_items (character_id, name, description, quantity, slot, equipped, armor_id)
-        SELECT ?, a.name, '', ?, CASE WHEN a.category = 'shield' THEN 'off-hand' ELSE 'armor' END, 0, a.id FROM armor_catalog a
+      const result = db.prepare(`INSERT INTO character_items (character_id, name, description, quantity, slot, equipped, armor_id, weight, cost)
+        SELECT ?, a.name, '', ?, CASE WHEN a.category = 'shield' THEN 'off-hand' ELSE 'armor' END, 0, a.id, a.weight, a.cost FROM armor_catalog a
         WHERE ? IS NOT NULL AND a.id = ? AND EXISTS (SELECT 1 FROM game_members m JOIN games g ON g.id = m.game_id
           WHERE m.game_id = ? AND g.gm_id = ? AND m.character_id = ? AND m.status = 'accepted')
         UNION ALL
-        SELECT ?, i.name, i.description, ?, i.slot, 0, i.armor_id FROM item_catalog i
+        SELECT ?, i.name, i.description, ?, i.slot, 0, i.armor_id, i.weight, i.cost FROM item_catalog i
         WHERE i.id = ? AND EXISTS (SELECT 1 FROM game_members m JOIN games g ON g.id = m.game_id
           WHERE m.game_id = ? AND g.gm_id = ? AND m.character_id = ? AND m.status = 'accepted')`).run(
         characterId, quantity, armorId ?? null, armorId ?? '', game.id, user.id, characterId,

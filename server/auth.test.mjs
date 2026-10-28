@@ -156,7 +156,7 @@ test('legacy role migration preserves users, sessions, characters and inventory'
     db.prepare("INSERT INTO item_catalog (name, description, slot) VALUES ('Helmet', 'Catalog entry', 'head')").run();
     db.close(); db = openDatabase(path);
     assert.equal(db.prepare('SELECT COUNT(*) AS n FROM character_items').get().n, 1);
-    assert.equal(db.prepare('SELECT name FROM item_catalog').get().name, 'Helmet');
+    assert.equal(db.prepare("SELECT name FROM item_catalog WHERE name = 'Helmet'").get().name, 'Helmet');
     assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
   } finally { db.close(); rmSync(directory, { recursive: true, force: true }); }
 });
@@ -197,7 +197,7 @@ test('GM games require owner consent and isolate character access', async () => 
     const characterId = db.prepare('SELECT id FROM characters').get().id;
     assert.equal((await request('/items')).status, 401);
     assert.equal((await request('/items', undefined, alice)).status, 403);
-    assert.deepEqual((await (await request('/items', undefined, gm)).json()).items, []);
+    assert.ok((await (await request('/items', undefined, gm)).json()).items.some(item => item.name === 'Kwas'));
     const catalogBody = { name: '  Helmet  ', description: 'Sturdy helmet', slot: 'head' };
     assert.equal((await request('/items', catalogBody, gm)).status, 403);
     assert.equal((await request('/items', catalogBody, alice)).status, 403);
@@ -208,7 +208,7 @@ test('GM games require owner consent and isolate character access', async () => 
     assert.equal(catalogResponse.status, 201);
     const catalogId = (await catalogResponse.json()).id;
     const catalog = (await (await request('/items', undefined, gm)).json()).items;
-    assert.equal(catalog[0].name, 'Helmet');
+    assert.equal(catalog.find(item => item.id === catalogId).name, 'Helmet');
     const award = { characterId, itemId: catalogId, quantity: 2 };
     assert.equal((await request(`${base}/equipment`, award, gm)).status, 404);
     db.prepare("INSERT INTO character_items (character_id, name, description, quantity, slot) VALUES (?, 'Secret item', 'Hidden', 1, 'backpack')").run(characterId);
