@@ -55,6 +55,29 @@ export function initializeDatabase(db) {
     status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'accepted', 'declined')),
     UNIQUE(game_id, character_id)
   );`);
+  db.exec(`CREATE TABLE IF NOT EXISTS game_monsters (
+    game_id INTEGER PRIMARY KEY REFERENCES games(id) ON DELETE CASCADE,
+    data TEXT NOT NULL CHECK(json_valid(data))
+  );
+  CREATE TABLE IF NOT EXISTS game_monster_entries (
+    game_id INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+    id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    hp INTEGER NOT NULL CHECK(hp BETWEEN 1 AND 9999),
+    ac INTEGER NOT NULL CHECK(ac BETWEEN 0 AND 9999),
+    speed INTEGER NOT NULL CHECK(speed BETWEEN 0 AND 9999),
+    notes TEXT NOT NULL,
+    saves TEXT NOT NULL CHECK(json_valid(saves)),
+    PRIMARY KEY (game_id, id)
+  );`);
+  db.exec(`CREATE TABLE IF NOT EXISTS session_battles (
+    session_id INTEGER PRIMARY KEY REFERENCES game_sessions(id) ON DELETE CASCADE,
+    data TEXT NOT NULL CHECK(json_valid(data))
+  );`);
+  db.exec(`CREATE TABLE IF NOT EXISTS character_spell_resources (
+    character_id INTEGER PRIMARY KEY REFERENCES characters(id) ON DELETE CASCADE,
+    data TEXT NOT NULL CHECK(json_valid(data))
+  );`);
   // Keep the earliest membership if an older database allowed multiple games.
   db.exec(`CREATE TABLE IF NOT EXISTS game_sessions (
     id INTEGER PRIMARY KEY, game_id INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE,

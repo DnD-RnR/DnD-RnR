@@ -7,6 +7,23 @@ Jedynym trwałym źródłem danych aplikacji jest Cloud Firestore w projekcie
 ekwipunek, gry i sesje znajdują się w kolekcjach pod `dnd_rnr/main`.
 Dotychczasowe loginy i hasła pozostają ważne; nie używamy Firebase Authentication.
 
+Każdy potwór jest osobnym dokumentem w kolekcji
+`dnd_rnr/main/game_monster_entries/{gameId}~{monsterId}`. Dokument zawiera `game_id`,
+`id`, `name`, `hp`, `ac`, `speed`, `notes` i `saves` (rzuty obronne jako JSON).
+Edycja potwora aktualizuje tylko jego dokument. Dokument
+`dnd_rnr/main/game_monsters/{gameId}` oznacza zainicjalizowany katalog; pole `data`
+po migracji zawiera pustą listę. Dawne katalogi z listą potworów w jednym dokumencie
+są automatycznie rozdzielane przy pierwszym odczycie w transakcji Firestore.
+Serwer udostępnia katalog wyłącznie GM prowadzącemu daną grę
+przez `/api/games/{gameId}/monsters`. Dodawanie, edycja i usuwanie są zatwierdzane
+dopiero po zapisie transakcji Firestore. Nowa gra ma pusty katalog potworów.
+Pięć potworów testowych dodano wyłącznie do pierwotnej gry testowej;
+nie są automatycznie kopiowane do nowych gier.
+Istniejący katalog z `localStorage` tej gry jest automatycznie importowany po
+otwarciu podstrony potworów lub przygotowania walki, a lokalna kopia pozostaje
+jako kopia zapasowa. Nie trzeba ponownie uruchamiać migracji całej bazy;
+nowa kolekcja powstaje przy pierwszym zapisie przez zaktualizowane API.
+
 Przed uruchomieniem API skopiuj `.env.example` do `.env` i ustaw
 `GOOGLE_APPLICATION_CREDENTIALS` na pełną ścieżkę do pliku konta serwisowego
 poza repozytorium. Klucz jest używany wyłącznie przez serwer Node.js.
@@ -32,6 +49,76 @@ Firestore i porównuje każdy rekord po migracji. Limit migracji wynosi 450 reko
 Po zweryfikowanej migracji lokalny plik można odłożyć do `data/backups/`;
 kopie zapasowe nie są używane przez aplikację. Testy używają izolowanych baz
 tymczasowych i nie łączą się z produkcyjnym Firestore.
+
+## Wspólna walka GM i graczy
+
+GM przygotowuje przeciwników, uczestników i końcowe wyniki inicjatywy przyciskiem
+**Rozpocznij walkę**. Po zatwierdzeniu serwer zapisuje walkę w
+`dnd_rnr/main/session_battles/{sessionId}`. Stan obejmuje kolejność tur, rundę,
+wykorzystane działania, rozpoczęte rzuty, PW uczestników oraz ostatnie 100 wpisów
+dziennika. Ekrany graczy i GM odczytują ten sam stan co 2 sekundy. Kolekcja
+powstaje przy pierwszym rozpoczęciu walki; samo wdrożenie nie rozpoczyna bitwy.
+
+Właściciel aktualnie działającej postaci wybiera ruch, akcję, akcję bonusową lub
+reakcję. Może pomijać działania i zakończyć turę. GM obsługuje potwory oraz może
+przesunąć turę lub zakończyć bitwę. Reakcje poza własną turą trafiają do GM.
+Serwer sprawdza aktualne uczestnictwo i właściciela postaci, limity działań oraz
+wersję walki. Nieaktualne lub powtórzone żądanie jest odrzucane.
+
+Atak bronią korzysta z wyposażenia i statystyk odczytanych przez serwer przy
+rozpoczęciu walki. Gracz podaje surowy k20; aplikacja dodaje premię i porównuje
+wynik z KP. Naturalne 1 oznacza pudło, a naturalne 20 trafienie krytyczne.
+Po trafieniu gracz podaje każdą kość obrażeń (podwojoną liczbę kości przy krytyku);
+premia nie jest podwajana. Wynik odejmuje tymczasowe PW, a następnie PW celu.
+Zmiana PW, rzutów przeciw śmierci i stanu walki trafia do jednej transakcji
+Firestore. Szablony potworów w katalogu pozostają bez zmian.
+
+Zautomatyzowano podstawowy Zryw, Unik, ruch, atak dodatkową lekką bronią oraz
+podstawowe Extra Attack wojownika, barbarzyńcy, mnicha, paladyna i łowcy.
+Ułatwienie i utrudnienie znoszą się; Unik, ciężka broń oraz brak wyszkolenia
+w pancerzu mogą wymusić utrudnienie. Rzuty przeciw śmierci obsługują naturalne
+1 i 20, stabilizację oraz porażki po otrzymaniu obrażeń przy zerowych PW.
+
+### Czary w walce i zasoby magiczne
+
+**Rzuć czar** pokazuje czary przygotowane i automatycznie przyznane przez klasę
+lub podklasę, odpowiednie dla bieżącej akcji, akcji dodatkowej lub reakcji.
+Sama obecność czaru w księdze czarodzieja nie pozwala go rzucić bez przygotowania.
+Zasoby są zapisywane osobno dla postaci w
+`dnd_rnr/main/character_spell_resources/{characterId}`: wykorzystane miejsca
+każdego kręgu, Pact Magic, Mystic Arcanum i koncentracja. Zmiana walki, sesji
+lub urządzenia nie odnawia miejsc. Wszystkie zużycia i stan walki są zatwierdzane
+w tej samej transakcji Firestore. Nowe liczniki zaczynają od pełnych zasobów,
+ponieważ poprzednia wersja nie rejestrowała ich zużycia.
+
+Silnik stosuje limit jednego miejsca na czar na turę (D&D 2024), sztuczki bez
+miejsc, rzucanie z wyższego kręgu i skalowanie sztuczek poziomem postaci.
+Mechaniki automatycznych czarów są jawnie zdefiniowane w
+`shared/combat-spells.mjs`: ataki czarami, osobne rzuty obronne celów, wspólny
+rzut obrażeń obszarowych, połowa obrażeń za udany rzut i leczenie ograniczone
+maksymalnymi PW. Krytyk podwaja kości tylko przy rzucie na atak, nigdy przy
+rzutach obronnych. GM zatwierdza odporności/niewrażliwości/podatności; gracz
+nie otrzymuje ich liczbowych parametrów. Dodatkowe efekty Vicious Mockery,
+Dissonant Whispers i Shield są obsługiwane; położenie i trasy ruchu ustala GM.
+Koncentracja wymaga osobnego rzutu CON po każdym źródle obrażeń i kończy się
+po utracie przytomności lub rozpoczęciu nowej koncentracji. Reakcję można
+zachować, pomijając jej krok we własnej turze, i wykorzystać później, np. Shield
+przed zastosowaniem obrażeń trafienia.
+
+Na ekranie sesji GM zatwierdza ukończony odpoczynek w sekcji **Odnowienie magii
+po odpoczynku**. Długi odpoczynek odnawia zwykłe miejsca, Pact Magic i Mystic
+Arcanum; krótki tylko Pact Magic. GM potwierdza wymagany upływ czasu i warunki
+odpoczynku w świecie gry; czas rzeczywisty komputera nie jest czasem gry.
+To odnowienie zasobów magicznych, nie pełna obsługa odpoczynku i kości wytrzymałości.
+
+Pełny katalog ma 391 czarów. Czary bez jawnej definicji automatycznej nadal
+można wybrać i opłacić właściwym zasobem, ale efekty rozstrzyga GM; interfejs
+oznacza je przed rzuceniem. GM weryfikuje też zasięg, widoczność, komponenty,
+wyzwalacze reakcji i wyjątki cech klasowych. Magia gatunkowa, atuty i przedmioty,
+darmowe użycia Wizard Spell Mastery/Signature Spells oraz odzyskiwanie miejsc
+przez Arcane Recovery nie mają jeszcze osobnych automatycznych zasobów.
+Nie jest to pełny silnik wszystkich wyjątków D&D.
+Założenia: D&D Basic Rules 2024, „Spells” i „Playing the Game”.
 
 ## Usuwanie ekwipunku przez GM
 

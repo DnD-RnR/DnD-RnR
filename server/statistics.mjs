@@ -71,6 +71,15 @@ export function handleStatistics(db, user, path, method, body, send) {
   } else if (method === 'POST') {
     if (!validStatistics(body)) { send(400, { error: 'Sprawdź statystyki: cechy 1–30, zakresy liczb i długość notatek (do 1500 znaków).' }); return true; }
     const stored = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(characterId);
+    const combats = db.prepare(`SELECT b.data FROM session_battles b JOIN game_sessions s ON s.id = b.session_id
+      JOIN game_members m ON m.game_id = s.game_id WHERE m.character_id = ? AND s.ended_at IS NULL`).all(characterId);
+    const fighting = combats.some(row => { const battle = JSON.parse(row.data); return battle.active && battle.fighters.some(f => f.characterId === characterId); });
+    if (fighting && stored) {
+      const current = JSON.parse(stored.data).values;
+      if (['hp', 'tempHp', 'deathSuccesses', 'deathFailures'].some(key => body.values[key] !== current[key])) {
+        send(409, { error: 'PW i rzuty przeciw śmierci zmieniły się w trwającej walce. Odśwież kartę; te wartości zmieniaj na ekranie walki.' }); return true;
+      }
+    }
     const spells = Object.hasOwn(body, 'spells') ? body.spells : (stored ? JSON.parse(stored.data).spells : null) ?? emptySpellSelection();
     const spellError = validateSpellSelection(character, spells);
     if (spellError) { send(400, { error: spellError }); return true; }

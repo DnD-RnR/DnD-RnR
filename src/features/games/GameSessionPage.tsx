@@ -1,12 +1,15 @@
+import { SpellRestControls } from './SpellRestControls';
+import { BattlePage } from './BattlePage';
+import { MonstersPage } from './MonstersPage';
 import { GameMemberCard, type GameMember as Member } from './GameMemberCard';
 import { GameEditPanel } from './GameEditPanel';
 import { useCallback, useEffect, useState } from 'react';
 import { api, type CatalogItem } from '../../api';
 import { Card } from '../../components/ui/Card';
 
-type Session = { game: { id: number; name: string; description: string }; members: Member[]; activeSession: { id: number; startedAt: number } | null };
+type Session = { game: { id: number; name: string; description: string }; members: Member[]; activeSession: { id: number; startedAt: number } | null; activeBattle: { sessionId: number } | null };
 
-export function GameSessionPage({ gameId }: { gameId: number }) {
+export function GameSessionPage({ gameId, userId }: { gameId: number; userId: number }) {
   const [editing, setEditing] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
@@ -84,6 +87,8 @@ export function GameSessionPage({ gameId }: { gameId: number }) {
   const members = session?.members.filter(m => m.status === 'accepted') ?? [];
   const participants = members.filter(m => m.participating);
   const absent = members.filter(m => !m.participating);
+  if (new URLSearchParams(window.location.search).get('monsters') === '1' && session) return <MonstersPage key={gameId} gameId={gameId} userId={userId} gameName={session.game.name} />;
+  if (new URLSearchParams(window.location.search).get('battle') === '1' && session?.activeSession) return <BattlePage key={session.activeSession.id} gameId={gameId} userId={userId} sessionId={session.activeSession.id} members={session.members} />;
   if (editing) return <GameEditPanel gameId={gameId} onBack={() => { setEditing(false); void refresh(); }} />;
   return <>
     <header className="page-heading"><p className="eyebrow">PANEL GM / GRA</p><div className="gm-game-heading"><h1>{session?.game.name ?? 'Gra'}</h1>{!loading && session && <div className={`gm-session-controls ${session.activeSession ? 'is-active' : 'is-inactive'}`}><span role="status">{session.activeSession ? 'Sesja trwa' : 'Sesja nieaktywna'}</span><button className="primary-button" disabled={pending} onClick={() => void changeSession()}>{session.activeSession ? 'Zako\u0144cz sesj\u0119' : 'Rozpocznij sesj\u0119'}</button></div>}</div><div className="admin-actions"><button className="text-button" disabled={pending || loading} onClick={() => void refresh()}>Odśwież drużynę</button><button className="text-button" disabled={pending || loading || !session} onClick={() => setEditing(true)}>{'Edytuj gr\u0119'}</button></div></header>
@@ -91,7 +96,8 @@ export function GameSessionPage({ gameId }: { gameId: number }) {
     {connectionLost && <p role="status">Ponowne łączenie z aktualizacjami gry… Możesz użyć „Odśwież drużynę”.</p>}
     {message && <p role="status">{message}</p>}
     {loading ? <p role="status">Wczytywanie gry…</p> : session && <>
-      <section aria-labelledby="participants-heading"><h2 id="participants-heading">Postacie w bieżącej sesji ({participants.length})</h2>
+      <div className="battle-toolbar"><a className="primary-button battle-start" href={`?gmGame=${gameId}&monsters=1`}>Potwory</a>{session.activeSession && <a className="primary-button battle-start" href={`?gmGame=${gameId}&battle=1`}>{session.activeBattle ? 'Wr\u00f3\u0107 do walki' : 'Rozpocznij walk\u0119'}</a>}</div>
+      {session.activeSession && !session.activeBattle && <SpellRestControls gameId={gameId} />}<section aria-labelledby="participants-heading"><h2 id="participants-heading">Postacie w bieżącej sesji ({participants.length})</h2>
         <p>Do gry należy {members.length} postaci. Poniżej widać tylko te, które weszły do trwającej sesji. Lista aktualizuje się po zmianach.</p>
         {participants.length ? <div className="session-characters gm-character-row">{participants.map(m => <GameMemberCard key={m.id} member={m} gameId={gameId} catalog={catalog} pending={pending} onAssigned={load} onKick={() => void kick(m)} />)}</div> : <Card title="Drużyna czeka na bohaterów"><p>{session.activeSession ? 'Żadna postać nie weszła jeszcze do bieżącej sesji.' : 'Rozpocznij sesję, aby gracze mogli dołączyć.'}</p></Card>}
       </section>

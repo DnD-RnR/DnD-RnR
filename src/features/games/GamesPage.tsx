@@ -3,7 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { api, type User } from '../../api';
 import { Card } from '../../components/ui/Card';
 
-type Game = { id: number; name: string; description: string; gmName: string };
+type Game = { id: number; name: string; description: string; gmName: string; activeBattleSessionId?: number | null };
 type Invitation = { id: number; gameName: string; gmName: string; characterName: string };
 
 export function GamesPage({ user }: { user: User }) {
@@ -36,6 +36,7 @@ export function GamesPage({ user }: { user: User }) {
     url.search = '';
     url.hash = '';
     url.searchParams.set('gmGame', String(game.id));
+    if (game.activeBattleSessionId) url.searchParams.set('battle', '1');
     window.location.assign(url.href);
   }
   if (editingGameId !== null && user.role === 'gm') return <GameEditPanel key={editingGameId} gameId={editingGameId} onBack={() => { setEditingGameId(null); void load().catch(e => setError(e.message)); }} />;
@@ -47,7 +48,7 @@ export function GamesPage({ user }: { user: User }) {
     {loading ? <p role="status">Wczytywanie gier…</p> : <>
       {user.role === 'gm' && <Card title="Nowa gra"><form className="stack-form" onSubmit={create}><fieldset disabled={pending}><label>Nazwa gry<input name="name" required maxLength={80} /></label><label>Opis<textarea name="description" maxLength={2000} rows={3} /></label><button className="primary-button">Utwórz grę</button></fieldset></form></Card>}
       {!!invitations.length && <section className="player-list"><h2>Zaproszenia</h2><ul>{invitations.map(i => <li key={i.id}><strong>{i.gameName}</strong><p>GM: {i.gmName} · Bohater: {i.characterName}</p><p>Akceptacja udostępni GM dane tej postaci i jej ekwipunek.</p><div className="admin-actions"><button className="primary-button" disabled={pending} onClick={() => void act(async () => { await api(`/invitations/${i.id}/accept`, {}); await load(); }, 'Zaproszenie zaakceptowane.')}>Akceptuj</button><button className="text-button" disabled={pending} onClick={() => void act(async () => { await api(`/invitations/${i.id}/decline`, {}); await load(); }, 'Zaproszenie odrzucone.')}>Odrzuć</button></div></li>)}</ul></section>}
-      <section className="player-list"><h2>Gry</h2>{games.length ? <ul>{games.map(g => <li key={g.id}><strong>{g.name}</strong><p>{g.description}</p><p>GM: {g.gmName}</p>{user.role === 'gm' && <div className="admin-actions"><button className="text-button" disabled={pending} onClick={() => openGame(g)}>Otwórz grę</button><button className="text-button" disabled={pending} onClick={() => setEditingGameId(g.id)}>{'Edytuj gr\u0119'}</button></div>}</li>)}</ul> : <p>Nie masz jeszcze żadnej gry.</p>}</section>
+      <section className="player-list"><h2>Gry</h2>{games.length ? <ul>{games.map(g => <li key={g.id}><strong>{g.name}</strong><p>{g.description}</p><p>GM: {g.gmName}</p>{user.role === 'gm' && <div className="admin-actions"><button className="text-button" disabled={pending} onClick={() => openGame(g)}>{g.activeBattleSessionId ? 'Wr\u00f3\u0107 do walki' : 'Otw\u00f3rz gr\u0119'}</button><button className="text-button" disabled={pending} onClick={() => setEditingGameId(g.id)}>{'Edytuj gr\u0119'}</button></div>}</li>)}</ul> : <p>Nie masz jeszcze żadnej gry.</p>}</section>
 
     </>}
   </>;

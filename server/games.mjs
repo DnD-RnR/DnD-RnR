@@ -6,6 +6,11 @@ export function handleGames(db, user, path, method, body, send) {
   if (path === '/api/games' && method === 'GET') {
     const games = db.prepare(`SELECT g.*, u.name AS gmName FROM games g JOIN users u ON u.id = g.gm_id
       WHERE g.gm_id = ? OR EXISTS (SELECT 1 FROM game_members m JOIN characters c ON c.id = m.character_id WHERE m.game_id = g.id AND c.user_id = ? AND m.status = 'accepted') ORDER BY g.id DESC`).all(user.id, user.id);
+    for (const game of games) {
+      const row = db.prepare(`SELECT b.session_id, b.data FROM session_battles b JOIN game_sessions s ON s.id = b.session_id
+        WHERE s.game_id = ? AND s.ended_at IS NULL`).get(game.id);
+      game.activeBattleSessionId = row && JSON.parse(row.data).active ? row.session_id : null;
+    }
     return reply(200, { games });
   }
   if (path === '/api/games' && method === 'POST') {
@@ -103,7 +108,9 @@ export function handleGames(db, user, path, method, body, send) {
         member.statistics = statisticsSummary(member.character, saved ? JSON.parse(saved.data) : null, equipment);
         member.items = db.prepare('SELECT id, name, description, quantity, slot, equipped, armor_id AS armorId FROM character_items WHERE character_id = ? ORDER BY id').all(member.characterId);
       }
-      return reply(200, { game, members, activeSession });
+      const savedBattle = activeSession ? db.prepare('SELECT data FROM session_battles WHERE session_id = ?').get(activeSession.id) : null;
+      const activeBattle = savedBattle && JSON.parse(savedBattle.data).active ? { sessionId: activeSession.id } : null;
+      return reply(200, { game, members, activeSession, activeBattle });
     }
   }
   return reply(404, { error: 'Nie znaleziono zasobu.' });

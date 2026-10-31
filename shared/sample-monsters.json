@@ -1,0 +1,82 @@
+[
+  {
+    "id": "sample-goblin",
+    "name": "Goblin zwiadowca (testowy)",
+    "hp": 12,
+    "ac": 14,
+    "speed": 30,
+    "saves": {
+      "str": -1,
+      "dex": 3,
+      "con": 0,
+      "int": 0,
+      "wis": 1,
+      "cha": -1
+    },
+    "notes": "Przykładowe statystyki do testów.\nKrótki łuk: +4 do ataku, 1k6 + 2 obrażeń kłutych, zasięg 80/320 stóp.\nSztylet: +4 do ataku, 1k4 + 2 obrażeń kłutych."
+  },
+  {
+    "id": "sample-wolf",
+    "name": "Wilk cieni (testowy)",
+    "hp": 18,
+    "ac": 13,
+    "speed": 40,
+    "saves": {
+      "str": 2,
+      "dex": 2,
+      "con": 1,
+      "int": -4,
+      "wis": 2,
+      "cha": -2
+    },
+    "notes": "Przykładowe statystyki do testów.\nUgryzienie: +4 do ataku, 2k4 + 2 obrażeń kłutych.\nOfiara trafienia wykonuje rzut obronny na Siłę ST 12; porażka oznacza powalenie."
+  },
+  {
+    "id": "sample-skeleton",
+    "name": "Szkielet strażnik (testowy)",
+    "hp": 22,
+    "ac": 15,
+    "speed": 30,
+    "saves": {
+      "str": 1,
+      "dex": 2,
+      "con": 2,
+      "int": -2,
+      "wis": 0,
+      "cha": -3
+    },
+    "notes": "Przykładowe statystyki do testów.\nMiecz: +4 do ataku, 1k8 + 2 obrażeń ciętych.\nPodatność: obrażenia obuchowe.\nNiewrażliwość na truciznę i zatrucie."
+  },
+  {
+    "id": "sample-ogre",
+    "name": "Ogr łamacz (testowy)",
+    "hp": 65,
+    "ac": 11,
+    "speed": 40,
+    "saves": {
+      "str": 5,
+      "dex": -1,
+      "con": 4,
+      "int": -3,
+      "wis": 0,
+      "cha": -2
+    },
+    "notes": "Przykładowe statystyki do testów.\nMaczuga: +6 do ataku, 2k8 + 4 obrażeń obuchowych, zasięg 5 stóp.\nRzut głazem: +6 do ataku, 2k6 + 4 obrażeń obuchowych, zasięg 30/120 stóp."
+  },
+  {
+    "id": "sample-spider",
+    "name": "Pająk jaskiniowy (testowy)",
+    "hp": 30,
+    "ac": 14,
+    "speed": 30,
+    "saves": {
+      "str": 1,
+      "dex": 4,
+      "con": 2,
+      "int": -4,
+      "wis": 1,
+      "cha": -3
+    },
+    "notes": "Przykładowe statystyki do testów.\nWspinaczka: 30 stóp.\nUgryzienie: +5 do ataku, 1k8 + 3 obrażeń kłutych oraz 1k6 obrażeń od trucizny.\nSieć: +5 do ataku, zasięg 30/60 stóp; trafiony cel jest unieruchomiony, oswobodzenie wymaga testu Siły ST 13."
+  }
+]

@@ -6,8 +6,8 @@ import { openDatabase, initializeDatabase } from './db.mjs';
 // constraints in RAM; it never opens the former local database in this runtime.
 export const tables = ['users', 'sessions', 'characters', 'games', 'game_members',
   'game_sessions', 'session_participants', 'weapon_catalog', 'armor_catalog',
-  'item_catalog', 'character_items', 'character_statistics'];
-const keys = { sessions: ['token'], session_participants: ['session_id', 'member_id'], character_statistics: ['character_id'] };
+  'item_catalog', 'character_items', 'character_statistics', 'game_monsters', 'game_monster_entries', 'session_battles', 'character_spell_resources'];
+const keys = { character_spell_resources: ['character_id'], session_battles: ['session_id'], game_monster_entries: ['game_id', 'id'], game_monsters: ['game_id'], sessions: ['token'], session_participants: ['session_id', 'member_id'], character_statistics: ['character_id'] };
 export const rowId = (table, row) => (keys[table] || ['id']).map(key => encodeURIComponent(String(row[key]))).join('~');
 const normalized = value => JSON.stringify(value, Object.keys(value).sort());
 export function exportRows(db) {
@@ -70,6 +70,9 @@ export async function openFirestoreDatabase(firestore = connectFirestore()) {
         let nextRevision;
         try {
           const result = await firestore.runTransaction(async transaction => {
+            // A previous attempt can have been aborted by Firestore contention.
+            candidate?.close();
+            candidate = undefined;
             const meta = await transaction.get(root);
             if (!meta.exists || meta.get('schemaVersion') !== 1) throw new Error('Firestore has not been migrated. Run npm run db:migrate first.');
             const version = meta.get('revision');
@@ -90,7 +93,7 @@ export async function openFirestoreDatabase(firestore = connectFirestore()) {
             nextRevision = changes.length ? version + 1 : version;
             if (changes.length) transaction.update(root, { revision: nextRevision });
             return output;
-          }, { maxAttempts: 1 });
+          }, { maxAttempts: 5 });
           current?.close();
           current = candidate;
           revision = nextRevision;

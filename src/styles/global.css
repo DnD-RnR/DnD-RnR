@@ -332,3 +332,14 @@ body:has(.equipment-dialog[open]) { overflow: hidden; }
 @media (max-width: 640px) {
   .character-create-form fieldset { grid-template-columns: 1fr; }
 }
+
+.battle-start { display: inline-block; margin-bottom: 20px; text-decoration: none; }
+.battle-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 20px; }
+.battle-toolbar p { margin: 0; }
+.battle-current > .card { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.battle-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+.battle-turn-steps { display: flex; flex-wrap: wrap; gap: 12px 28px; padding-left: 24px; color: var(--muted); }
+.battle-turn-steps [aria-current="step"] { color: var(--accent); font-weight: 700; }
+.battle-action-choices { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.stack-form .battle-check { display: flex; align-items: center; gap: 12px; }
+.stack-form .battle-check input { width: 22px; min-height: 22px; }

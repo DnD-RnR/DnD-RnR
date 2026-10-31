@@ -1,4 +1,7 @@
 import { handleGames } from './games.mjs';
+import { handleSpellResources } from './spell-resources.mjs';
+import { handleBattles } from './battles.mjs';
+import { handleMonsters } from './monsters.mjs';
 import { createGameEvents } from './game-events.mjs';
 import { handleGameSessions } from './game-sessions.mjs';
 import { handleItems } from './items.mjs';
@@ -37,15 +40,20 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     let respond;
+    let requestBody;
+    let loginAttemptCounted = false;
     // Do not report success (or send cookies) until Firestore commits.
     const send = (status, data) => { respond = () => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(data)); }; };
     const cookie = (value, age) => res.setHeader('Set-Cookie', `session=${value}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${age}${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
     const execute = async () => {
+      respond = undefined;
+      res.removeHeader('Set-Cookie');
       const path = new URL(req.url, 'http://localhost').pathname;
       if (!['GET', 'POST'].includes(req.method)) return send(405, { error: 'Niedozwolona metoda.' });
       if (req.method === 'POST' && !allowedOrigins.has(req.headers.origin)) return send(403, { error: 'Niedozwolone źródło żądania.' });
       let body = {};
-      if (req.method === 'POST') {
+      if (req.method === 'POST' && requestBody !== undefined) body = structuredClone(requestBody);
+      else if (req.method === 'POST') {
         if (!req.headers['content-type']?.startsWith('application/json')) return send(415, { error: 'Wymagany format JSON.' });
         const chunks = [];
         let bodySize = 0;
@@ -58,6 +66,9 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         const raw = Buffer.concat(chunks).toString('utf8');
         try { body = JSON.parse(raw); } catch { return send(400, { error: 'Niepoprawne dane.' }); }
         if (!body || typeof body !== 'object' || Array.isArray(body)) return send(400, { error: 'Niepoprawne dane.' });
+        // The incoming stream can be consumed only once; transaction retries
+        // must validate the same request against the latest committed state.
+        requestBody = structuredClone(body);
       }
       const token = req.headers.cookie?.split(';').map(v => v.trim()).find(v => v.startsWith('session='))?.slice(8) || '';
       const user = db.prepare('SELECT users.* FROM sessions JOIN users ON users.id = sessions.user_id WHERE token = ? AND expires > ?').get(digest(token), Date.now());
@@ -66,8 +77,10 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         const now = Date.now();
         for (const [key, entry] of attempts) if (entry.until <= now) attempts.delete(key);
         const attempt = attempts.get(ip) || { count: 0, until: now + 15 * 60 * 1000 };
-        if (attempt.count >= 10) return send(429, { error: 'Za dużo prób. Spróbuj ponownie za 15 minut.' });
-        attempt.count++; attempts.set(ip, attempt);
+        if (!loginAttemptCounted) {
+          if (attempt.count >= 10) return send(429, { error: 'Za dużo prób. Spróbuj ponownie za 15 minut.' });
+          attempt.count++; attempts.set(ip, attempt); loginAttemptCounted = true;
+        }
         if (typeof body.username !== 'string' || typeof body.password !== 'string' || body.password.length > 128) return send(400, { error: 'Podaj login i hasło.' });
         const found = db.prepare('SELECT * FROM users WHERE username = ?').get(body.username.trim().toLowerCase());
         const valid = await verifyPassword(body.password, found?.password || await dummyHash);
@@ -93,6 +106,9 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         db.prepare('DELETE FROM sessions WHERE token = ?').run(digest(token)); cookie('', 0); return send(200, { ok: true });
       }
       if (handleGameSessions(db, user, path, req.method, body, send)) return;
+      if (handleMonsters(db, user, path, req.method, body, send)) return;
+      if (handleBattles(db, user, path, req.method, body, send)) return;
+      if (handleSpellResources(db, user, path, req.method, body, send)) return;
       if (handleGames(db, user, path, req.method, body, send)) return;
       if (handleItems(db, user, path, req.method, body, send)) return;
       if (handleStatistics(db, user, path, req.method, body, send)) return;

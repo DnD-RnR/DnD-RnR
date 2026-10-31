@@ -1,6 +1,6 @@
 import { GamesPage } from '../features/games/GamesPage';
 import { GameSessionPage } from '../features/games/GameSessionPage';
-import { PlayerSessionPage } from '../features/games/PlayerSessionPage';
+import { PlayerGamePage } from '../features/games/PlayerGamePage';
 import { useEffect, useState } from 'react';
 import { api, type User, type Character } from '../api';
 import { GamePage } from '../features/game/GamePage';
@@ -18,7 +18,14 @@ export function App() {
   });
   const [activePage, setActivePage] = useState<PageId>('characters');
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
-  const [joinedSessionId, setJoinedSessionId] = useState<number | null>(null);
+  const [playerGame] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const session = params.get('playerSession');
+    const character = params.get('character');
+    return session && character && /^[1-9]\d*$/.test(session) && /^[1-9]\d*$/.test(character)
+      && Number.isSafeInteger(Number(session)) && Number.isSafeInteger(Number(character))
+      ? { sessionId: Number(session), characterId: Number(character) } : null;
+  });
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [logoutPending, setLogoutPending] = useState(false);
@@ -38,11 +45,19 @@ export function App() {
   if (loading) return <div className="loading-screen" role="status">Wczytywanie drużyny…</div>;
   if (!user) return <LoginPage onLogin={nextUser => { setUser(nextUser); setActivePage(nextUser.role === 'admin' ? 'admin' : nextUser.role === 'gm' ? 'games' : 'characters'); setError(''); }} />;
 
+  if (playerGame !== null && gameWindowId === null) return <div className="game-window-shell">
+    <header className="game-window-toolbar"><a className="text-button" href={window.location.pathname}>← Moje postacie</a><span>{user.name} · Trwająca gra</span><button className="text-button" onClick={logout} disabled={logoutPending}>Wyloguj się</button></header>
+    <main id="main" tabIndex={-1}>
+      {error && <p role="alert" className="form-error">{error}</p>}
+      <PlayerGamePage key={`${user.id}-${playerGame.characterId}-${playerGame.sessionId}`} characterId={playerGame.characterId} sessionId={playerGame.sessionId} onBack={() => window.location.assign(window.location.pathname)} />
+    </main>
+  </div>;
+
   if (gameWindowId !== null) return <div className="game-window-shell">
     <header className="game-window-toolbar"><a className="text-button" href={window.location.pathname}>← Wróć do gier</a><span>{user.name} · {user.role === 'gm' ? 'GM' : user.role === 'admin' ? 'Administrator' : 'Gracz'}</span><button className="text-button" onClick={logout} disabled={logoutPending}>Wyloguj się</button></header>
     <main id="main" tabIndex={-1}>
       {error && <p role="alert" className="form-error">{error}</p>}
-      {user.role === 'gm' ? <GameSessionPage key={`${user.id}-${gameWindowId}`} gameId={gameWindowId} /> : <p role="alert" className="form-error">Widok gry jest dostępny tylko dla prowadzącego ją GM.</p>}
+      {user.role === 'gm' ? <GameSessionPage key={`${user.id}-${gameWindowId}`} gameId={gameWindowId} userId={user.id} /> : <p role="alert" className="form-error">Widok gry jest dostępny tylko dla prowadzącego ją GM.</p>}
     </main>
   </div>;
 
@@ -52,8 +67,8 @@ export function App() {
       {activePage === 'admin' && user.role === 'admin' && <AdminPage onCreateCharacter={() => setActivePage('create-character')} />}
       {activePage === 'create-character' && <CreateCharacterPage key={user.id} user={user} onBack={() => setActivePage(user.role === 'admin' ? 'admin' : 'characters')} />}
       {activePage === 'games' && <GamesPage key={user.id} user={user} />}
-      {activePage === 'characters' && <CharactersPage onCreate={() => setActivePage('create-character')} onSelect={character => { setJoinedSessionId(null); setSelectedCharacter(character); setActivePage('game'); }} onEnter={(character, sessionId) => { setJoinedSessionId(sessionId); setSelectedCharacter(character); setActivePage('game'); }} />}
-      {activePage === 'game' && selectedCharacter && (joinedSessionId !== null ? <PlayerSessionPage key={`${user.id}-${selectedCharacter.id}-${joinedSessionId}`} character={selectedCharacter} sessionId={joinedSessionId} onBack={() => setActivePage('characters')} /> : <GamePage key={`${user.id}-${selectedCharacter.id}`} character={selectedCharacter} onBack={() => setActivePage('characters')} />)}
+      {activePage === 'characters' && <CharactersPage onCreate={() => setActivePage('create-character')} onSelect={character => { setSelectedCharacter(character); setActivePage('game'); }} onEnter={(character, sessionId) => window.location.assign(`?playerSession=${sessionId}&character=${character.id}`)} />}
+      {activePage === 'game' && selectedCharacter && <GamePage key={`${user.id}-${selectedCharacter.id}`} character={selectedCharacter} onBack={() => setActivePage('characters')} />}
     </AppLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { SpellResources } from './SpellResources';
 import { Card } from '../../components/ui/Card';
 import { useEffect, useMemo, useState } from 'react';
 import { api, type Character, type CharacterStatistics, type InventoryItem } from '../../api';
@@ -139,7 +140,7 @@ export function CombatTab({ character, active: isActive, equippedWeapons }: { ch
         </div>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}
-      <div className="combat-sections">
+      <SpellResources characterId={character.id} /><div className="combat-sections">
         <Card title="Akcja" eyebrow="TURA">
           <ActionList entries={actions} spells={combatSpells.action} weapons={equippedWeapons} character={character} statistics={statistics} />
         </Card>
