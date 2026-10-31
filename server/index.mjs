@@ -10,6 +10,8 @@ import { createServer } from 'node:http';
 import { createHash, randomBytes } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { openDatabase, hashPassword, verifyPassword } from './db.mjs';
+import { weaponMasteryChoicesValid } from '../shared/weapon-mastery.mjs';
+import { emptyStatistics } from './statistics.mjs';
 
 const digest = (value) => createHash('sha256').update(value).digest('hex');
 function characterError(body) {
@@ -25,6 +27,8 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
   const attempts = new Map();
   const gameEvents = createGameEvents(db);
   const dummyHash = hashPassword(randomBytes(32).toString('hex'));
+  const allowedOrigins = new Set([origin]);
+  if (!process.env.APP_ORIGIN && origin === 'http://127.0.0.1:5173') allowedOrigins.add('http://localhost:5173');
   return createServer(async (req, res) => {
     res.once('finish', () => {
       if (req.method === 'POST' && res.statusCode >= 200 && res.statusCode < 300) gameEvents.publish();
@@ -36,7 +40,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
     try {
       const path = new URL(req.url, 'http://localhost').pathname;
       if (!['GET', 'POST'].includes(req.method)) return send(405, { error: 'Niedozwolona metoda.' });
-      if (req.method === 'POST' && req.headers.origin !== origin) return send(403, { error: 'Niedozwolone źródło żądania.' });
+      if (req.method === 'POST' && !allowedOrigins.has(req.headers.origin)) return send(403, { error: 'Niedozwolone źródło żądania.' });
       let body = {};
       if (req.method === 'POST') {
         if (!req.headers['content-type']?.startsWith('application/json')) return send(415, { error: 'Wymagany format JSON.' });
@@ -97,7 +101,12 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         const validationError = characterError(character);
         if (validationError) return send(400, { error: validationError });
         const { name, characterClass, level, species, background, subclass } = character;
+        const weaponMastery = body.weaponMastery ?? [];
+        if (!weaponMasteryChoicesValid({ class: characterClass, level }, weaponMastery)) return send(400, { error: 'Wybierz poprawne bronie do Weapon Mastery.' });
         const result = db.prepare('INSERT INTO characters (user_id, name, class, level, species, background, subclass) VALUES (?, ?, ?, ?, ?, ?, ?)').run(user.id, name.trim(), characterClass, level, species, background, subclass);
+        const stats = emptyStatistics();
+        stats.choices = { weaponMastery };
+        db.prepare('INSERT INTO character_statistics (character_id, data) VALUES (?, ?)').run(Number(result.lastInsertRowid), JSON.stringify(stats));
         return send(201, { id: Number(result.lastInsertRowid) });
       }
       if (path === '/api/characters' && req.method === 'GET') return send(200, { characters: db.prepare(`
@@ -261,6 +270,8 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
             const { userId, name, characterClass, level, species, background, subclass } = body;
             const validationError = characterError(body);
             if (validationError) return send(400, { error: validationError });
+          const weaponMastery = body.weaponMastery ?? [];
+          if (!weaponMasteryChoicesValid({ class: characterClass, level }, weaponMastery)) return send(400, { error: 'Wybierz poprawne bronie do Weapon Mastery.' });
             if (!db.prepare("SELECT id FROM users WHERE id = ? AND role IN ('player', 'gm')").get(userId)) return send(400, { error: 'Nie znaleziono gracza.' });
             db.prepare('DELETE FROM game_members WHERE character_id = ? AND EXISTS (SELECT 1 FROM characters WHERE id = ? AND user_id != ?)').run(id, id, userId);
             db.prepare('UPDATE characters SET user_id = ?, name = ?, class = ?, level = ?, species = ?, background = ?, subclass = ? WHERE id = ?').run(userId, name.trim(), characterClass, level, species, background, subclass, id);
@@ -285,8 +296,13 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
           const { userId, name, characterClass, level, species, background, subclass } = body;
             const validationError = characterError(body);
             if (validationError) return send(400, { error: validationError });
+          const weaponMastery = body.weaponMastery ?? [];
+          if (!weaponMasteryChoicesValid({ class: characterClass, level }, weaponMastery)) return send(400, { error: 'Wybierz poprawne bronie do Weapon Mastery.' });
           if (!db.prepare("SELECT id FROM users WHERE id = ? AND role IN ('player', 'gm')").get(userId)) return send(400, { error: 'Nie znaleziono gracza.' });
-          db.prepare('INSERT INTO characters (user_id, name, class, level, species, background, subclass) VALUES (?, ?, ?, ?, ?, ?, ?)').run(userId, name.trim(), characterClass, level, species, background, subclass);
+          const result = db.prepare('INSERT INTO characters (user_id, name, class, level, species, background, subclass) VALUES (?, ?, ?, ?, ?, ?, ?)').run(userId, name.trim(), characterClass, level, species, background, subclass);
+          const stats = emptyStatistics();
+          stats.choices = { weaponMastery };
+          db.prepare('INSERT INTO character_statistics (character_id, data) VALUES (?, ?)').run(Number(result.lastInsertRowid), JSON.stringify(stats));
           return send(201, { ok: true });
         }
       }

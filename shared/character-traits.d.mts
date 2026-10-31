@@ -6,9 +6,10 @@ export type TraitProfile = {
   savingThrows: string[]; effectiveSavingThrows: string[]; skillSources: Record<string, string>; skillBonuses: Record<string, number | null>;
   languages: { id: string; label: string; standard: boolean }[]; tools: string[]; armor: string[]; weapons: string[]; feats: string[];
   features: { level: number; name: string; url: string; source: string }[];
-  hitDie: number | null; hitDiceTotal: number; baseSpeed: number | null; senses: string[]; defenses: string[];
+  hitDie: number | null; hitDiceTotal: number; size: string | null; baseSpeed: number | null; senses: string[]; defenses: string[];
   resources: { name: string; value: string }[]; hpBonus: number; firstLevelMaxHp: number | null; initiativeBonus: number;
 };
 export function emptyTraitSelection(): TraitSelection;
 export function characterTraits(character: Pick<Character, 'class' | 'subclass' | 'level' | 'species' | 'background'>, statistics: CharacterStatistics): TraitProfile;
 export function validateTraitSelection(character: Pick<Character, 'class' | 'subclass' | 'level' | 'species' | 'background'>, statistics: CharacterStatistics): string | null;
+export function weaponMasteryCount(character: Pick<Character, 'class' | 'level'>): number;

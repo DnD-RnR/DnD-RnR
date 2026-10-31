@@ -4,6 +4,7 @@ import { api, type Character, type CharacterStatistics, type InventoryItem } fro
 import { spellById, spellcastingProfile, type Spell } from '../../../shared/spellcasting.mjs';
 import { weaponDamage } from '../../lib/weapons';
 import { characterTraits } from '../../../shared/character-traits.mjs';
+import { masteryProperties, weaponById } from '../../../shared/weapon-mastery.mjs';
 
 const actions = [
   ['Atak', 'Wykonaj atak bronią lub cios bez użycia broni.'],
@@ -65,6 +66,11 @@ function WeaponList({ weapons, character, statistics }: { weapons: readonly Inve
         {item.weapon?.type === 'dystansowa' && item.weapon.range && <small>Poza normalnym zasięgiem ({item.weapon.range.split('/')[0]} stóp): utrudnienie.</small>}
         {hasProperty(item, 'lekka', 'light') && <small>Atak bonusowy inną lekką bronią nie dodaje modyfikatora cechy (chyba że jest ujemny).</small>}
       </li>;
+    })}
+    {(statistics.choices?.weaponMastery ?? []).filter(id => weapons.some(item => item.weapon?.id === id)).map(id => {
+      const weapon = weaponById(id);
+      if (!weapon) return null;
+      return <li key={`mastery-${id}`}><strong>{weapon.mastery}</strong><span>Weapon Mastery · {weapon.name}</span><small>{masteryProperties[weapon.mastery] ?? 'Właściwość mistrzostwa tej broni.'}</small></li>;
     })}
   </ul>;
 }

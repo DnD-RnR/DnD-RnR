@@ -53,6 +53,17 @@ export function characterTraits(character, stats) {
     group('humanFeat', 'Human — Versatile: atut pochodzenia', 1, namedOptions(options.originFeats.filter(name => name !== bg?.Feat || name === 'Skilled')), 'feat');
   }
   if (species === 'Elf') skillGroup('elfSkill', 'Elf — Keen Senses', 1, ['insight', 'perception', 'survival']);
+  if (species === 'Gnom (Gnome)') {
+    group('gnomeLineage', 'Gnomish Lineage — linia', 1, [
+      { id: 'forest', label: 'Forest Gnome (Leśny gnom)' },
+      { id: 'rock', label: 'Rock Gnome (Skalny gnom)' },
+    ], 'lineage');
+    group('gnomeSpellAbility', 'Gnomish Lineage — cecha czarowania', 1, [
+      { id: 'int', label: 'Inteligencja' },
+      { id: 'wis', label: 'Mądrość' },
+      { id: 'cha', label: 'Charyzma' },
+    ], 'ability');
+  }
   if (cls) {
     const text = cls.core['Skill Proficiencies'];
     const count = Number(text?.match(/Choose\s+(?:any\s+)?(\d+)/i)?.[1]) || 0;
@@ -97,7 +108,25 @@ export function characterTraits(character, stats) {
   }
   const classFeatures = (cls?.features ?? []).filter(feature => feature.level <= level).map(feature => ({ ...feature, source: character.class }));
   const subclassFeatures = (data.subclasses[character.subclass]?.features ?? []).filter(feature => feature.level <= level).map(feature => ({ ...feature, source: character.subclass }));
-  const features = [...new Map([...classFeatures, ...subclassFeatures].map(feature => [`${feature.source}:${feature.name}`, feature])).values()];
+  const lineage = chosen.gnomeLineage?.[0];
+  const spellAbility = chosen.gnomeSpellAbility?.[0];
+  const lineageFeatures = [];
+  if (species === 'Gnom (Gnome)' && lineage === 'forest') {
+    lineageFeatures.push(
+      { level: 1, name: 'Gnomish Lineage — Minor Illusion; Speak with Animals', url: 'https://dnd2024.wikidot.com/species:gnome#Gnomish-Lineage', source: 'Gnom (Gnome)' },
+    );
+  }
+  if (species === 'Gnom (Gnome)' && lineage === 'rock') {
+    lineageFeatures.push(
+      { level: 1, name: 'Gnomish Lineage — Mending; Prestidigitation; clockwork devices', url: 'https://dnd2024.wikidot.com/species:gnome#Gnomish-Lineage', source: 'Gnom (Gnome)' },
+    );
+  }
+  if (species === 'Gnom (Gnome)' && spellAbility) {
+    lineageFeatures.push(
+      { level: 1, name: `Gnomish Lineage — cecha czarowania: ${spellAbility === 'int' ? 'Inteligencja' : spellAbility === 'wis' ? 'Mądrość' : 'Charyzma'}`, url: 'https://dnd2024.wikidot.com/species:gnome#Gnomish-Lineage', source: 'Gnom (Gnome)' },
+    );
+  }
+  const features = [...new Map([...classFeatures, ...subclassFeatures, ...lineageFeatures].map(feature => [`${feature.source}:${feature.name}`, feature])).values()];
   const darkvision = species === 'Krasnolud (Dwarf)' || species === 'Ork (Orc)' ? 120 : ['Aasimar', 'Smokowiec (Dragonborn)', 'Elf', 'Gnom (Gnome)', 'Diabelstwo (Tiefling)'].includes(species) ? 60 : 0;
   const senses = darkvision ? [`Widzenie w ciemności: ${darkvision} stóp (gatunek)`] : [];
   if (classId === 'ranger' && level >= 18) senses.push('Ślepowidzenie: 30 stóp (Feral Senses)');
@@ -117,7 +146,8 @@ export function characterTraits(character, stats) {
     savingThrows: [...new Set(savingThrows)], effectiveSavingThrows: [...new Set([...savingThrows, ...(stats.savingThrows ?? [])])],
     skillSources: sourceLabels, skillBonuses, languages: options.languages.filter(language => languages.has(language.id)),
     tools: [...tools], armor: armor.filter(Boolean), weapons: weapons.filter(Boolean), feats: [...feats], features,
-    hitDie: die, hitDiceTotal: level, baseSpeed: species === 'Goliat (Goliath)' ? 35 : species ? 30 : null,
+    hitDie: die, hitDiceTotal: level, size: species === 'Gnom (Gnome)' ? 'Small' : null,
+    baseSpeed: species === 'Goliat (Goliath)' ? 35 : species ? 30 : null,
     senses, defenses, resources, hpBonus, firstLevelMaxHp: level === 1 && die && con !== null ? Math.max(1, die + con) + hpBonus : null,
     initiativeBonus: feats.has('Alert') ? proficiency : 0,
   };
@@ -133,6 +163,7 @@ export function validateTraitSelection(character, stats) {
     const values = selection[group.id] ?? [];
     if (values.length > group.limit) return `${group.label}: limit wynosi ${group.limit}.`;
     if (values.some(id => !group.options.some(option => option.id === id))) return `${group.label}: wybierz dostępną, niepowtarzającą się pozycję.`;
+    if (stats.requireCompleteTraits && character.species === 'Gnom (Gnome)' && ['gnomeLineage', 'gnomeSpellAbility'].includes(group.id) && values.length !== group.limit) return `${group.label}: wybierz jedną opcję.`;
   }
   return null;
 }

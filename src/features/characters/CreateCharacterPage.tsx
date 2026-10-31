@@ -24,10 +24,12 @@ export function CreateCharacterPage({ user, onBack }: { user: User; onBack: () =
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending) return;
-    const values = Object.fromEntries(new FormData(event.currentTarget));
+    const formData = new FormData(event.currentTarget);
+    const values = Object.fromEntries(formData);
+    const weaponMastery = formData.getAll('weaponMastery').filter(value => value !== '');
     setPending(true); setError('');
     try {
-      await api(isAdmin ? '/admin/characters' : '/characters', { ...values, userId: isAdmin ? Number(values.userId) : user.id, level: user.role === 'player' ? 1 : Number(values.level) });
+      await api(isAdmin ? '/admin/characters' : '/characters', { ...values, weaponMastery, userId: isAdmin ? Number(values.userId) : user.id, level: user.role === 'player' ? 1 : Number(values.level) });
       setCreated(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Nie udało się utworzyć postaci. Spróbuj ponownie.');

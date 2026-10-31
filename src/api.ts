@@ -1,5 +1,5 @@
 export type User = { id: number; username: string; name: string; role: 'admin' | 'player' | 'gm' };
-export type Character = { id: number; name: string; class: string; level: number; species: string; background: string; subclass: string; gameName?: string | null; activeSessionId?: number | null; participating?: number };
+export type Character = { id: number; name: string; class: string; level: number; species: string; background: string; subclass: string; gameName?: string | null; activeSessionId?: number | null; participating?: number; weaponMastery?: string[] };
 export type CharacterSession = { game: { id: number; name: string } | null; activeSession: { id: number; startedAt: number; participating: boolean } | null };
 export type InventoryItem = { id: number; name: string; description: string; quantity: number; slot: string; equipped: number; weight?: number | null; cost?: string; grip: 'one' | 'two' | 'none'; weapon?: Weapon | null; armor?: { id: string; category: 'light' | 'medium' | 'heavy' | 'shield' } | null };
 export type CatalogItem = { id: number; name: string; description: string; slot: string; weight?: number | null; cost?: string; armorId?: string | null; armorCategory?: 'light' | 'medium' | 'heavy' | 'shield' | null };
@@ -28,6 +28,7 @@ export type CharacterStatistics = {
   stealthDisadvantage?: boolean;
   untrainedArmor?: boolean; untrainedShield?: boolean; d20StrengthDexDisadvantage?: boolean; spellcastingBlocked?: boolean;
   notes: Record<string, string>;
+  choices: { weaponMastery: string[] };
 };
 
 export async function api<T>(path: string, body?: unknown): Promise<T> {

@@ -113,6 +113,35 @@ test('origin feats, species and tool selections combine without overwriting note
   assert.equal(group(characterTraits(hero('Bard', 1, 'Artysta (Entertainer)'), emptyStatistics()), 'musician').limit, 3);
 });
 
+test('gnome lineage requires a lineage and spellcasting ability and applies gnome size', () => {
+  const gnome = hero('Bard', 1, 'Mędrzec (Sage)', 'Gnom (Gnome)');
+  const stats = emptyStatistics();
+  let profile = characterTraits(gnome, stats);
+  assert.equal(profile.size, 'Small');
+  assert.equal(profile.baseSpeed, 30);
+  assert.ok(profile.senses.some(sense => sense.includes('60')));
+  assert.ok(profile.defenses.some(defense => defense.includes('Inteligencji')));
+  assert.equal(validateTraitSelection(gnome, stats), null);
+  assert.match(validateTraitSelection(gnome, { ...stats, requireCompleteTraits: true }), /Gnomish Lineage/);
+  assert.equal(group(profile, 'gnomeLineage').limit, 1);
+  assert.equal(group(profile, 'gnomeSpellAbility').limit, 1);
+  stats.traits = { gnomeLineage: ['forest'], gnomeSpellAbility: ['wis'] };
+  assert.equal(validateTraitSelection(gnome, stats), null);
+  profile = characterTraits(gnome, stats);
+  assert.ok(profile.features.some(feature => feature.name.includes('Minor Illusion')));
+  assert.ok(profile.features.some(feature => feature.name.includes('Mądrość')));
+  stats.traits.gnomeLineage = ['rock'];
+  assert.ok(characterTraits(gnome, stats).features.some(feature => feature.name.includes('clockwork devices')));
+});
+
+test('gnome validation allows an incomplete draft but requires both choices for saving', () => {
+  const gnome = hero('Wojownik (Fighter)', 1, 'Żołnierz (Soldier)', 'Gnom (Gnome)');
+  const stats = emptyStatistics();
+  stats.traits = { gnomeLineage: ['rock'] };
+  assert.equal(validateTraitSelection(gnome, stats), null);
+  assert.match(validateTraitSelection(gnome, { ...stats, requireCompleteTraits: true }), /cecha czarowania/);
+});
+
 test('all supported backgrounds and subclass levels have valid trait metadata', () => {
   for (const background of options.backgrounds) {
     const profile = characterTraits(hero('Bard', 1, background), emptyStatistics());
