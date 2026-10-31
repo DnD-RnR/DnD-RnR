@@ -9,7 +9,8 @@ import options from '../shared/character-options.json' with { type: 'json' };
 import { createServer } from 'node:http';
 import { createHash, randomBytes } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { openDatabase, hashPassword, verifyPassword } from './db.mjs';
+import { hashPassword, verifyPassword } from './db.mjs';
+import { openFirestoreDatabase } from './firestore.mjs';
 import { weaponMasteryChoicesValid } from '../shared/weapon-mastery.mjs';
 import { emptyStatistics } from './statistics.mjs';
 
@@ -35,9 +36,11 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
     });
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    const send = (status, data) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(data)); };
+    let respond;
+    // Do not report success (or send cookies) until Firestore commits.
+    const send = (status, data) => { respond = () => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(data)); }; };
     const cookie = (value, age) => res.setHeader('Set-Cookie', `session=${value}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${age}${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`);
-    try {
+    const execute = async () => {
       const path = new URL(req.url, 'http://localhost').pathname;
       if (!['GET', 'POST'].includes(req.method)) return send(405, { error: 'Niedozwolona metoda.' });
       if (req.method === 'POST' && !allowedOrigins.has(req.headers.origin)) return send(403, { error: 'Niedozwolone źródło żądania.' });
@@ -82,7 +85,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
       if (eventsRoute && req.method === 'GET') {
         const gameId = Number(eventsRoute[1]);
         if (user.role !== 'gm' || !db.prepare('SELECT id FROM games WHERE id = ? AND gm_id = ?').get(gameId, user.id)) return send(404, { error: 'Nie znaleziono gry.' });
-        gameEvents.subscribe(req, res, { gameId, userId: user.id, token: digest(token) });
+        respond = () => gameEvents.subscribe(req, res, { gameId, userId: user.id, token: digest(token) });
         return;
       }
       if (path === '/api/me' && req.method === 'GET') return send(200, { user: publicUser(user) });
@@ -307,10 +310,22 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         }
       }
       send(404, { error: 'Nie znaleziono zasobu.' });
-    } catch (error) { console.error(error); if (!res.headersSent) send(500, { error: 'Błąd serwera. Spróbuj ponownie.' }); }
+    };
+    try {
+      if (db.run) await db.run(execute);
+      else await execute();
+      respond?.();
+    } catch (error) {
+      console.error(error);
+      if (!res.headersSent) {
+        res.removeHeader('Set-Cookie');
+        send(db.run ? 503 : 500, { error: 'Błąd serwera. Spróbuj ponownie.' });
+        respond();
+      }
+    }
   });
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const db = openDatabase();
+  const db = await openFirestoreDatabase();
   createApp(db).listen(Number(process.env.PORT || 3001), '127.0.0.1', () => console.log('API: http://127.0.0.1:' + (process.env.PORT || 3001)));
 }

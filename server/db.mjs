@@ -17,9 +17,12 @@ export async function verifyPassword(password, stored) {
   const actual = await hashPassword(password, stored.split(':')[0]);
   return timingSafeEqual(Buffer.from(actual), Buffer.from(stored));
 }
-export function openDatabase(path = process.env.DB_PATH || 'data/dnd.sqlite') {
+export function openDatabase(path = ':memory:') {
   if (path !== ':memory:') mkdirSync(dirname(resolve(path)), { recursive: true });
   const db = new DatabaseSync(path);
+  return initializeDatabase(db);
+}
+export function initializeDatabase(db) {
   db.exec(`PRAGMA foreign_keys = ON;
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY, username TEXT NOT NULL UNIQUE,

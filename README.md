@@ -1,5 +1,38 @@
 # DnD-RnR
 
+## Baza danych: Firestore
+
+Jedynym trwałym źródłem danych aplikacji jest Cloud Firestore w projekcie
+`dnd-rnr-3d8f1`, baza `(default)`. Konta, hashe haseł, postacie, statystyki,
+ekwipunek, gry i sesje znajdują się w kolekcjach pod `dnd_rnr/main`.
+Dotychczasowe loginy i hasła pozostają ważne; nie używamy Firebase Authentication.
+
+Przed uruchomieniem API skopiuj `.env.example` do `.env` i ustaw
+`GOOGLE_APPLICATION_CREDENTIALS` na pełną ścieżkę do pliku konta serwisowego
+poza repozytorium. Klucz jest używany wyłącznie przez serwer Node.js.
+`npm run db:check` sprawdza połączenie i liczby rekordów.
+`npm run db:rules` wdraża reguły blokujące dostęp z przeglądarki; serwer korzysta z IAM.
+
+API nie otwiera `data/dnd.sqlite` i nie przełącza się na lokalną bazę przy awarii
+Firestore. SQLite działa wyłącznie w RAM jako silnik istniejących zapytań
+i ograniczeń relacyjnych. Każde żądanie sprawdza wersję danych w transakcji
+Firestore, a odpowiedź jest wysyłana po zatwierdzeniu zapisu. Konflikt lub brak
+połączenia zwraca 503. Nowe dane z innego procesu są pobierane przy następnym
+żądaniu; strumień GM sprawdza je także co 20 sekund. Zmiany danych należy
+wykonywać przez API, które aktualizuje wspólny numer wersji.
+
+To rozwiązanie dla niewielkiej aplikacji: każdy proces przechowuje w pamięci
+widok wszystkich danych, odświeżany po zmianie wersji. Jedno żądanie może zmienić
+maksymalnie 450 dokumentów. Większa skala wymaga zapytań bezpośrednio do kolekcji.
+
+Jednorazowa migracja ze starej SQLite: zatrzymaj stare API, ustaw `DB_PATH`
+(domyślnie `data/dnd.sqlite`) i wykonaj `npm run db:migrate`.
+Skrypt tworzy kopię w `data/backups/`, odmawia nadpisania innej zawartości
+Firestore i porównuje każdy rekord po migracji. Limit migracji wynosi 450 rekordów.
+Po zweryfikowanej migracji lokalny plik można odłożyć do `data/backups/`;
+kopie zapasowe nie są używane przez aplikację. Testy używają izolowanych baz
+tymczasowych i nie łączą się z produkcyjnym Firestore.
+
 ## Usuwanie ekwipunku przez GM
 
 W panelu gry rozwiń **Postać i ekwipunek**, a przy przedmiocie wybierz
@@ -24,8 +57,8 @@ odświeżenie po powrocie do karty. Połączenie wymaga sesji prowadzącego GM;
 serwer ponownie sprawdza dostęp przy zmianach i sygnałach podtrzymania połączenia.
 Reverse proxy powinno wyłączać buforowanie dla strumienia SSE.
 
-Powiadomienia obejmują zapisy przez ten proces API. Ręczne zmiany SQLite lub
-zapisy przez inny proces wymagają ręcznego odświeżenia. Lista postaci i widok
+Powiadomienia obejmują zapisy przez API. Zmiany z innego procesu API są wykrywane
+także przy podtrzymaniu strumienia. Lista postaci i widok
 gracza nadal sprawdzają stan co 5 sekund.
 
 ## Statystyki drużyny dla GM
@@ -84,8 +117,8 @@ nie przywraca go automatycznie. API sprawdza właściciela postaci, prowadząceg
 przynależność i identyfikator aktywnej sesji, aby stare żądania nie dołączały do
 nowej sesji ani jej nie kończyły.
 
-Stan jest zapisany w SQLite (`game_sessions`, `session_participants`) i przetrwa
-restart API. Migracja dodaje tabele bez zmiany obecnych przypisań postaci.
+Stan jest zapisany w Firestore (`game_sessions`, `session_participants`) i przetrwa
+restart API. Migracja zachowuje obecne przypisania postaci.
 Lista postaci i widok gracza sprawdzają stan co 5 sekund, a panel GM odbiera powiadomienia o zmianach.
 
 ## Statystyki postaci
@@ -167,8 +200,8 @@ Percepcja i parametry magii są przeliczane z zapisanych danych według
 [zasad 2024](https://www.dndbeyond.com/sources/dnd/br-2024/creating-a-character).
 KP, PW i pozostałe wartości wpisuje się ręcznie; aplikacja nie nalicza automatycznie
 wpływu przedmiotów, stanów, wyczerpania ani warunkowych zdolności klasowych.
-Zapis trafia do `character_statistics` w SQLite. Migracja tworzy tabelę przy
-starcie API, a istniejące postacie otrzymują pustą kartę bez nadpisania danych.
+Zapis trafia do `character_statistics` w Firestore. Brak zapisanej karty oznacza
+pusty formularz bez nadpisania innych danych postaci.
 
 ## Usuwanie postaci z gry
 
@@ -208,8 +241,8 @@ tak samo jak postacie graczy. Nadal obowiązuje jedna gra na postać.
 
 W panelu **Administracja → Katalog przedmiotów** administrator ręcznie dodaje
 nazwę, opis i miejsce noszenia przedmiotu. „Tylko plecak” służy przedmiotom,
-których nie można zakładać. Katalog jest początkowo pusty i jest zapisywany
-w tabeli `item_catalog` w tej samej bazie SQLite co konta i postacie.
+których nie można zakładać. Katalog zawiera wpisy podstawowe i jest zapisywany
+w kolekcji `item_catalog` w tej samej bazie Firestore co konta i postacie.
 
 GM otwiera **Gry → Otwórz grę**, a przy bohaterze wybiera przedmiot z katalogu
 i liczbę sztuk 1–9999 w formularzu **Przydziel ekwipunek**. Przedmiot trafia do
@@ -223,16 +256,11 @@ wybraniu „Odśwież drużynę”. Gracz zobaczy przydział po ponownym otwarci
 Przydział kopiuje nazwę, opis i slot z katalogu; późniejsze zmiany lub usunięcie
 wpisu katalogu bezpośrednio w bazie nie zmieniają już wydanych przedmiotów.
 
-Katalog można też uzupełniać ręcznie przez SQL, po uruchomieniu migracji API:
-
-```sql
-INSERT INTO item_catalog (name, description, slot)
-VALUES ('Lina', 'Lina konopna, 15 metrów.', 'backpack');
-```
+Katalog uzupełniaj przez panel administratora, aby zapis trafił do Firestore
+i zaktualizował wersję danych dla wszystkich procesów API.
 
 Dozwolone sloty: `backpack` oraz identyfikatory z `shared/equipment-slots.json`.
-Zmiana katalogu nie wymaga restartu API. Pierwsze uruchomienie nowej wersji API
-automatycznie tworzy tabelę katalogu bez zmieniania istniejącego ekwipunku.
+Zmiana katalogu przez panel nie wymaga restartu API i nie zmienia istniejącego ekwipunku.
 
 ## Katalog broni
 
@@ -263,16 +291,16 @@ Zaproszenie może mieć stan oczekujący, zaakceptowany lub odrzucony. Dla danej
 pary gra–bohater istnieje jedno zaproszenie. Bohater może uczestniczyć tylko w jednej
 grze na raz. Może otrzymać kilka zaproszeń przed dołączeniem, ale zaakceptowanie
 jednego blokuje akceptację pozostałych. Bohaterowie będący już w grze nie pojawiają
-się na liście do zaproszenia. API i unikalny indeks SQLite wymuszają ten limit.
+się na liście do zaproszenia. API, ograniczenia relacyjne w RAM i transakcja Firestore wymuszają ten limit.
 Jeśli starsza baza zawiera kilka zaakceptowanych udziałów jednej postaci, migracja
 zachowuje najwcześniejszy udział, a pozostałe przywraca do stanu oczekującego.
 Zmiana właściciela postaci przez administratora usuwa jej dotychczasowe
 zaproszenia i udziały w grach, aby nowy właściciel mógł sam wyrazić zgodę.
-Migracja SQLite przy starcie API zachowuje istniejące konta, postacie i sesje.
+Migracja do Firestore zachowuje istniejące konta, postacie i sesje.
 
 Katalog podstawowego wyposażenia znajduje się w `shared/item-catalog.json` i jest
 synchronizowany do tabeli `item_catalog` przy uruchomieniu API. Wpisy dodane
-ręcznie przez administratora pozostają w lokalnej bazie obok danych z katalogu
+ręcznie przez administratora pozostają w Firestore obok danych z katalogu
 wersjonowanego.
 
 Projekt DnD-RnR.
@@ -299,7 +327,7 @@ npm run server
 Podczas pracy nad aplikacją używaj `npm run server:dev`, aby API automatycznie
 uruchamiało się ponownie po zmianach kodu i wczytywało aktualny zapis postaci.
 Po aktualizacji kodu serwera działającego przez `npm run server` trzeba go ponownie
-uruchomić. Migracje bazy (w tym gatunek i pochodzenie) wykonują się przy starcie API.
+uruchomić. Przy starcie API aktualizowane są katalogi w Firestore.
 
 Otwieraj aplikację przez `http://127.0.0.1:5173` (ten adres jest domyślnym
 `APP_ORIGIN`). Opcjonalnie skopiuj `.env.example` do `.env` i ustaw adres aplikacji.
@@ -322,7 +350,7 @@ Polecenie zapyta o login i imię. Następnie zaloguj się w aplikacji, wybierz
 „Administracja”, utwórz konto gracza i przypisz mu postać. Login i hasło przekaż
 graczowi prywatnie. Gracz po zalogowaniu zobaczy „Moje postacie”.
 
-Konta, przypisania postaci i sesje są zapisywane w `data/dnd.sqlite` (plik poza Git).
+Konta, przypisania postaci i sesje są zapisywane w Firestore (konfiguracja powyżej).
 Hasła są haszowane funkcją scrypt; losowe sesje są przechowywane jako skróty
 i przekazywane przez cookie HttpOnly, SameSite=Strict. Sesja wygasa po 8 godzinach.
 API wymusza uprawnienia administratora i filtruje postacie według zalogowanego
@@ -357,7 +385,7 @@ src/
     characters/            # Moduł postaci
   styles/                  # Style globalne i zmienne motywu
   main.tsx                 # Punkt wejścia
-server/                    # API, SQLite, tworzenie admina i testy uprawnień
+server/                    # API, Firestore, silnik SQL w RAM i testy uprawnień
 ```
 
 Projekt korzysta z React, TypeScript i Vite. Każdy moduł zawiera swój widok;
@@ -372,7 +400,7 @@ Elementy współdzielone trafiają do `components/`.
 - Ciemny motyw ze zmiennymi CSS, obsługa klawiatury i odnośnik do głównej treści.
 
 Nawigacja działa w pamięci aplikacji; odświeżenie wraca do widoku postaci.
-Logowanie, konta graczy i podstawowe przypisania postaci korzystają z API i SQLite.
+Logowanie, konta graczy i podstawowe przypisania postaci korzystają z API i Firestore.
 Kolejne moduły będą dodawane w miarę potrzeb.
 
 ## Zarządzanie kontami i postaciami
@@ -387,7 +415,7 @@ Usuwanie wymaga potwierdzenia w interfejsie. Te operacje są dostępne tylko dla
 
 Administrator wybiera gracza, imię, gatunek (rasę), pochodzenie, klasę i poziom 1–20. Od poziomu 3 wymagana jest podklasa pasująca do klasy. Katalog obejmuje 10 gatunków, 16 pochodzeń i 12 klas z 48 podklasami z Player’s Handbook 2024, według https://dnd2024.wikidot.com/. Angielskie nazwy podklas odpowiadają wiki; polskie etykiety są pomocnicze. Dodatki i opcje homebrew nie są jeszcze uwzględnione.
 
-Wybory są sprawdzane przez API, zapisywane w SQLite i widoczne na karcie gracza. Baza automatycznie otrzymuje nowe kolumny; istniejące postacie zachowują dane, a nowe pola należy uzupełnić przy edycji. Ten etap zapisuje podstawy postaci; nie wylicza jeszcze cech, biegłości, atutów, zaklęć ani wyposażenia.
+Wybory są sprawdzane przez API, zapisywane w Firestore i widoczne na karcie gracza. Istniejące postacie zachowują dane, a nowe pola należy uzupełnić przy edycji.
 
 ## Ekran gry i ekwipunek
 
@@ -397,7 +425,7 @@ Plecak pokazuje przedmioty przypisane do postaci. Gracz może zakładać i zdejm
 przedmioty, usuwać je z plecaka oraz przekazywać innym postaciom. GM przydziela
 nowe przedmioty z katalogu w panelu swojej gry.
 Założenie nowego przedmiotu odkłada poprzedni z tego slotu do plecaka.
-Dane są zapisywane w SQLite, a API pozwala korzystać tylko z ekwipunku własnych
+Dane są zapisywane w Firestore, a API pozwala korzystać tylko z ekwipunku własnych
 postaci. Sloty służą do ewidencji: aplikacja nie wylicza statystyk postaci,
 premii ani ograniczeń używania przedmiotów, takich jak broń dwuręczna czy dostrojenie.
 

@@ -14,7 +14,7 @@ export function createGameEvents(db) {
     const catalog = db.prepare('SELECT id, name, description, slot, weight, cost, armor_id, source_id FROM item_catalog ORDER BY name, id').all();
     return createHash('sha256').update(JSON.stringify({ snapshot, catalog })).digest('hex');
   }
-  function publish() {
+  function publishNow() {
     for (const client of subscribers) {
       if (!authorized(client)) { client.res.end(); continue; }
       const next = fingerprint(client);
@@ -25,15 +25,25 @@ export function createGameEvents(db) {
       }
     }
   }
+  async function publish() {
+    if (!subscribers.size) return;
+    try {
+      if (db.run) await db.run(publishNow);
+      else publishNow();
+    } catch (error) {
+      console.error('Could not refresh game events:', error.message);
+      for (const client of subscribers) client.res.end();
+    }
+  }
   function subscribe(req, res, client) {
     client.res = res;
     client.fingerprint = fingerprint(client);
     res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', 'X-Accel-Buffering': 'no' });
     res.write('retry: 2000\n\n');
     subscribers.add(client);
-    const heartbeat = setInterval(() => {
-      if (!authorized(client)) { res.end(); return; }
-      if (!res.write(': keep-alive\n\n')) res.destroy();
+    const heartbeat = setInterval(async () => {
+      await publish();
+      if (!res.writableEnded && !res.destroyed && !res.write(': keep-alive\n\n')) res.destroy();
     }, 20000);
     heartbeat.unref();
     const cleanup = () => { clearInterval(heartbeat); subscribers.delete(client); };
