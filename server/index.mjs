@@ -256,7 +256,8 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
             return send(200, { ok: true });
           }
           if (kind === 'players') {
-            const { username, name, password } = body;
+            const { name, password } = body;
+            const username = typeof body.username === 'string' ? body.username.toLowerCase() : body.username;
             if (typeof username !== 'string' || !/^[a-z0-9._-]{3,40}$/.test(username) || typeof name !== 'string' || !name.trim() || name.length > 80 || (password !== undefined && (typeof password !== 'string' || (password !== '' && (password.length < 6 || password.length > 128))))) return send(400, { error: 'Podaj poprawny login, imię (do 80 znaków) i opcjonalne hasło (6–128 znaków).' });
             const hashed = password ? await hashPassword(password) : null;
             try {
@@ -285,7 +286,8 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         if (path === '/api/admin/gms' && req.method === 'GET') return send(200, { players: db.prepare("SELECT id, username, name, role FROM users WHERE role = 'gm' ORDER BY id DESC").all() });
         if (path === '/api/admin/players' && req.method === 'GET') return send(200, { players: db.prepare("SELECT id, username, name, role FROM users WHERE role = 'player' ORDER BY id DESC").all() });
         if (path === '/api/admin/players' && req.method === 'POST') {
-          const { username, name, password, role = 'player' } = body;
+          const { name, password, role = 'player' } = body;
+          const username = typeof body.username === 'string' ? body.username.toLowerCase() : body.username;
           if (!['player', 'gm'].includes(role)) return send(400, { error: 'Wybierz konto gracza lub GM.' });
           if (typeof username !== 'string' || !/^[a-z0-9._-]{3,40}$/.test(username) || typeof name !== 'string' || !name.trim() || name.length > 80 || typeof password !== 'string' || password.length < 6 || password.length > 128) return send(400, { error: 'Login: 3–40 znaków a-z, 0-9, . _ -. Imię: 1–80 znaków. Hasło: 6–128 znaków.' });
           if (db.prepare('SELECT id FROM users WHERE username = ?').get(username)) return send(409, { error: 'Ten login jest już zajęty.' });

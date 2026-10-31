@@ -358,9 +358,15 @@ test('admin provisions players; sessions and character ownership are enforced', 
     assert.equal((await request('/login', { username: 'admin', password: 'wrong' })).status, 401);
     const admin = await login('admin');
     assert.equal((await request('/admin/players', { username: 'short', name: 'Short', password: 'abc12' }, admin)).status, 400);
-    for (const username of ['alice', 'bob']) assert.equal((await request('/admin/players', { username, name: username, password }, admin)).status, 201);
-    assert.equal((await request('/admin/players', { username: 'alice', name: 'Duplicate', password }, admin)).status, 409);
+    for (const username of ['Alice', 'bOB']) assert.equal((await request('/admin/players', { username, name: username, password }, admin)).status, 201);
+    assert.equal((await request('/admin/players', { username: 'ALICE', name: 'Duplicate', password }, admin)).status, 409);
     const { players } = await (await request('/admin/players', undefined, admin)).json();
+    assert.deepEqual(players.map(player => player.username).sort(), ['alice', 'bob']);
+    await login('ALIce');
+    const mixedCasePlayer = players.find(player => player.username === 'alice');
+    assert.equal((await request('/admin/players/' + mixedCasePlayer.id + '/update', { username: 'ALIce', name: 'Alice', password: '' }, admin)).status, 200);
+    await login('Alice');
+    assert.equal((await request('/admin/players/' + mixedCasePlayer.id + '/update', { username: 'BOB', name: 'Alice', password: '' }, admin)).status, 409);
     for (const player of players) assert.equal((await request('/admin/characters', { userId: player.id, name: player.username + ' hero', characterClass: 'Czarodziej (Wizard)', level: 1, species: 'Elf', background: 'Mędrzec (Sage)', subclass: '' }, admin)).status, 201);
     const baseCharacter = { userId: players[0].id, name: 'Test', characterClass: 'Bard', level: 3, species: 'Elf', background: 'Mędrzec (Sage)', subclass: 'College of Lore' };
     for (const invalid of [{ species: 'Unknown' }, { background: '' }, { characterClass: 'Mag' }, { subclass: 'Champion' }, { subclass: '' }, { level: 2 }, { level: 21 }]) {

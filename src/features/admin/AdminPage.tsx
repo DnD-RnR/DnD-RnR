@@ -45,7 +45,7 @@ export function AdminPage({ onCreateCharacter }: { onCreateCharacter: () => void
     return <>
       {!player && <label>Typ konta<select name="role"><option value="player">Gracz</option><option value="gm">GM — Gamemaster</option></select></label>}
       <label>Imię gracza<input name="name" required maxLength={80} defaultValue={player?.name} autoComplete="off" /></label>
-      <label>Login<input name="username" required minLength={3} maxLength={40} pattern="[a-z0-9._\-]{3,40}" defaultValue={player?.username} autoCapitalize="none" autoComplete="off" /><small>3–40 znaków: małe litery, cyfry, kropka, _ lub -.</small></label>
+      <label>Login<input name="username" required minLength={3} maxLength={40} pattern="[a-zA-Z0-9._\-]{3,40}" defaultValue={player?.username} autoCapitalize="none" autoComplete="off" /><small>3–40 znaków: małe i duże litery, cyfry, kropka, _ lub -. Wielkość liter nie ma znaczenia.</small></label>
       <label>{player ? 'Nowe hasło (opcjonalnie)' : 'Hasło'}<input name="password" type="password" required={!player} minLength={6} maxLength={128} autoComplete="new-password" /><small>{player ? 'Minimum 6 znaków. Puste pole zachowuje obecne hasło. Zmiana hasła wyloguje gracza.' : 'Minimum 6 znaków.'}</small></label>
     </>;
   }
