@@ -158,7 +158,7 @@ export function CombatTab({ character, active: isActive, equippedWeapons }: { ch
         </Card>
         <Card title="Akcja bonusowa" eyebrow="TURA">
           <ActionList entries={[]} spells={combatSpells.bonus} />
-          {!!bonusWeapons.length && <WeaponList weapons={bonusWeapons} character={character} statistics={statistics} />}
+          {!!bonusWeapons.length && <WeaponList weapons={bonusWeapons} character={character} statistics={statistics} showMastery />}
           {!combatSpells.bonus.length && !bonusWeapons.length && <p className="statistics-help">Brak czarów lub ataków z czasem wykonania „Akcja bonusowa”.</p>}
         </Card>
         <Card title="Reakcja" eyebrow="POZA TURĄ">
