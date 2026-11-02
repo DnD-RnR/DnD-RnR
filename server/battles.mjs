@@ -25,7 +25,7 @@ function characterFighter(db, sessionId, memberId) {
   requireValue(s.hp !== null && s.maxHp !== null && s.ac !== null, `Uzupełnij PW i KP postaci ${c.name} przed walką.`);
   const traits = characterTraits(c, stats);
   const attacks = [];
-  for (const item of db.prepare(`SELECT i.id AS itemId, i.grip, w.* FROM character_items i JOIN weapon_catalog w ON w.id = i.weapon_id WHERE i.character_id = ? AND i.equipped = 1`).all(c.id)) {
+  for (const item of db.prepare(`SELECT i.id AS itemId, i.slot, i.grip, w.* FROM character_items i JOIN weapon_catalog w ON w.id = i.weapon_id WHERE i.character_id = ? AND i.equipped = 1`).all(c.id)) {
     const properties = JSON.parse(item.properties);
     const finesse = properties.some(p => p.startsWith('finezyjna'));
     const strength = s.abilities.str.modifier, dex = s.abilities.dex.modifier;
@@ -38,9 +38,10 @@ function characterFighter(db, sessionId, memberId) {
     });
     const versatile = item.grip === 'two' ? properties.find(p => p.startsWith('wszechstronna'))?.match(/(\d+)d(\d+)/) : null;
     const dice = versatile ?? item.damage.match(/(\d+)d(\d+)/);
+    const offHand = item.slot === 'off-hand';
     attacks.push({ id: String(item.itemId), name: item.name, bonus: mod + (proficient ? s.proficiency : 0), dice: dice ? Number(dice[1]) : 0,
-      sides: dice ? Number(dice[2]) : 0, damageBonus: mod + (dice ? 0 : Number(item.damage) || 0), type: item.damage_type,
-      light: properties.includes('lekka'), disadvantage: Boolean(s.d20StrengthDexDisadvantage || (properties.includes('ciężka') && (stats.values[item.type === 'dystansowa' ? 'dex' : 'str'] ?? 0) < 13)) });
+      sides: dice ? Number(dice[2]) : 0, damageBonus: offHand ? (dice ? 0 : Number(item.damage) || 0) : mod + (dice ? 0 : Number(item.damage) || 0), type: item.damage_type,
+      light: properties.includes('lekka'), offHand, nick: item.mastery === 'Nick', disadvantage: Boolean(s.d20StrengthDexDisadvantage || (properties.includes('ciężka') && (stats.values[item.type === 'dystansowa' ? 'dex' : 'str'] ?? 0) < 13)) });
   }
   if (s.abilities.str.modifier !== null) attacks.push({ id: 'unarmed', name: 'Cios bez broni', bonus: s.abilities.str.modifier + s.proficiency, dice: 0, sides: 0, damageBonus: Math.max(0, 1 + s.abilities.str.modifier), type: 'obuchowe', light: false });
   const baseClass = c.class.split(' ')[0];
@@ -234,13 +235,15 @@ export function handleBattles(db, user, path, method, body, send) {
                 requireValue(attack, 'Wybierz dostępną broń.');
                 if (slot === 'bonus') {
                   requireValue(actor.characterId, 'Atak bonusowy potwora wymaga konkretnej zdolności. Rozstrzygnij ją jako zdolność specjalną GM.');
-                  requireValue(!actor.bonus && attack.light && actor.usedWeapons.some(id => id !== attack.id && actor.attacks.find(a => a.id === id)?.light), 'Brak dostępnego ataku bonusowego inną lekką bronią.');
+                  requireValue(!actor.bonus && attack.offHand && attack.light && actor.usedWeapons.some(id => id !== attack.id && actor.attacks.find(a => a.id === id)?.light), 'Brak dostępnego ataku bonusowego inną lekką bronią.');
                   if (actor.characterId) attack = { ...attack, damageBonus: Math.min(0, attack.damageBonus) };
                   actor.bonus = 'Atak';
                 } else {
                   requireValue(!actor.action || actor.action === 'Atak' && actor.attacksLeft > 0, 'Akcja została wykorzystana.');
                   if (!actor.action) actor.attacksLeft = actor.maxAttacks;
                   actor.action = 'Atak'; actor.attacksLeft--; actor.usedWeapons.push(attack.id);
+                  const nickExtraAvailable = attack.light && actor.attacks.some(a => a.id !== attack.id && a.offHand && a.light && (a.nick || attack.nick));
+                  if (actor.usedWeapons.length === 1 && nickExtraAvailable) actor.attacksLeft++;
                 }
                 const target = b.fighters.find(f => f.id === body.targetId);
                 requireValue(target && target.id !== actor.id && target.deathFailures < 3, 'Wybierz cel ataku.');

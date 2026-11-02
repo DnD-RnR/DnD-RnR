@@ -5,7 +5,7 @@ import { api, type Character, type CharacterStatistics, type InventoryItem } fro
 import { spellById, spellcastingProfile, type Spell } from '../../../shared/spellcasting.mjs';
 import { weaponDamage } from '../../lib/weapons';
 import { characterTraits } from '../../../shared/character-traits.mjs';
-import { masteryProperties, weaponById } from '../../../shared/weapon-mastery.mjs';
+import { masteryProperties } from '../../../shared/weapon-mastery.mjs';
 
 const actions = [
   ['Atak', 'Wykonaj atak bronią lub cios bez użycia broni.'],
@@ -29,8 +29,11 @@ function SpellList({ spells }: { spells: readonly Spell[] }) {
 
 const signed = (value: number) => value >= 0 ? `+${value}` : String(value);
 const hasProperty = (item: InventoryItem, ...names: string[]) => item.weapon?.properties.some(property => names.some(name => property.toLowerCase().startsWith(name))) ?? false;
+const isMeleeWeapon = (item: InventoryItem) => ['wręczna', 'melee'].includes(item.weapon?.type.toLowerCase() ?? '');
+const isLightWeapon = (item: InventoryItem) => hasProperty(item, 'lekka', 'light');
+const isTwoHandedWeapon = (item: InventoryItem) => hasProperty(item, 'dwuręczna', 'two-handed');
 
-function WeaponList({ weapons, character, statistics }: { weapons: readonly InventoryItem[]; character: Character; statistics: CharacterStatistics | null }) {
+function WeaponList({ weapons, character, statistics, showMastery = false }: { weapons: readonly InventoryItem[]; character: Character; statistics: CharacterStatistics | null; showMastery?: boolean }) {
   const [finesseAbilities, setFinesseAbilities] = useState<Record<number, 'str' | 'dex'>>({});
   if (!weapons.length) return <p className="combat-weapon-empty">Brak założonej broni — możesz wykonać cios bez użycia broni.</p>;
   if (!statistics) return <p className="combat-weapon-empty">Wczytywanie statystyk broni…</p>;
@@ -50,9 +53,12 @@ function WeaponList({ weapons, character, statistics }: { weapons: readonly Inve
       const heavyDisadvantage = hasProperty(item, 'ciężka', 'heavy') &&
         ((item.weapon?.type === 'dystansowa' && (statistics.values.dex === null || (statistics.values.dex ?? 0) < 13)) ||
          (item.weapon?.type !== 'dystansowa' && (statistics.values.str === null || (statistics.values.str ?? 0) < 13)));
+      const selectedMasteries = statistics.choices?.weaponMastery ?? [];
+      const masterySelected = showMastery && item.weapon &&
+        selectedMasteries.some(value => value === item.weapon!.id || value === item.weapon!.name);
       return <li key={item.id}>
-        <strong>{item.name}</strong>
-        <span>{weaponDamage(item)} {damageBonus === null ? '' : `${signed(damageBonus)} obrażeń`} {item.weapon?.damageType ? `· ${item.weapon.damageType}` : ''}</span>
+        <strong className={item.slot === 'main-hand' ? 'combat-weapon-main-hand' : 'combat-weapon-off-hand'}>{item.name} <small>{item.slot === 'main-hand' ? 'Główna ręka' : item.slot === 'off-hand' ? 'Druga ręka' : ''}</small></strong>
+        <span>{weaponDamage(item)} {damageBonus === null ? '' : `${item.slot === 'off-hand' ? '+0' : signed(damageBonus)} obrażeń`} {item.weapon?.damageType ? `· ${item.weapon.damageType}` : ''}</span>
         <span>Atak: {attackBonus === null ? 'brak danych' : signed(attackBonus)} · {proficient ? 'biegłość' : 'brak biegłości'}</span>
         <small>{item.grip === 'two' ? 'dwie ręce' : item.grip === 'none' ? 'broń dystansowa' : 'jedna ręka'}</small>
         {finesse && <label className="combat-weapon-choice">Modyfikator finezyjny:
@@ -65,13 +71,11 @@ function WeaponList({ weapons, character, statistics }: { weapons: readonly Inve
         {hasProperty(item, 'zasięg', 'reach') && <small>+5 stóp zasięgu.</small>}
         {hasProperty(item, 'miotana', 'thrown') && <small>Rzut tą bronią używa tego samego modyfikatora co atak wręcz.</small>}
         {item.weapon?.type === 'dystansowa' && item.weapon.range && <small>Poza normalnym zasięgiem ({item.weapon.range.split('/')[0]} stóp): utrudnienie.</small>}
-        {hasProperty(item, 'lekka', 'light') && <small>Atak bonusowy inną lekką bronią nie dodaje modyfikatora cechy (chyba że jest ujemny).</small>}
+        {hasProperty(item, 'lekka', 'light') && <small>Atak drugą lekką bronią nie dodaje modyfikatora cechy.</small>}
+        {item.slot === 'off-hand' && <small>Druga ręka: po ataku główną ręką; obrażenia to tylko kość broni.</small>}
+        {item.slot === 'off-hand' && item.weapon?.mastery === 'Nick' && <small>Nick: ten dodatkowy atak możesz wykonać w ramach Akcji zamiast Akcji bonusowej.</small>}
+        {masterySelected && item.weapon && <div className="combat-weapon-mastery"><strong>{item.weapon.mastery}</strong><span>Weapon Mastery · {item.name}</span><small>{masteryProperties[item.weapon.mastery] ?? 'Właściwość mistrzostwa tej broni.'}</small></div>}
       </li>;
-    })}
-    {(statistics.choices?.weaponMastery ?? []).filter(id => weapons.some(item => item.weapon?.id === id)).map(id => {
-      const weapon = weaponById(id);
-      if (!weapon) return null;
-      return <li key={`mastery-${id}`}><strong>{weapon.mastery}</strong><span>Weapon Mastery · {weapon.name}</span><small>{masteryProperties[weapon.mastery] ?? 'Właściwość mistrzostwa tej broni.'}</small></li>;
     })}
   </ul>;
 }
@@ -86,7 +90,7 @@ function ActionList({ entries, spells, weapons, character, statistics }: { entri
             <details>
               <summary>{name}</summary>
               <p>{description}</p>
-              {name === 'Atak' && weapons && character && statistics !== undefined && <WeaponList weapons={weapons} character={character} statistics={statistics} />}
+              {name === 'Atak' && weapons && character && statistics !== undefined && <WeaponList weapons={weapons} character={character} statistics={statistics} showMastery />}
               {name === 'Magia' && spells && <SpellList spells={spells} />}
             </details>
           </li>
@@ -130,6 +134,14 @@ export function CombatTab({ character, active: isActive, equippedWeapons }: { ch
       return groups;
     }, { action: [], bonus: [], reaction: [] } as Record<'action' | 'bonus' | 'reaction', Spell[]>);
   }, [character, statistics]);
+  const mainHand = equippedWeapons.find(item => item.slot === 'main-hand');
+  const offHand = equippedWeapons.find(item => item.slot === 'off-hand');
+  const dualWield = Boolean(mainHand && offHand && isMeleeWeapon(mainHand) && isMeleeWeapon(offHand) &&
+    isLightWeapon(mainHand) && isLightWeapon(offHand) &&
+    mainHand.grip !== 'two' && offHand.grip !== 'two' &&
+    !isTwoHandedWeapon(mainHand) && !isTwoHandedWeapon(offHand));
+  const actionWeapons = equippedWeapons.filter(item => item.slot !== 'off-hand' || item.weapon?.mastery === 'Nick');
+  const bonusWeapons: InventoryItem[] = dualWield && offHand && offHand.weapon?.mastery !== 'Nick' ? [offHand] : [];
 
   return (
     <div className="combat-tab">
@@ -142,11 +154,12 @@ export function CombatTab({ character, active: isActive, equippedWeapons }: { ch
       {error && <p className="form-error" role="alert">{error}</p>}
       <SpellResources characterId={character.id} /><div className="combat-sections">
         <Card title="Akcja" eyebrow="TURA">
-          <ActionList entries={actions} spells={combatSpells.action} weapons={equippedWeapons} character={character} statistics={statistics} />
+          <ActionList entries={actions} spells={combatSpells.action} weapons={actionWeapons} character={character} statistics={statistics} />
         </Card>
         <Card title="Akcja bonusowa" eyebrow="TURA">
           <ActionList entries={[]} spells={combatSpells.bonus} />
-          {!combatSpells.bonus.length && <p className="statistics-help">Brak czarów z czasem rzucania „Akcja bonusowa”.</p>}
+          {!!bonusWeapons.length && <WeaponList weapons={bonusWeapons} character={character} statistics={statistics} />}
+          {!combatSpells.bonus.length && !bonusWeapons.length && <p className="statistics-help">Brak czarów lub ataków z czasem wykonania „Akcja bonusowa”.</p>}
         </Card>
         <Card title="Reakcja" eyebrow="POZA TURĄ">
           <ActionList entries={[

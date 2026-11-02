@@ -57,6 +57,13 @@ test('weapon catalog is seeded and available to authenticated users', async () =
       body: JSON.stringify({ grip: 'one' }),
     })).status, 200);
     assert.deepEqual({ ...db.prepare('SELECT slot, equipped, grip FROM character_items WHERE id = ?').get(dagger.id) }, { slot: 'main-hand', equipped: 1, grip: 'one' });
+    const offHandId = Number(db.prepare(`INSERT INTO character_items
+      (character_id, name, description, quantity, slot, weapon_id) VALUES (?, 'Sierp', '', 1, 'backpack', 'sickle')`).run(characterId).lastInsertRowid);
+    assert.equal((await fetch(`http://127.0.0.1:${app.address().port}/api${inventoryPath}/${offHandId}/equip`, {
+      method: 'POST', headers: { Cookie: cookie, Origin: 'http://127.0.0.1:5173', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slot: 'off-hand', grip: 'one' }),
+    })).status, 200);
+    assert.deepEqual({ ...db.prepare('SELECT slot, equipped, grip FROM character_items WHERE id = ?').get(offHandId) }, { slot: 'off-hand', equipped: 1, grip: 'one' });
     const bowId = Number(db.prepare(`INSERT INTO character_items
       (character_id, name, description, quantity, slot, weapon_id) VALUES (?, 'Krótki łuk', '', 1, 'backpack', 'shortbow')`).run(characterId).lastInsertRowid);
     assert.equal((await fetch(`http://127.0.0.1:${app.address().port}/api${inventoryPath}/${bowId}/equip`, {

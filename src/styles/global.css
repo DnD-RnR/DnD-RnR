@@ -55,6 +55,12 @@ main { width: 100%; max-width: 1280px; padding: 60px clamp(24px, 5vw, 80px); mar
 .combat-weapon-list li { display: grid; gap: 2px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .combat-weapon-list li:last-child { border-bottom: 0; padding-bottom: 0; }
 .combat-weapon-list strong { color: var(--text); }
+.combat-weapon-list .combat-weapon-main-hand { display: block; padding: 4px 8px; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); font-size: .98rem; }
+.combat-weapon-list .combat-weapon-off-hand { display: block; color: var(--muted); font-size: .86rem; }
+.combat-weapon-list .combat-weapon-main-hand small, .combat-weapon-list .combat-weapon-off-hand small { margin-left: 6px; font-weight: 500; }
+.combat-weapon-mastery { display: grid; gap: 2px; margin-top: 8px; padding: 7px 8px; border-left: 2px solid var(--border); background: color-mix(in srgb, var(--surface) 70%, transparent); }
+.combat-weapon-mastery strong { font-size: .8rem; }
+.combat-weapon-mastery span, .combat-weapon-mastery small { font-size: .74rem; }
 .combat-weapon-list span, .combat-weapon-list small { color: var(--muted); font-size: .78rem; }
 .combat-weapon-choice { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .78rem; }
 .combat-weapon-choice select { min-width: 150px; border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; background: var(--background); color: var(--text); font: inherit; }

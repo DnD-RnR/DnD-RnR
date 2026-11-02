@@ -1,4 +1,4 @@
-export type Attack = { id: string; name: string; bonus: number; dice: number; sides: number; damageBonus: number; type: string; light: boolean; disadvantage?: boolean };
+export type Attack = { id: string; name: string; bonus: number; dice: number; sides: number; damageBonus: number; type: string; light: boolean; offHand?: boolean; nick?: boolean; disadvantage?: boolean };
 export type Combatant = {
   spellcasting?: SpellcastingState; concentration?: string | null; concentrationDC?: number | null; concentrationChecks?: number[]; reactionDeferred?: boolean;
   mockery?: { expiresRound: number } | null;

@@ -42,11 +42,12 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
     finally { setPending(false); }
     return false;
   }
-  function itemAction(item: InventoryItem, action: 'equip' | 'unequip' | 'delete', grip?: 'one' | 'two' | 'none') {
+  function itemAction(item: InventoryItem, action: 'equip' | 'unequip' | 'delete', grip?: 'one' | 'two' | 'none', targetSlot?: string) {
     if (action === 'delete' && !window.confirm(`Usunąć „${item.name}” z ekwipunku?`)) return;
-    if (action === 'equip') setSelectedSlot(item.weapon ? item.weapon.type === 'dystansowa' ? 'belt' : 'main-hand' : item.armor?.category === 'shield' ? 'off-hand' : item.armor ? 'armor' : item.slot);
+    const equipSlot = targetSlot ?? (item.weapon ? item.weapon.type === 'dystansowa' ? 'belt' : 'main-hand' : item.armor?.category === 'shield' ? 'off-hand' : item.armor ? 'armor' : item.slot);
+    if (action === 'equip') setSelectedSlot(equipSlot);
     const requestedGrip = item.weapon?.type === 'dystansowa' ? 'none' : grip ?? 'one';
-    void mutate(`${inventoryPath}/${item.id}/${action}`, action === 'equip' ? { grip: requestedGrip } : {}, action === 'equip' ? 'Przedmiot założony. Poprzedni przedmiot z tego slotu wrócił do plecaka.' : action === 'unequip' ? 'Przedmiot przeniesiony do plecaka.' : 'Przedmiot usunięty.').then(success => { if (success) equipmentDialog.current?.close(); });
+    void mutate(`${inventoryPath}/${item.id}/${action}`, action === 'equip' ? { grip: requestedGrip, slot: item.weapon?.type === 'wręczna' ? equipSlot : undefined } : {}, action === 'equip' ? 'Przedmiot założony. Poprzedni przedmiot z tego slotu wrócił do plecaka.' : action === 'unequip' ? 'Przedmiot przeniesiony do plecaka.' : 'Przedmiot usunięty.').then(success => { if (success) equipmentDialog.current?.close(); });
   }
   function selectSlot(slotId: string) {
     setSelectedSlot(slotId);
@@ -57,7 +58,11 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
   const equipped = items.filter(item => item.equipped);
   const backpack = items.filter(item => !item.equipped);
   const selectedItem = equipped.find(item => item.slot === selectedSlot);
-  const availableItems = backpack.filter(item => item.weapon ? (item.weapon.type === 'dystansowa' ? selectedSlot === 'belt' : selectedSlot === 'main-hand') : item.armor ? (item.armor.category === 'shield' ? selectedSlot === 'off-hand' : selectedSlot === 'armor') : item.slot === selectedSlot);
+  const availableItems = backpack.filter(item => item.weapon
+    ? item.weapon.type === 'dystansowa'
+      ? selectedSlot === 'belt'
+      : (selectedSlot === 'main-hand' || (selectedSlot === 'off-hand' && item.weapon.properties.includes('lekka') && !item.weapon.properties.some(property => property.startsWith('dwuręczna'))))
+    : item.armor ? (item.armor.category === 'shield' ? selectedSlot === 'off-hand' : selectedSlot === 'armor') : item.slot === selectedSlot);
   const slot = slots.find(entry => entry.id === selectedSlot) ?? slots.find(entry => entry.id === 'main-hand')!;
 
   return <>
@@ -93,7 +98,7 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
           {error && <p role="alert" className="form-error">{error}</p>}
           {pending && <p role="status">Zapisywanie wyposażenia…</p>}<p className="eyebrow">WYBRANY SLOT</p><span className="detail-symbol" aria-hidden="true">{slot.symbol}</span><h2 id="selected-slot-heading">{slot.label}</h2>{selectedItem ? <><h2>{selectedItem.name}</h2>{selectedItem.weapon && <p><strong>Obrażenia: {weaponDamage(selectedItem)}</strong> · {selectedItem.grip === 'none' ? 'slot zasięgowy' : selectedItem.grip === 'two' ? 'dwie ręce' : 'jedna ręka'}</p>}<p>{selectedItem.weight == null ? 'Waga: —' : `Waga: ${selectedItem.weight} lb`} · Wartość: {selectedItem.cost || '—'}</p><p>{formatDice(selectedItem.description || 'Brak dodatkowego opisu.')}</p><p>Ilość: {selectedItem.quantity}</p><button className="text-button" disabled={pending} onClick={() => itemAction(selectedItem, 'unequip')}>Zdejmij do plecaka ↓</button></> : <p>Ten slot jest pusty.</p>}
           <div className="slot-picker"><h4>{selectedItem ? 'Zamień na przedmiot z plecaka' : 'Załóż z plecaka'}</h4>
-            {availableItems.length ? <ul className="slot-picker-list">{availableItems.map(item => <li key={item.id}><span className="slot-picker-option"><span className="slot-picker-name">{item.name} <small>×{item.quantity}</small></span>{item.weapon && <span className="slot-picker-description">Obrażenia: {item.weapon.damage} · {item.weapon.properties.join(', ') || 'brak właściwości'}</span>}{item.description && <span className="slot-picker-description">{formatDice(item.description)}</span>}<span className="slot-picker-action">{item.weapon?.properties.some(property => property.startsWith('wszechstronna (')) ? <><button className="text-button" disabled={pending} onClick={() => itemAction(item, 'equip', 'one')}>Jedna ręka</button><button className="text-button" disabled={pending} onClick={() => itemAction(item, 'equip', 'two')}>Dwie ręce</button></> : <button className="text-button" disabled={pending} onClick={() => itemAction(item, 'equip', item.weapon?.type === 'dystansowa' ? 'none' : item.weapon?.properties.some(property => property.startsWith('dwuręczna')) ? 'two' : 'one')}>Załóż →</button>}</span></span></li>)}</ul> : <p>W plecaku nie ma przedmiotów pasujących do tego slotu.</p>}
+            {availableItems.length ? <ul className="slot-picker-list">{availableItems.map(item => <li key={item.id}><span className="slot-picker-option"><span className="slot-picker-name">{item.name} <small>×{item.quantity}</small></span>{item.weapon && <span className="slot-picker-description">Obrażenia: {item.weapon.damage} · {item.weapon.properties.join(', ') || 'brak właściwości'}</span>}{item.description && <span className="slot-picker-description">{formatDice(item.description)}</span>}<span className="slot-picker-action">{selectedSlot === 'main-hand' && item.weapon?.properties.some(property => property.startsWith('wszechstronna (')) ? <><button className="text-button" disabled={pending} onClick={() => itemAction(item, 'equip', 'one', selectedSlot)}>Jedna ręka</button><button className="text-button" disabled={pending} onClick={() => itemAction(item, 'equip', 'two', selectedSlot)}>Dwie ręce</button></> : <button className="text-button" disabled={pending} onClick={() => itemAction(item, 'equip', item.weapon?.type === 'dystansowa' ? 'none' : item.weapon?.properties.some(property => property.startsWith('dwuręczna')) ? 'two' : 'one', selectedSlot)}>Załóż →</button>}</span></span></li>)}</ul> : <p>W plecaku nie ma przedmiotów pasujących do tego slotu.</p>}
           </div>
         </div></dialog>
       </section>

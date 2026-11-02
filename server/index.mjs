@@ -217,15 +217,32 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
             if (isWeapon) {
               const weapon = db.prepare('SELECT type, properties FROM weapon_catalog WHERE id = ?').get(item.weaponId);
               const grip = body.grip === 'two' ? 'two' : 'one';
+              const requestedSlot = body.slot === 'off-hand' ? 'off-hand' : 'main-hand';
               const properties = weapon;
               const weaponProperties = JSON.parse(properties.properties);
               const requiresTwoHands = weaponProperties.some(property => property.startsWith('dwuręczna'));
               const isRanged = weapon.type === 'dystansowa';
+              const lightMelee = !isRanged && weaponProperties.includes('lekka') && !requiresTwoHands;
+              if (requestedSlot === 'off-hand' && !lightMelee) return send(400, { error: 'W drugiej ręce można trzymać tylko lekką broń wręcz, która nie jest dwuręczna.' });
               if (!isRanged && requiresTwoHands && grip !== 'two') return send(400, { error: 'Ta broń wymaga dwóch rąk.' });
               if (!isRanged && grip === 'two' && !requiresTwoHands && !weaponProperties.some(property => property.startsWith('wszechstronna'))) return send(400, { error: 'Ta broń nie może być trzymana w dwóch rękach.' });
+              if (requestedSlot === 'off-hand') {
+                const mainHand = db.prepare(`SELECT w.properties, w.type, i.grip FROM character_items i JOIN weapon_catalog w ON w.id = i.weapon_id
+                  WHERE i.character_id = ? AND i.slot = 'main-hand' AND i.equipped = 1`).get(characterId);
+                if (!mainHand || mainHand.type !== 'wręczna' || mainHand.grip === 'two' || !JSON.parse(mainHand.properties).includes('lekka')) {
+                  return send(400, { error: 'Najpierw załóż w głównej ręce lekką broń wręcz, która nie jest dwuręczna.' });
+                }
+              }
+              if (requestedSlot === 'main-hand' && grip !== 'two') {
+                const offHand = db.prepare(`SELECT w.properties, w.type, i.grip FROM character_items i JOIN weapon_catalog w ON w.id = i.weapon_id
+                  WHERE i.character_id = ? AND i.slot = 'off-hand' AND i.equipped = 1`).get(characterId);
+                if (offHand && (!lightMelee || offHand.type !== 'wręczna' || offHand.grip === 'two' || !JSON.parse(offHand.properties).includes('lekka'))) {
+                  return send(400, { error: 'Przy broni w drugiej ręce główna broń również musi być lekka i wręczna.' });
+                }
+              }
               db.exec('BEGIN');
               try {
-                const targetSlot = isRanged ? 'belt' : 'main-hand';
+                const targetSlot = isRanged ? 'belt' : requestedSlot;
                 const targetGrip = isRanged ? 'none' : requiresTwoHands ? 'two' : grip;
                 db.prepare("UPDATE character_items SET equipped = 0, slot = 'backpack' WHERE character_id = ? AND slot = ?").run(characterId, targetSlot);
                 if (!isRanged && targetGrip === 'two') {
