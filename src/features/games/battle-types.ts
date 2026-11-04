@@ -1,7 +1,7 @@
 export type Attack = { id: string; name: string; bonus: number; dice: number; sides: number; damageBonus: number; type: string; light: boolean; offHand?: boolean; nick?: boolean; disadvantage?: boolean };
 export type Combatant = {
   spellcasting?: SpellcastingState; concentration?: string | null; concentrationDC?: number | null; concentrationChecks?: number[]; reactionDeferred?: boolean;
-  mockery?: { expiresRound: number } | null;
+  mockery?: { expiresRound: number } | null; protectionAvailable?: boolean; protectedBy?: string[];
   hidden?: boolean; damageTaken?: number; attackDisadvantage?: boolean;
   id: string; name: string; memberId?: number; characterId?: number; ownerId?: number;
   initiative: number; hp: number; maxHp: number; tempHp: number; ac: number | null; speed: number;

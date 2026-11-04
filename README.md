@@ -1,5 +1,7 @@
 # DnD-RnR
 
+Krótka instrukcja uruchomienia: [README-URUCHOMIENIE.md](README-URUCHOMIENIE.md).
+
 ## Baza danych: Firestore
 
 Jedynym trwałym źródłem danych aplikacji jest Cloud Firestore w projekcie

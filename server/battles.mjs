@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { statisticsSummary } from './statistics-summary.mjs';
 import { emptyStatistics } from './statistics.mjs';
 import { characterTraits } from '../shared/character-traits.mjs';
+import { fightingStyleAttackBonus, fightingStyleDamageBonus, unarmedStrikeProfile } from '../shared/fighting-style.mjs';
 import { publicCaster, resourceState, saveResources } from './spell-resources.mjs';
 import { handleCombatSpell } from './spell-combat.mjs';
 
@@ -11,6 +12,12 @@ const fresh = f => {
   if (f.shieldAC) { f.ac -= f.shieldAC; f.shieldAC = 0; }
   return Object.assign(f, { action: '', bonus: '', reaction: '', reactionDeferred: false, moved: 0, extraMove: 0, attacksLeft: 0, usedWeapons: [], dodge: false });
 };
+const clearProtection = (b, protectorId) => b.fighters.forEach(f => {
+  if (Array.isArray(f.protectedBy)) {
+    f.protectedBy = f.protectedBy.filter(id => id !== protectorId);
+    f.attackDisadvantage = f.protectedBy.length > 0;
+  }
+});
 const log = (b, message) => { b.log = [...b.log, message].slice(-100); };
 const decode = row => row ? JSON.parse(row.data) : null;
 const statsFor = (db, id) => decode(db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(id)) ?? emptyStatistics();
@@ -25,8 +32,10 @@ function characterFighter(db, sessionId, memberId) {
   requireValue(s.hp !== null && s.maxHp !== null && s.ac !== null, `Uzupełnij PW i KP postaci ${c.name} przed walką.`);
   const traits = characterTraits(c, stats);
   const attacks = [];
-  for (const item of db.prepare(`SELECT i.id AS itemId, i.slot, i.grip, w.* FROM character_items i JOIN weapon_catalog w ON w.id = i.weapon_id WHERE i.character_id = ? AND i.equipped = 1`).all(c.id)) {
-    const properties = JSON.parse(item.properties);
+  const equippedWeapons = db.prepare(`SELECT i.id AS itemId, i.slot, i.grip, w.* FROM character_items i JOIN weapon_catalog w ON w.id = i.weapon_id WHERE i.character_id = ? AND i.equipped = 1`).all(c.id)
+    .map(item => ({ ...item, properties: JSON.parse(item.properties) }));
+  for (const item of equippedWeapons) {
+    const properties = item.properties;
     const finesse = properties.some(p => p.startsWith('finezyjna'));
     const strength = s.abilities.str.modifier, dex = s.abilities.dex.modifier;
     const mod = finesse ? Math.max(strength ?? -99, dex ?? -99) : item.type === 'dystansowa' ? dex : strength;
@@ -39,16 +48,23 @@ function characterFighter(db, sessionId, memberId) {
     const versatile = item.grip === 'two' ? properties.find(p => p.startsWith('wszechstronna'))?.match(/(\d+)d(\d+)/) : null;
     const dice = versatile ?? item.damage.match(/(\d+)d(\d+)/);
     const offHand = item.slot === 'off-hand';
-    attacks.push({ id: String(item.itemId), name: item.name, bonus: mod + (proficient ? s.proficiency : 0), dice: dice ? Number(dice[1]) : 0,
-      sides: dice ? Number(dice[2]) : 0, damageBonus: offHand ? (dice ? 0 : Number(item.damage) || 0) : mod + (dice ? 0 : Number(item.damage) || 0), type: item.damage_type,
+    const weapon = { ...item, properties };
+    const weaponDamageBonus = offHand ? (dice ? 0 : Number(item.damage) || 0) : mod + (dice ? 0 : Number(item.damage) || 0);
+    attacks.push({ id: String(item.itemId), name: item.name, bonus: mod + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(stats.choices?.fightingStyle, weapon), dice: dice ? Number(dice[1]) : 0,
+      sides: dice ? Number(dice[2]) : 0, damageBonus: weaponDamageBonus + fightingStyleDamageBonus(stats.choices?.fightingStyle, weapon, equippedWeapons, mod), type: item.damage_type,
       light: properties.includes('lekka'), offHand, nick: item.mastery === 'Nick', disadvantage: Boolean(s.d20StrengthDexDisadvantage || (properties.includes('ciężka') && (stats.values[item.type === 'dystansowa' ? 'dex' : 'str'] ?? 0) < 13)) });
   }
-  if (s.abilities.str.modifier !== null) attacks.push({ id: 'unarmed', name: 'Cios bez broni', bonus: s.abilities.str.modifier + s.proficiency, dice: 0, sides: 0, damageBonus: Math.max(0, 1 + s.abilities.str.modifier), type: 'obuchowe', light: false });
+  if (s.abilities.str.modifier !== null) {
+    const unarmed = unarmedStrikeProfile(stats.choices?.fightingStyle, equippedWeapons, equipment.some(item => item.equipped && item.armorCategory === 'shield'), s.abilities.str.modifier);
+    attacks.push({ id: 'unarmed', name: 'Cios bez broni', bonus: s.abilities.str.modifier + s.proficiency, ...unarmed, type: 'obuchowe', light: false });
+  }
   const baseClass = c.class.split(' ')[0];
   const maxAttacks = baseClass === 'Fighter' || c.class.includes('Fighter') ? c.level >= 20 ? 4 : c.level >= 11 ? 3 : c.level >= 5 ? 2 : 1
     : /Barbarian|Monk|Paladin|Ranger/.test(c.class) && c.level >= 5 ? 2 : 1;
   return fresh({ id: randomUUID(), name: c.name, memberId, characterId: c.id, ownerId: c.user_id, hp: s.hp, maxHp: s.maxHp, tempHp: s.tempHp ?? 0,
-    ac: s.ac, speed: s.speed ?? 0, saves: s.savingThrows, notes: '', attacks, maxAttacks, concentration: resourceState(db, c.id).concentration ?? null, deathSuccesses: s.deathSuccesses ?? 0, deathFailures: s.deathFailures ?? 0 });
+    ac: s.ac, speed: s.speed ?? 0, saves: s.savingThrows, notes: '', attacks, maxAttacks, concentration: resourceState(db, c.id).concentration ?? null,
+    protectionAvailable: stats.choices?.fightingStyle === 'protection' && equipment.some(item => item.equipped && item.armorCategory === 'shield'),
+    deathSuccesses: s.deathSuccesses ?? 0, deathFailures: s.deathFailures ?? 0 });
 }
 function persistVitals(db, f) {
   if (!f.characterId) return;
@@ -182,6 +198,7 @@ export function handleBattles(db, user, path, method, body, send) {
         if (current.mockery && current.mockery.expiresRound <= b.round) current.mockery = null;
         b.slotCasters = [];
         if (++b.turn === b.fighters.length) { b.turn = 0; b.round++; }
+        clearProtection(b, b.fighters[b.turn].id);
         fresh(b.fighters[b.turn]); log(b, `Runda ${b.round}: tura ${b.fighters[b.turn].name}.`);
       } else {
         const kind = body.kind;
@@ -198,7 +215,7 @@ export function handleBattles(db, user, path, method, body, send) {
           }
           log(b, `GM: ${body.note}${body.targetId ? ` (${body.effect === 'damage' ? 'obrażenia' : 'leczenie'}: ${body.amount})` : ''}`); b.pending = null;
         } else {
-          const actor = kind === 'request' && body.slot === 'reaction' ? b.fighters.find(f => f.id === body.actorId) : current;
+          const actor = (kind === 'request' && body.slot === 'reaction' || kind === 'protection') ? b.fighters.find(f => f.id === body.actorId) : current;
           requireValue(!b.fighters.some(f => f.concentrationDC), 'Najpierw rozstrzygnij rzuty koncentracji.');
           requireValue(actor && activeMember(db, session.id, actor) && canControl(actor), 'Nie możesz sterować tym uczestnikiem.');
           if (kind === 'death') {
@@ -210,7 +227,15 @@ export function handleBattles(db, user, path, method, body, send) {
             actor.action = body.roll === 20 ? '' : 'Rzut przeciw śmierci'; persistVitals(db, actor); log(b, `${actor.name}: rzut przeciw śmierci ${body.roll}.`);
           } else {
             requireValue(actor.hp > 0 && actor.deathFailures < 3, 'Ten uczestnik nie może teraz działać.');
-            if (kind === 'damage') {
+            if (kind === 'protection') {
+              requireValue(!b.pending && actor.protectionAvailable && !actor.reaction && body.targetId, 'Protection wymaga dostępnej reakcji, tarczy i wybranego celu.');
+              const target = b.fighters.find(f => f.id === body.targetId);
+              requireValue(target && target.id !== actor.id && target.hp > 0 && target.deathFailures < 3, 'Wybierz pobliski cel Protection.');
+              actor.reaction = 'Protection';
+              target.protectedBy = [...(target.protectedBy ?? []), actor.id];
+              target.attackDisadvantage = true;
+              log(b, `${actor.name}: Protection chroni ${target.name} do początku następnej tury.`);
+            } else if (kind === 'damage') {
               const p = b.pending;
               requireValue(p?.kind === 'damage' && p.actorId === actor.id, 'Brak trafienia do rozliczenia.');
               const count = p.attack.dice * (p.critical ? 2 : 1);
@@ -247,7 +272,7 @@ export function handleBattles(db, user, path, method, body, send) {
                 }
                 const target = b.fighters.find(f => f.id === body.targetId);
                 requireValue(target && target.id !== actor.id && target.deathFailures < 3, 'Wybierz cel ataku.');
-                const disadvantage = Boolean(attack.disadvantage || target.dodge || body.disadvantage || actor.mockery);
+                const disadvantage = Boolean(attack.disadvantage || target.dodge || target.attackDisadvantage || body.disadvantage || actor.mockery);
                 const advantage = Boolean(body.advantage);
                 requireValue(int(body.roll, 1, 20) && (disadvantage === advantage || int(body.roll2, 1, 20)), 'Podaj wynik k20; przy ułatwieniu lub utrudnieniu podaj dwie kości.');
                 const roll = disadvantage === advantage ? body.roll : disadvantage ? Math.min(body.roll, body.roll2) : Math.max(body.roll, body.roll2);

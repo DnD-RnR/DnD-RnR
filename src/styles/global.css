@@ -50,10 +50,22 @@ main { width: 100%; max-width: 1280px; padding: 60px clamp(24px, 5vw, 80px); mar
 .combat-action-list li:first-child { padding-top: 0; border-top: 0; }
 .combat-action-list summary { cursor: pointer; color: var(--accent); font-weight: 650; }
 .combat-action-list summary::marker { color: var(--muted); }
+.combat-action-list > li > details > .combat-action-summary { padding: 2px 0 6px; color: var(--text); font-size: 1rem; font-weight: 750; }
 .combat-action-list p { margin: 4px 0 0; font-size: .85rem; }
+.unarmed-strike { margin-top: 12px; border-top: 1px solid var(--border); }
+.unarmed-strike > summary { padding: 12px 0; color: var(--accent); font-weight: 700; }
+.unarmed-strike-content { padding-top: 2px; }
+.unarmed-strike-content > p { color: var(--muted); }
+.unarmed-options { margin-top: 12px; }
+.unarmed-options li { padding: 10px 0; }
+.unarmed-options li:first-child { padding-top: 10px; border-top: 1px solid var(--border); }
+.unarmed-options strong { color: var(--text); }
 .combat-weapon-list { list-style: none; padding: 0; margin: 12px 0 0; border-top: 1px solid var(--border); }
 .combat-weapon-list li { display: grid; gap: 2px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .combat-weapon-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+.weapon-attack-group > summary { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 8px; color: var(--accent); font-weight: 700; }
+.weapon-attack-group > summary small { color: var(--muted); font-size: .78rem; font-weight: 500; text-align: right; }
+.weapon-attack-content { display: grid; gap: 2px; padding: 0 8px 10px; }
 .combat-weapon-list strong { color: var(--text); }
 .combat-weapon-list .combat-weapon-main-hand { display: block; padding: 4px 8px; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); font-size: .98rem; }
 .combat-weapon-list .combat-weapon-off-hand { display: block; color: var(--muted); font-size: .86rem; }

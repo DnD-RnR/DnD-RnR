@@ -132,6 +132,124 @@ test('attacks use server weapon bonuses, critical dice and do not apply damage t
   } finally { db.close(); }
 });
 
+test('Archery adds two to attacks with ranged weapons only', () => {
+  const { db, start } = fixture();
+  try {
+    db.prepare(`INSERT INTO character_items (id, character_id, name, quantity, slot, equipped, weapon_id)
+      VALUES (2, 1, 'Shortbow', 1, 'backpack', 1, 'shortbow')`).run();
+    db.prepare(`UPDATE character_statistics
+      SET data = json_set(data, '$.choices.fightingStyle', 'archery') WHERE character_id = 1`).run();
+    const attacks = start().battle.fighters[0].attacks;
+    assert.equal(attacks.find(attack => attack.id === '1').bonus, 6);
+    assert.equal(attacks.find(attack => attack.id === '2').bonus, 6);
+  } finally { db.close(); }
+});
+
+test('Dueling adds two damage with a single one-handed melee weapon', () => {
+  const { db, start } = fixture();
+  try {
+    db.prepare(`UPDATE character_statistics
+      SET data = json_set(data, '$.choices.fightingStyle', 'dueling') WHERE character_id = 1`).run();
+    assert.equal(start().battle.fighters[0].attacks.find(attack => attack.id === '1').damageBonus, 5);
+  } finally { db.close(); }
+});
+
+test('Dueling does not apply when another weapon is equipped or the weapon uses two hands', () => {
+  const { db, start } = fixture();
+  try {
+    db.prepare(`INSERT INTO character_items (id, character_id, name, quantity, slot, equipped, weapon_id)
+      VALUES (2, 1, 'Dagger', 1, 'off-hand', 1, 'dagger')`).run();
+    db.prepare(`UPDATE character_statistics
+      SET data = json_set(data, '$.choices.fightingStyle', 'dueling') WHERE character_id = 1`).run();
+    assert.equal(start().battle.fighters[0].attacks.find(attack => attack.id === '1').damageBonus, 3);
+  } finally { db.close(); }
+
+  const twoHanded = fixture();
+  try {
+    twoHanded.db.prepare(`UPDATE character_items SET weapon_id = 'greatsword' WHERE id = 1`).run();
+    twoHanded.db.prepare(`UPDATE character_statistics
+      SET data = json_set(data, '$.choices.fightingStyle', 'dueling') WHERE character_id = 1`).run();
+    assert.equal(twoHanded.start().battle.fighters[0].attacks.find(attack => attack.id === '1').damageBonus, 3);
+  } finally { twoHanded.db.close(); }
+});
+
+test('Two-Weapon Fighting adds the ability modifier to the off-hand light weapon', () => {
+  const { db, start } = fixture();
+  try {
+    db.prepare(`INSERT INTO character_items (id, character_id, name, quantity, slot, equipped, weapon_id)
+      VALUES (2, 1, 'Dagger', 1, 'off-hand', 1, 'dagger')`).run();
+    db.prepare(`UPDATE character_statistics
+      SET data = json_set(data, '$.choices.fightingStyle', 'two-weapon-fighting') WHERE character_id = 1`).run();
+    const attacks = start().battle.fighters[0].attacks;
+    assert.equal(attacks.find(attack => attack.id === '1').damageBonus, 3);
+    assert.equal(attacks.find(attack => attack.id === '2').damageBonus, 3);
+  } finally { db.close(); }
+});
+
+test('Thrown Weapon Fighting adds two damage to thrown weapons', () => {
+  const { db, start } = fixture();
+  try {
+    db.prepare(`UPDATE character_items SET weapon_id = 'dagger' WHERE id = 1`).run();
+    db.prepare(`UPDATE character_statistics
+      SET data = json_set(data, '$.choices.fightingStyle', 'thrown-weapon-fighting') WHERE character_id = 1`).run();
+    assert.equal(start().battle.fighters[0].attacks.find(attack => attack.id === '1').damageBonus, 5);
+  } finally { db.close(); }
+});
+
+test('Unarmed Fighting changes unarmed strike damage dice based on held equipment', () => {
+  const withWeapon = fixture();
+  try {
+    withWeapon.db.prepare(`UPDATE character_statistics
+      SET data = json_set(data, '$.choices.fightingStyle', 'unarmed-fighting') WHERE character_id = 1`).run();
+    const attack = withWeapon.start().battle.fighters[0].attacks.find(attack => attack.id === 'unarmed');
+    assert.deepEqual({ dice: attack.dice, sides: attack.sides, damageBonus: attack.damageBonus }, { dice: 1, sides: 6, damageBonus: 3 });
+  } finally { withWeapon.db.close(); }
+
+  const emptyHands = fixture();
+  try {
+    emptyHands.db.prepare('UPDATE character_items SET equipped = 0 WHERE character_id = 1').run();
+    emptyHands.db.prepare(`UPDATE character_statistics
+      SET data = json_set(data, '$.choices.fightingStyle', 'unarmed-fighting') WHERE character_id = 1`).run();
+    const attack = emptyHands.start().battle.fighters[0].attacks.find(attack => attack.id === 'unarmed');
+    assert.deepEqual({ dice: attack.dice, sides: attack.sides, damageBonus: attack.damageBonus }, { dice: 1, sides: 8, damageBonus: 3 });
+  } finally { emptyHands.db.close(); }
+
+  const shield = fixture();
+  try {
+    shield.db.prepare('UPDATE character_items SET equipped = 0 WHERE character_id = 1').run();
+    shield.db.prepare(`INSERT INTO character_items (id, character_id, name, quantity, slot, equipped, armor_id)
+      VALUES (2, 1, 'Shield', 1, 'off-hand', 1, 'shield')`).run();
+    shield.db.prepare(`UPDATE character_statistics
+      SET data = json_set(data, '$.choices.fightingStyle', 'unarmed-fighting') WHERE character_id = 1`).run();
+    const attack = shield.start().battle.fighters[0].attacks.find(attack => attack.id === 'unarmed');
+    assert.deepEqual({ dice: attack.dice, sides: attack.sides, damageBonus: attack.damageBonus }, { dice: 1, sides: 6, damageBonus: 3 });
+  } finally { shield.db.close(); }
+});
+
+test('Protection uses a reaction only while holding a shield and gives attacks disadvantage until the protector turns', () => {
+  const { db, call, start, player } = fixture();
+  try {
+    db.prepare(`INSERT INTO character_items (id, character_id, name, quantity, slot, equipped, armor_id)
+      VALUES (2, 1, 'Shield', 1, 'off-hand', 1, 'shield')`).run();
+    db.prepare(`UPDATE character_statistics
+      SET data = json_set(data, '$.choices.fightingStyle', 'protection') WHERE character_id = 1`).run();
+    const battle = start().battle, protector = battle.fighters[0], target = battle.fighters[2], enemy = battle.fighters[1];
+    assert.equal(protector.protectionAvailable, true);
+    const protectedBattle = call('act', { kind: 'protection', actorId: protector.id, targetId: target.id }, player).battle;
+    assert.deepEqual(protectedBattle.fighters.find(f => f.id === target.id).protectedBy, [protector.id]);
+    assert.equal(protectedBattle.fighters.find(f => f.id === protector.id).reaction, 'Protection');
+    call('next', {}, player);
+    assert.equal(call().battle.fighters.find(f => f.id === target.id).attackDisadvantage, true);
+    const attack = call('act', { kind: 'attack', slot: 'action', attackId: 'attack', targetId: target.id, roll: 20, roll2: 1, attack: { name: 'Claw', bonus: 4, dice: 1, sides: 6, damageBonus: 2 } });
+    assert.equal(attack.status, 200);
+    assert.equal(attack.battle.pending, null);
+    call('next');
+    call('next');
+    const afterProtectorTurn = call().battle.fighters.find(f => f.id === target.id);
+    assert.equal(afterProtectorTurn.attackDisadvantage, false);
+  } finally { db.close(); }
+});
+
 test('turn steps can skip remaining Extra Attacks and persist skipped actions', () => {
   const { db, call, start, player } = fixture();
   try {

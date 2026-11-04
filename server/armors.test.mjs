@@ -62,6 +62,18 @@ test('armor catalog is seeded and available to authenticated users', async () =>
     assert.equal(armorClassFromEquipment({ values: { ac: 10, dex: 18 } }, [
       { equipped: 1, armorCategory: 'heavy', armorClass: '16' },
     ]), 16);
+    assert.equal(armorClassFromEquipment({ values: { ac: 10, dex: 10 }, choices: { fightingStyle: 'defense' } }, [
+      { equipped: 1, armorCategory: 'light', armorClass: '11' },
+    ]), 12);
+    assert.equal(armorClassFromEquipment({ values: { ac: 10, dex: 10 }, choices: { fightingStyle: 'defense' } }, [
+      { equipped: 1, armorCategory: 'medium', armorClass: '14' },
+    ]), 15);
+    assert.equal(armorClassFromEquipment({ values: { ac: 10, dex: 10 }, choices: { fightingStyle: 'defense' } }, [
+      { equipped: 1, armorCategory: 'heavy', armorClass: '16' },
+    ]), 17);
+    assert.equal(armorClassFromEquipment({ values: { ac: 10, dex: 10 }, choices: { fightingStyle: 'defense' } }, [
+      { equipped: 1, armorCategory: 'shield', armorClass: '+2' },
+    ]), 12);
     assert.equal(speedFromEquipment({ values: { str: 12 } }, [
       { equipped: 1, armorCategory: 'heavy', strength: 13 },
     ], 30), 20);

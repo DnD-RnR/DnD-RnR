@@ -3,7 +3,14 @@ import { emptySpellSelection, spellcastingProfile, validateSpellSelection } from
 import { characterTraits, emptyTraitSelection, validateTraitSelection } from '../shared/character-traits.mjs';
 import { armorClassFromEquipment, armorSpeedPenalty, armorTrainingEffects, hasArmorTraining, hasStealthDisadvantage, speedFromEquipment } from './armor-class.mjs';
 import { weaponMasteryChoicesValid } from '../shared/weapon-mastery.mjs';
-import { fightingStyleChoicesValid } from '../shared/fighting-style.mjs';
+import { fightingStyleChoicesValid, wizardCantrips } from '../shared/fighting-style.mjs';
+
+const emptyArcaneWarrior = () => ({ cantrips: [], ability: '' });
+const validArcaneWarrior = value => value && typeof value === 'object' && !Array.isArray(value)
+  && Array.isArray(value.cantrips) && value.cantrips.length === 2
+  && new Set(value.cantrips).size === 2
+  && value.cantrips.every(id => wizardCantrips.some(spell => spell.id === id))
+  && ['int', 'wis', 'cha'].includes(value.ability);
 
 export function emptyStatistics() {
   return {
@@ -14,7 +21,7 @@ export function emptyStatistics() {
     skills: Object.fromEntries(definitions.skills.map(skill => [skill.id, 0])),
     spellAbility: '',
     notes: Object.fromEntries(definitions.notes.map(field => [field.id, ''])),
-    choices: { weaponMastery: [], fightingStyle: '' },
+    choices: { weaponMastery: [], fightingStyle: '', arcaneWarrior: emptyArcaneWarrior() },
   };
 }
 function validStatistics(stats) {
@@ -42,14 +49,24 @@ export function handleStatistics(db, user, path, method, body, send) {
     if (method === 'GET') {
       const stored = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(characterId);
       const choices = stored ? JSON.parse(stored.data).choices ?? {} : {};
-      send(200, { choices: { weaponMastery: choices.weaponMastery ?? [], fightingStyle: choices.fightingStyle ?? '' } });
+      send(200, { choices: {
+        weaponMastery: choices.weaponMastery ?? [],
+        fightingStyle: choices.fightingStyle ?? '',
+        arcaneWarrior: choices.arcaneWarrior ?? emptyArcaneWarrior(),
+      } });
     } else if (method === 'POST') {
-      if (!body || !weaponMasteryChoicesValid(character, body.weaponMastery) || !fightingStyleChoicesValid(character, body.fightingStyle ?? '')) {
+      const arcaneWarrior = body?.arcaneWarrior;
+      if (!body || !weaponMasteryChoicesValid(character, body.weaponMastery) || !fightingStyleChoicesValid(character, body.fightingStyle ?? '')
+        || (body.fightingStyle === 'arcane-warrior' && !validArcaneWarrior(arcaneWarrior))) {
         send(400, { error: 'Wybierz poprawne, niepowtarzające się bronie do Weapon Mastery.' }); return true;
       }
       const stored = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(characterId);
       const stats = stored ? JSON.parse(stored.data) : emptyStatistics();
-      stats.choices = { weaponMastery: body.weaponMastery, fightingStyle: body.fightingStyle ?? '' };
+      stats.choices = {
+        weaponMastery: body.weaponMastery,
+        fightingStyle: body.fightingStyle ?? '',
+        arcaneWarrior: body.fightingStyle === 'arcane-warrior' ? arcaneWarrior : emptyArcaneWarrior(),
+      };
       db.prepare('INSERT INTO character_statistics (character_id, data) VALUES (?, ?) ON CONFLICT(character_id) DO UPDATE SET data = excluded.data').run(characterId, JSON.stringify(stats));
       send(200, { choices: stats.choices });
     } else send(405, { error: 'Niedozwolona metoda.' });
@@ -58,9 +75,11 @@ export function handleStatistics(db, user, path, method, body, send) {
     const statistics = stored ? JSON.parse(stored.data) : emptyStatistics();
     statistics.spells ??= emptySpellSelection();
     statistics.traits ??= emptyTraitSelection();
-    statistics.choices ??= { weaponMastery: [], fightingStyle: '' };
+    statistics.choices ??= { weaponMastery: [], fightingStyle: '', arcaneWarrior: emptyArcaneWarrior() };
     statistics.choices.fightingStyle ??= '';
+    statistics.choices.arcaneWarrior ??= emptyArcaneWarrior();
     statistics.spellAbility = spellcastingProfile(character, statistics.spells).ability || statistics.spellAbility;
+    statistics.proficiency = 2 + Math.floor((character.level - 1) / 4);
     const equipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.armor_class AS armorClass, a.strength,
       a.stealth_disadvantage AS stealthDisadvantage
       FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(characterId);
@@ -92,8 +111,9 @@ export function handleStatistics(db, user, path, method, body, send) {
     const traits = Object.fromEntries(submittedTraitEntries.filter(([id]) => supportedTraitGroups.has(id)));
     const traitError = validateTraitSelection(character, { ...body, spells, traits, requireCompleteTraits: true });
     if (traitError) { send(400, { error: traitError }); return true; }
-    const choices = Object.hasOwn(body, 'choices') ? body.choices : (stored ? JSON.parse(stored.data).choices : null) ?? { weaponMastery: [], fightingStyle: '' };
-    if (!choices || !weaponMasteryChoicesValid(character, choices.weaponMastery ?? []) || !fightingStyleChoicesValid(character, choices.fightingStyle ?? '')) { send(400, { error: 'Wybierz poprawne wybory Weapon Mastery i Fighting Style.' }); return true; }
+    const choices = Object.hasOwn(body, 'choices') ? body.choices : (stored ? JSON.parse(stored.data).choices : null) ?? { weaponMastery: [], fightingStyle: '', arcaneWarrior: emptyArcaneWarrior() };
+    if (!choices || !weaponMasteryChoicesValid(character, choices.weaponMastery ?? []) || !fightingStyleChoicesValid(character, choices.fightingStyle ?? '')
+      || (choices.fightingStyle === 'arcane-warrior' && !validArcaneWarrior(choices.arcaneWarrior))) { send(400, { error: 'Wybierz poprawne wybory Weapon Mastery i Fighting Style.' }); return true; }
     // Store only supported fields, never arbitrary properties from the request.
     const stats = emptyStatistics();
     for (const key of Object.keys(stats.values)) stats.values[key] = body.values[key];
@@ -102,8 +122,13 @@ export function handleStatistics(db, user, path, method, body, send) {
     stats.savingThrows = body.savingThrows;
     stats.spells = spells;
     stats.traits = traits;
-    stats.choices = { weaponMastery: choices.weaponMastery, fightingStyle: choices.fightingStyle ?? '' };
+    stats.choices = {
+      weaponMastery: choices.weaponMastery,
+      fightingStyle: choices.fightingStyle ?? '',
+      arcaneWarrior: choices.fightingStyle === 'arcane-warrior' ? choices.arcaneWarrior : emptyArcaneWarrior(),
+    };
     stats.spellAbility = spellcastingProfile(character, spells).ability || body.spellAbility;
+    stats.proficiency = 2 + Math.floor((character.level - 1) / 4);
     const equipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.strength
       FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(characterId);
     if (stats.values.speed !== null) stats.values.speed += armorSpeedPenalty(stats, equipment);

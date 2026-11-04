@@ -2,11 +2,14 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { api, type Character, type CharacterStatistics } from '../../api';
 import { weaponMasteryCount, weapons } from '../../../shared/weapon-mastery.mjs';
 import { fightingStyleCount, fightingStyles } from '../../../shared/fighting-style.mjs';
+import { wizardCantrips } from '../../../shared/fighting-style.mjs';
 
 export function ChoicesTab({ character, active }: { character: Character; active: boolean }) {
+  const [abilityScores, setAbilityScores] = useState<Record<string, number | null>>({});
   const [choices, setChoices] = useState<string[]>([]);
   const [fightingStyle, setFightingStyle] = useState('');
   const [draftFightingStyle, setDraftFightingStyle] = useState('');
+  const [draftArcaneWarrior, setDraftArcaneWarrior] = useState({ cantrips: ['', ''], ability: '' });
   const [draft, setDraft] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
@@ -17,8 +20,11 @@ export function ChoicesTab({ character, active }: { character: Character; active
     if (!active) return;
     api<{ statistics: CharacterStatistics }>(`/characters/${character.id}/statistics`)
       .then(({ statistics }) => {
+        setAbilityScores(statistics.values);
         setChoices(statistics.choices?.weaponMastery ?? []);
         setFightingStyle(statistics.choices?.fightingStyle ?? '');
+        const savedArcaneWarrior = statistics.choices?.arcaneWarrior ?? { cantrips: [], ability: '' };
+        setDraftArcaneWarrior({ cantrips: [savedArcaneWarrior.cantrips[0] ?? '', savedArcaneWarrior.cantrips[1] ?? ''], ability: savedArcaneWarrior.ability });
         setDraftFightingStyle('');
         setError('');
       })
@@ -36,20 +42,50 @@ export function ChoicesTab({ character, active }: { character: Character; active
     if (new Set(values).size !== values.length) { setError('Każda broń może być wybrana tylko raz.'); return; }
     setPending(true); setError(''); setMessage('');
     try {
-      await api(`/characters/${character.id}/choices`, { weaponMastery: values, fightingStyle: draftFightingStyle || fightingStyle });
-      setChoices(values); setDraft([]); setFightingStyle(draftFightingStyle || fightingStyle); setDraftFightingStyle(''); setMessage('Wybory zapisane.');
+      const selectedStyle = draftFightingStyle || fightingStyle;
+      const selectedArcaneWarrior = draftArcaneWarrior;
+      if (selectedStyle === 'arcane-warrior' && (selectedArcaneWarrior.cantrips.some(value => !value) || new Set(selectedArcaneWarrior.cantrips).size !== 2 || !selectedArcaneWarrior.ability)) {
+        setError('Wybierz dwie różne sztuczki i cechę czarowania dla Arcane Warrior.'); return;
+      }
+      await api(`/characters/${character.id}/choices`, { weaponMastery: values, fightingStyle: selectedStyle, arcaneWarrior: selectedArcaneWarrior });
+      setChoices(values); setDraft([]); setFightingStyle(selectedStyle); setDraftFightingStyle(''); setDraftArcaneWarrior(selectedArcaneWarrior); setMessage('Wybory zapisane.');
     } catch (e) { setError(e instanceof Error ? e.message : 'Nie udało się zapisać wyborów.'); }
     finally { setPending(false); }
   }
   if (!count && !hasFightingStyle) return <Cardless heading="Wybory"><p className="statistics-help">Ta postać nie ma obecnie wyborów zależnych od odpoczynku ani awansu.</p></Cardless>;
   const values = draft.length ? draft : choices;
   const selectedStyle = fightingStyles.find(style => style.id === (draftFightingStyle || fightingStyle));
+  const selectedStyleId = draftFightingStyle || fightingStyle;
+  const modifier = (ability: string) => {
+    const score = abilityScores[ability];
+    return score == null ? '—' : `${score} (${score >= 10 ? '+' : ''}${Math.floor((score - 10) / 2)})`;
+  };
+  const updateArcaneCantrip = (index: number, value: string) => setDraftArcaneWarrior(previous => {
+    const cantrips = [...previous.cantrips];
+    cantrips[index] = value;
+    return { ...previous, cantrips };
+  });
   return <section className="statistics-tab">
     <div className="inventory-section-heading"><div><p className="eyebrow">ODNAWIANE PODCZAS ODPOCZYNKU</p><h2>Wybory</h2></div></div>
     {error && <p className="form-error" role="alert">{error}</p>}{message && <p role="status">{message}</p>}
     {hasFightingStyle && <section className="card"><h3>Co level up</h3><p className="statistics-help">Wybierz atut Fighting Style. Przy kolejnym poziomie wojownika możesz zastąpić go innym atutem Fighting Style.</p>
       <label>Fighting Style<select value={draftFightingStyle || fightingStyle} disabled={pending} onChange={event => setDraftFightingStyle(event.target.value)}><option value="">Nie wybrano</option>{fightingStyles.map(style => <option key={style.id} value={style.id}>{style.name}</option>)}</select></label>
       {selectedStyle && <p className="statistics-help"><strong>{selectedStyle.name}</strong>: {selectedStyle.description}</p>}
+      {selectedStyleId === 'arcane-warrior' && <div className="statistics-fields">
+        {draftArcaneWarrior.cantrips.map((cantripId, index) => {
+          const cantrip = wizardCantrips.find(spell => spell.id === cantripId);
+          return <div key={index}><label>Sztuczka {index + 1}<select value={cantripId} disabled={pending} onChange={event => updateArcaneCantrip(index, event.target.value)}>
+            <option value="">Wybierz sztuczkę…</option>
+            {wizardCantrips.map(spell => <option key={spell.id} value={spell.id} disabled={draftArcaneWarrior.cantrips.includes(spell.id) && cantripId !== spell.id}>{spell.name}</option>)}
+          </select></label>{cantrip && <p className="statistics-help">{cantrip.description}</p>}</div>;
+        })}
+        <label>Cecha czarowania<select value={draftArcaneWarrior.ability} disabled={pending} onChange={event => setDraftArcaneWarrior(previous => ({ ...previous, ability: event.target.value }))}>
+          <option value="">Wybierz cechę…</option>
+          <option value="int">Inteligencja ({modifier('int')})</option>
+          <option value="wis">Mądrość ({modifier('wis')})</option>
+          <option value="cha">Charyzma ({modifier('cha')})</option>
+        </select></label>
+      </div>}
       <button className="primary-button" disabled={pending || !(draftFightingStyle || fightingStyle)} onClick={() => void save()}>{pending ? 'Zapisywanie…' : 'Zapisz wybory'}</button>
     </section>}
     {count > 0 && <section className="card"><h3>Co Long Rest</h3><p className="statistics-help">Po długim odpoczynku możesz zmienić jedną z wybranych broni. Wybierz do {count} broni z katalogu.</p>

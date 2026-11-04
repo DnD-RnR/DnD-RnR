@@ -73,6 +73,7 @@ export function LiveBattle({ controller, onReturnToExploration }: { controller: 
     <SpellReactions controller={controller} />
     {battle.pending?.kind === 'request' && <Card title="Rozstrzygnięcie GM"><p>{battle.fighters.find(f => f.id === battle.pending?.actorId)?.name}: {battle.pending.description}</p>{battle.pending.roll && <p>Wynik k20: {battle.pending.roll}</p>}{response.gm ? <ResolveForm controller={controller} /> : <p>GM rozstrzyga działanie.</p>}</Card>}
     {controls && !battle.pending && (actor.hp > 0 ? <TurnForm key={`${actor.id}-${battle.round}`} controller={controller} /> : actor.characterId && actor.deathFailures < 3 && actor.deathSuccesses < 3 && !actor.action ? <DeathForm controller={controller} /> : <p>Uczestnik jest {actor.deathFailures >= 3 ? 'martwy' : actor.deathSuccesses >= 3 ? 'ustabilizowany' : 'niezdolny do działania'}. Możesz zakończyć turę.</p>)}
+    {!battle.pending && <ProtectionReactionForm controller={controller} excludeActorId={actor.id} />}
     {!battle.pending && response.controlledIds.some(id => id !== actor.id && battle.fighters.some(f => f.id === id && f.hp > 0 && !f.reaction)) && <ReactionForm controller={controller} />}
     {response.gm && !battle.pending && <details><summary>Rozstrzygnięcie GM: obrażenia lub leczenie</summary><ResolveForm controller={controller} /></details>}
     <div className="session-characters gm-character-row">{battle.fighters.map((f, index) => <div key={f.id} className={index === battle.turn ? 'battle-current' : ''}><Card title={`${index + 1}. ${f.name}`} eyebrow={f.hidden ? 'POTWÓR' : `${f.characterId ? 'POSTAĆ' : 'POTWÓR'} · INICJATYWA ${f.initiative}`}>
@@ -138,6 +139,7 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
     ...(canAttack ? [{ id: 'attack', label: 'Atak' }] : []),
     ...(slot === 'action' ? [{ id: 'move', label: 'Ruch' }, { id: 'dash', label: 'Zryw' }, { id: 'dodge', label: 'Unik' }, { id: 'disengage', label: 'Wycofanie' }, { id: 'help', label: 'Pomoc' }] : []),
     ...(actor.spellcasting?.spells.some(s => s.action === slot) ? [{ id: 'spell', label: 'Rzuć czar' }] : []),
+    ...(slot === 'reaction' && actor.protectionAvailable && !actor.reaction && !actor.reactionDeferred ? [{ id: 'protection', label: 'Ochrona' }] : []),
     { id: 'request', label: 'Zdolność / inne' },
   ];
   return <Card title={`${steps.find(step => step.id === slot)!.label}: ${actor.name}`}>
@@ -145,7 +147,7 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
     {slot === 'action' && actor.action === 'Atak' && <p>Pozostałe ataki w tej akcji: {actor.attacksLeft}. Wykonaj kolejny atak albo przejdź dalej.</p>}
     {actor.spellcasting && !actor.spellcasting.spells.length && actor.spellcasting.slots.length > 0 && <p>Brak wybranych czarów. Przygotuj je na karcie postaci w zakładce Statystyki.</p>}
     <div className="battle-action-choices" role="group" aria-label="Wybierz działanie">{choices.map(choice => <button type="button" className={kind === choice.id ? 'primary-button' : 'text-button'} aria-pressed={kind === choice.id} disabled={pending || (slot === 'action' && actor.action === 'Atak' && choice.id !== 'attack')} key={choice.id} onClick={() => setKind(choice.id)}>{choice.label}</button>)}</div>
-    {kind === 'spell' ? <><SpellCastForm controller={controller} actor={actor} slot={slot} /><button className="text-button" disabled={pending} onClick={() => void mutate('act', { kind: 'skip', slot })}>Pomiń ten krok</button></> : <form className="stack-form" onSubmit={async e => {
+    {kind === 'spell' ? <><SpellCastForm controller={controller} actor={actor} slot={slot} /><button className="text-button" disabled={pending} onClick={() => void mutate('act', { kind: 'skip', slot })}>Pomiń ten krok</button></> : kind === 'protection' ? <ProtectionReactionForm controller={controller} actorId={actor.id} inline /> : <form className="stack-form" onSubmit={async e => {
     e.preventDefault();
     const ok = await mutate('act', { kind, slot, attackId, targetId, roll: roll ? Number(roll) : null, roll2: roll2 ? Number(roll2) : null, advantage, disadvantage: manualDisadvantage, description, feet: Number(feet), ...(!actor.characterId ? { attack: monsterAttack } : {}) });
     if (ok) { setRoll(''); setRoll2(''); setDescription(''); setFeet(''); }
@@ -201,6 +203,25 @@ function ReactionForm({ controller }: { controller: Controller }) {
     <label>Uczestnik<select required value={actorId} onChange={e => setActorId(e.target.value)}><option value="">Wybierz</option>{b.fighters.filter(f => f.id !== b.fighters[b.turn].id && controller.response!.controlledIds.includes(f.id) && f.hp > 0 && !f.reaction).map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></label>
     <label>Reakcja i jej wyzwalacz<textarea required maxLength={1000} value={description} onChange={e => setDescription(e.target.value)} /></label><button className="primary-button" disabled={controller.pending}>Przekaż do GM</button>
   </form></details>;
+}
+
+function ProtectionReactionForm({ controller, actorId: requestedActorId, excludeActorId, inline = false }: { controller: Controller; actorId?: string; excludeActorId?: string; inline?: boolean }) {
+  const b = controller.response!.battle!;
+  const candidates = b.fighters.filter(f => controller.response!.controlledIds.includes(f.id) && f.id !== excludeActorId && f.hp > 0 && f.protectionAvailable && !f.reaction && !f.reactionDeferred);
+  const [actorId, setActorId] = useState(requestedActorId ?? '');
+  const [targetId, setTargetId] = useState('');
+  const actor = candidates.find(f => f.id === (requestedActorId ?? actorId)) ?? candidates[0];
+  if (!actor) return null;
+  const form = <form className="stack-form" onSubmit={async e => {
+    e.preventDefault();
+    if (await controller.mutate('act', { kind: 'protection', actorId: actor.id, targetId })) setTargetId('');
+  }}>
+    {!requestedActorId && <label>Postać<select value={actor.id} onChange={e => { setActorId(e.target.value); setTargetId(''); }}>{candidates.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></label>}
+    <label>Chroniony cel<select required value={targetId} onChange={e => setTargetId(e.target.value)}><option value="">Wybierz</option>{b.fighters.filter(f => f.id !== actor.id && f.hp > 0 && f.deathFailures < 3).map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></label>
+    <p>Utrudnienie dotyczy ataków na cel do początku następnej tury {actor.name}. Odległość do 1,5 m potwierdza gracz lub GM.</p>
+    <button className="primary-button" disabled={controller.pending}>Użyj reakcji</button>
+  </form>;
+  return inline ? form : <details><summary>Protection — osłoń sojusznika reakcją</summary>{form}</details>;
 }
 
 function SpellReactions({ controller }: { controller: Controller }) {

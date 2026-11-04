@@ -19,6 +19,7 @@ export type StatisticsSummary = {
   savingThrows: Record<string, number | null>; skills: Record<string, number | null>;
 };
 export type CharacterStatistics = {
+  proficiency: number;
   traits: import('../shared/character-traits.mjs').TraitSelection;
   spells: import('../shared/spellcasting.mjs').SpellSelection;
   values: Record<string, number | null>;
@@ -28,7 +29,7 @@ export type CharacterStatistics = {
   stealthDisadvantage?: boolean;
   untrainedArmor?: boolean; untrainedShield?: boolean; d20StrengthDexDisadvantage?: boolean; spellcastingBlocked?: boolean;
   notes: Record<string, string>;
-  choices: { weaponMastery: string[]; fightingStyle: string };
+  choices: { weaponMastery: string[]; fightingStyle: string; arcaneWarrior?: { cantrips: string[]; ability: string } };
 };
 
 export async function api<T>(path: string, body?: unknown): Promise<T> {
