@@ -15,6 +15,7 @@ import { pathToFileURL } from 'node:url';
 import { hashPassword, verifyPassword } from './db.mjs';
 import { openFirestoreDatabase } from './firestore.mjs';
 import { weaponMasteryChoicesValid } from '../shared/weapon-mastery.mjs';
+import { fightingStyleChoicesValid } from '../shared/fighting-style.mjs';
 import { emptyStatistics } from './statistics.mjs';
 
 const digest = (value) => createHash('sha256').update(value).digest('hex');
@@ -122,9 +123,10 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         const { name, characterClass, level, species, background, subclass } = character;
         const weaponMastery = body.weaponMastery ?? [];
         if (!weaponMasteryChoicesValid({ class: characterClass, level }, weaponMastery)) return send(400, { error: 'Wybierz poprawne bronie do Weapon Mastery.' });
+        if (!fightingStyleChoicesValid({ class: characterClass, level }, body.fightingStyle ?? '')) return send(400, { error: 'Wybierz poprawny atut Fighting Style.' });
         const result = db.prepare('INSERT INTO characters (user_id, name, class, level, species, background, subclass) VALUES (?, ?, ?, ?, ?, ?, ?)').run(user.id, name.trim(), characterClass, level, species, background, subclass);
         const stats = emptyStatistics();
-        stats.choices = { weaponMastery };
+        stats.choices = { weaponMastery, fightingStyle: body.fightingStyle ?? '' };
         db.prepare('INSERT INTO character_statistics (character_id, data) VALUES (?, ?)').run(Number(result.lastInsertRowid), JSON.stringify(stats));
         return send(201, { id: Number(result.lastInsertRowid) });
       }
@@ -233,7 +235,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
                   return send(400, { error: 'Najpierw załóż w głównej ręce lekką broń wręcz, która nie jest dwuręczna.' });
                 }
               }
-              if (requestedSlot === 'main-hand' && grip !== 'two') {
+              if (!isRanged && requestedSlot === 'main-hand' && grip !== 'two') {
                 const offHand = db.prepare(`SELECT w.properties, w.type, i.grip FROM character_items i JOIN weapon_catalog w ON w.id = i.weapon_id
                   WHERE i.character_id = ? AND i.slot = 'off-hand' AND i.equipped = 1`).get(characterId);
                 if (offHand && (!lightMelee || offHand.type !== 'wręczna' || offHand.grip === 'two' || !JSON.parse(offHand.properties).includes('lekka'))) {
@@ -309,6 +311,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
             if (validationError) return send(400, { error: validationError });
           const weaponMastery = body.weaponMastery ?? [];
           if (!weaponMasteryChoicesValid({ class: characterClass, level }, weaponMastery)) return send(400, { error: 'Wybierz poprawne bronie do Weapon Mastery.' });
+          if (!fightingStyleChoicesValid({ class: characterClass, level }, body.fightingStyle ?? '')) return send(400, { error: 'Wybierz poprawny atut Fighting Style.' });
             if (!db.prepare("SELECT id FROM users WHERE id = ? AND role IN ('player', 'gm')").get(userId)) return send(400, { error: 'Nie znaleziono gracza.' });
             db.prepare('DELETE FROM game_members WHERE character_id = ? AND EXISTS (SELECT 1 FROM characters WHERE id = ? AND user_id != ?)').run(id, id, userId);
             db.prepare('UPDATE characters SET user_id = ?, name = ?, class = ?, level = ?, species = ?, background = ?, subclass = ? WHERE id = ?').run(userId, name.trim(), characterClass, level, species, background, subclass, id);
@@ -339,7 +342,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
           if (!db.prepare("SELECT id FROM users WHERE id = ? AND role IN ('player', 'gm')").get(userId)) return send(400, { error: 'Nie znaleziono gracza.' });
           const result = db.prepare('INSERT INTO characters (user_id, name, class, level, species, background, subclass) VALUES (?, ?, ?, ?, ?, ?, ?)').run(userId, name.trim(), characterClass, level, species, background, subclass);
           const stats = emptyStatistics();
-          stats.choices = { weaponMastery };
+          stats.choices = { weaponMastery, fightingStyle: body.fightingStyle ?? '' };
           db.prepare('INSERT INTO character_statistics (character_id, data) VALUES (?, ?)').run(Number(result.lastInsertRowid), JSON.stringify(stats));
           return send(201, { ok: true });
         }

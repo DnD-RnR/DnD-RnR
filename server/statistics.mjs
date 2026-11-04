@@ -3,6 +3,7 @@ import { emptySpellSelection, spellcastingProfile, validateSpellSelection } from
 import { characterTraits, emptyTraitSelection, validateTraitSelection } from '../shared/character-traits.mjs';
 import { armorClassFromEquipment, armorSpeedPenalty, armorTrainingEffects, hasArmorTraining, hasStealthDisadvantage, speedFromEquipment } from './armor-class.mjs';
 import { weaponMasteryChoicesValid } from '../shared/weapon-mastery.mjs';
+import { fightingStyleChoicesValid } from '../shared/fighting-style.mjs';
 
 export function emptyStatistics() {
   return {
@@ -13,7 +14,7 @@ export function emptyStatistics() {
     skills: Object.fromEntries(definitions.skills.map(skill => [skill.id, 0])),
     spellAbility: '',
     notes: Object.fromEntries(definitions.notes.map(field => [field.id, ''])),
-    choices: { weaponMastery: [] },
+    choices: { weaponMastery: [], fightingStyle: '' },
   };
 }
 function validStatistics(stats) {
@@ -41,14 +42,14 @@ export function handleStatistics(db, user, path, method, body, send) {
     if (method === 'GET') {
       const stored = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(characterId);
       const choices = stored ? JSON.parse(stored.data).choices ?? {} : {};
-      send(200, { choices: { weaponMastery: choices.weaponMastery ?? [] } });
+      send(200, { choices: { weaponMastery: choices.weaponMastery ?? [], fightingStyle: choices.fightingStyle ?? '' } });
     } else if (method === 'POST') {
-      if (!body || !weaponMasteryChoicesValid(character, body.weaponMastery)) {
+      if (!body || !weaponMasteryChoicesValid(character, body.weaponMastery) || !fightingStyleChoicesValid(character, body.fightingStyle ?? '')) {
         send(400, { error: 'Wybierz poprawne, niepowtarzające się bronie do Weapon Mastery.' }); return true;
       }
       const stored = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(characterId);
       const stats = stored ? JSON.parse(stored.data) : emptyStatistics();
-      stats.choices = { weaponMastery: body.weaponMastery };
+      stats.choices = { weaponMastery: body.weaponMastery, fightingStyle: body.fightingStyle ?? '' };
       db.prepare('INSERT INTO character_statistics (character_id, data) VALUES (?, ?) ON CONFLICT(character_id) DO UPDATE SET data = excluded.data').run(characterId, JSON.stringify(stats));
       send(200, { choices: stats.choices });
     } else send(405, { error: 'Niedozwolona metoda.' });
@@ -57,7 +58,8 @@ export function handleStatistics(db, user, path, method, body, send) {
     const statistics = stored ? JSON.parse(stored.data) : emptyStatistics();
     statistics.spells ??= emptySpellSelection();
     statistics.traits ??= emptyTraitSelection();
-    statistics.choices ??= { weaponMastery: [] };
+    statistics.choices ??= { weaponMastery: [], fightingStyle: '' };
+    statistics.choices.fightingStyle ??= '';
     statistics.spellAbility = spellcastingProfile(character, statistics.spells).ability || statistics.spellAbility;
     const equipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.armor_class AS armorClass, a.strength,
       a.stealth_disadvantage AS stealthDisadvantage
@@ -90,8 +92,8 @@ export function handleStatistics(db, user, path, method, body, send) {
     const traits = Object.fromEntries(submittedTraitEntries.filter(([id]) => supportedTraitGroups.has(id)));
     const traitError = validateTraitSelection(character, { ...body, spells, traits, requireCompleteTraits: true });
     if (traitError) { send(400, { error: traitError }); return true; }
-    const choices = Object.hasOwn(body, 'choices') ? body.choices : (stored ? JSON.parse(stored.data).choices : null) ?? { weaponMastery: [] };
-    if (!choices || !weaponMasteryChoicesValid(character, choices.weaponMastery ?? [])) { send(400, { error: 'Wybierz poprawne, niepowtarzające się bronie do Weapon Mastery.' }); return true; }
+    const choices = Object.hasOwn(body, 'choices') ? body.choices : (stored ? JSON.parse(stored.data).choices : null) ?? { weaponMastery: [], fightingStyle: '' };
+    if (!choices || !weaponMasteryChoicesValid(character, choices.weaponMastery ?? []) || !fightingStyleChoicesValid(character, choices.fightingStyle ?? '')) { send(400, { error: 'Wybierz poprawne wybory Weapon Mastery i Fighting Style.' }); return true; }
     // Store only supported fields, never arbitrary properties from the request.
     const stats = emptyStatistics();
     for (const key of Object.keys(stats.values)) stats.values[key] = body.values[key];
@@ -100,7 +102,7 @@ export function handleStatistics(db, user, path, method, body, send) {
     stats.savingThrows = body.savingThrows;
     stats.spells = spells;
     stats.traits = traits;
-    stats.choices = { weaponMastery: choices.weaponMastery };
+    stats.choices = { weaponMastery: choices.weaponMastery, fightingStyle: choices.fightingStyle ?? '' };
     stats.spellAbility = spellcastingProfile(character, spells).ability || body.spellAbility;
     const equipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.strength
       FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(characterId);

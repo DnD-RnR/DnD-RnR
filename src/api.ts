@@ -28,7 +28,7 @@ export type CharacterStatistics = {
   stealthDisadvantage?: boolean;
   untrainedArmor?: boolean; untrainedShield?: boolean; d20StrengthDexDisadvantage?: boolean; spellcastingBlocked?: boolean;
   notes: Record<string, string>;
-  choices: { weaponMastery: string[] };
+  choices: { weaponMastery: string[]; fightingStyle: string };
 };
 
 export async function api<T>(path: string, body?: unknown): Promise<T> {
