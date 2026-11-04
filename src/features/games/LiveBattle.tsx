@@ -139,6 +139,7 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
     ...(canAttack ? [{ id: 'attack', label: 'Atak' }] : []),
     ...(slot === 'action' ? [{ id: 'move', label: 'Ruch' }, { id: 'dash', label: 'Zryw' }, { id: 'dodge', label: 'Unik' }, { id: 'disengage', label: 'Wycofanie' }, { id: 'help', label: 'Pomoc' }] : []),
     ...(actor.spellcasting?.spells.some(s => s.action === slot) ? [{ id: 'spell', label: 'Rzuć czar' }] : []),
+    ...(slot === 'bonus' && actor.secondWindMax ? [{ id: 'second-wind', label: 'Drugi oddech' }] : []),
     ...(slot === 'reaction' && actor.protectionAvailable && !actor.reaction && !actor.reactionDeferred ? [{ id: 'protection', label: 'Ochrona' }] : []),
     { id: 'request', label: 'Zdolność / inne' },
   ];
@@ -163,6 +164,7 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
       {disadvantage !== advantage && <label>Drugi k20 · {disadvantage ? 'utrudnienie' : 'ułatwienie'}<input required type="number" min={1} max={20} value={roll2} onChange={e => setRoll2(e.target.value)} /></label>}
     </>}
     {kind === 'move' && <label>Ruch w stopach (pozostało {Math.max(0, actor.speed + actor.extraMove - actor.moved)})<input required type="number" min={1} max={Math.max(1, actor.speed + actor.extraMove - actor.moved)} value={feet} onChange={e => setFeet(e.target.value)} /></label>}
+    {kind === 'second-wind' && <><p>Odzyskujesz 1k10 + {actor.level} PW. Pozostałe użycia: {actor.secondWindUses ?? 0} / {actor.secondWindMax}.</p><label>Wynik k10<input required type="number" min={1} max={10} value={roll} onChange={e => setRoll(e.target.value)} /></label></>}
     {kind === 'request' && <><label>Opis czaru / zdolności, cel i oczekiwany efekt<textarea required maxLength={1000} value={description} onChange={e => setDescription(e.target.value)} /></label><label>Wynik k20 (jeśli GM wymaga rzutu)<input type="number" min={1} max={20} value={roll} onChange={e => setRoll(e.target.value)} /></label></>}
     {slot === 'bonus' && <p>Akcja bonusowa wymaga odpowiedniej zdolności. Atak inną lekką bronią jest dostępny po ataku lekką bronią w tej turze.</p>}
     <div className="battle-toolbar"><button className="primary-button" disabled={pending || (kind === 'attack' && !attack)}>Użyj wybranej opcji</button><button type="button" className="text-button" disabled={pending} onClick={() => void mutate('act', { kind: 'skip', slot })}>{slot === 'action' && actor.action === 'Atak' ? 'Pomiń pozostałe ataki' : 'Pomiń ten krok'}</button></div>

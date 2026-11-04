@@ -219,13 +219,16 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
           <ActionList entries={actions} spells={combatSpells.action} weapons={actionWeapons} character={character} statistics={statistics} equippedItems={equippedItems} />
         </Card>
         <Card title="Akcja bonusowa" eyebrow="TURA">
-          <ActionList entries={[]} spells={combatSpells.bonus} />
+          <ActionList entries={character.class.includes('Fighter') ? [['Drugi oddech', 'Masz ograniczony zapas fizycznej i mentalnej wytrzymałości, z którego możesz czerpać. W ramach akcji bonusowej możesz go wykorzystać, aby odzyskać punkty życia (PW) w liczbie 1k10 + poziom wojownika.'] as const] : []} spells={combatSpells.bonus} />
           {!!bonusWeapons.length && <WeaponList weapons={bonusWeapons} character={character} statistics={statistics} showMastery />}
           {!combatSpells.bonus.length && !bonusWeapons.length && <p className="statistics-help">Brak czarów lub ataków z czasem wykonania „Akcja bonusowa”.</p>}
         </Card>
         <Card title="Reakcja" eyebrow="POZA TURĄ">
           <ActionList entries={[
             ['Atak okazyjny', 'Możesz wykonać atak okazyjny, gdy widziana przez ciebie istota opuszcza twój zasięg, wykorzystując do tego akcję, akcję bonusową, reakcję lub jedną ze swoich Szybkości. Aby wykonać atak okazyjny, użyj reakcji i wykonaj jeden atak wręcz bronią lub cios bez użycia broni przeciwko prowokującej istocie. Atak następuje bezpośrednio przed opuszczeniem przez nią twojego zasięgu.'],
+            ...(character.class.includes('Fighter')
+              ? [['Action Surge', 'You can push yourself beyond your normal limits for a moment. On your turn, you can take one additional action, except the Magic action.'] as const]
+              : []),
             ...(statistics?.choices?.fightingStyle === 'interception'
               ? [['Interception (Przechwycenie)', `Gdy widziana przez ciebie istota trafia inną istotę w odległości do 1,5 metra od ciebie, możesz użyć reakcji, aby zmniejszyć zadane obrażenia o 1k10 ${signed(statistics.proficiency)}. Musisz trzymać tarczę albo broń prostą lub wojenną.`] as const]
               : []),

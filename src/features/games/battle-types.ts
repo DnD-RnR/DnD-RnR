@@ -4,7 +4,8 @@ export type Combatant = {
   mockery?: { expiresRound: number } | null; protectionAvailable?: boolean; protectedBy?: string[];
   hidden?: boolean; damageTaken?: number; attackDisadvantage?: boolean;
   id: string; name: string; memberId?: number; characterId?: number; ownerId?: number;
-  initiative: number; hp: number; maxHp: number; tempHp: number; ac: number | null; speed: number;
+  initiative: number; level?: number; hp: number; maxHp: number; tempHp: number; ac: number | null; speed: number;
+  secondWindUses?: number; secondWindMax?: number;
   saves: Record<string, number | null>; notes: string; attacks: Attack[]; maxAttacks: number;
   action: string; bonus: string; reaction: string; moved: number; extraMove: number;
   attacksLeft: number; usedWeapons: string[]; dodge: boolean; deathSuccesses: number; deathFailures: number;

@@ -132,6 +132,23 @@ test('attacks use server weapon bonuses, critical dice and do not apply damage t
   } finally { db.close(); }
 });
 
+test('fighter second wind heals from a d10, consumes a use and bonus action', () => {
+  const { db, call, start, player } = fixture();
+  try {
+    const started = start();
+    const fighter = started.battle.fighters[0];
+    call('act', { kind: 'resolve', note: 'Damage', targetId: fighter.id, effect: 'damage', amount: 10 });
+    const healed = call('act', { kind: 'second-wind', slot: 'bonus', roll: 10 }, player);
+    const actor = healed.battle.fighters[0];
+    assert.equal(actor.hp, 30);
+    assert.equal(actor.bonus, 'Drugi oddech');
+    assert.equal(actor.secondWindUses, 2);
+    assert.equal(call('act', { kind: 'second-wind', slot: 'bonus', roll: 10 }, player).status, 409);
+    const resources = JSON.parse(db.prepare('SELECT data FROM character_spell_resources WHERE character_id = 1').get().data);
+    assert.equal(resources.secondWindUses, 2);
+  } finally { db.close(); }
+});
+
 test('Archery adds two to attacks with ranged weapons only', () => {
   const { db, start } = fixture();
   try {

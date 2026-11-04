@@ -3,7 +3,7 @@ import { statisticsSummary } from './statistics-summary.mjs';
 import { emptyStatistics } from './statistics.mjs';
 import { characterTraits } from '../shared/character-traits.mjs';
 import { fightingStyleAttackBonus, fightingStyleDamageBonus, unarmedStrikeProfile } from '../shared/fighting-style.mjs';
-import { publicCaster, resourceState, saveResources } from './spell-resources.mjs';
+import { publicCaster, resourceState, saveResources, secondWindMaximum } from './spell-resources.mjs';
 import { handleCombatSpell } from './spell-combat.mjs';
 
 const int = (n, min, max) => Number.isInteger(n) && n >= min && n <= max;
@@ -61,8 +61,11 @@ function characterFighter(db, sessionId, memberId) {
   const baseClass = c.class.split(' ')[0];
   const maxAttacks = baseClass === 'Fighter' || c.class.includes('Fighter') ? c.level >= 20 ? 4 : c.level >= 11 ? 3 : c.level >= 5 ? 2 : 1
     : /Barbarian|Monk|Paladin|Ranger/.test(c.class) && c.level >= 5 ? 2 : 1;
-  return fresh({ id: randomUUID(), name: c.name, memberId, characterId: c.id, ownerId: c.user_id, hp: s.hp, maxHp: s.maxHp, tempHp: s.tempHp ?? 0,
+  const secondWindMax = secondWindMaximum(c);
+  const resources = resourceState(db, c.id);
+  return fresh({ id: randomUUID(), name: c.name, memberId, characterId: c.id, ownerId: c.user_id, level: c.level, hp: s.hp, maxHp: s.maxHp, tempHp: s.tempHp ?? 0,
     ac: s.ac, speed: s.speed ?? 0, saves: s.savingThrows, notes: '', attacks, maxAttacks, concentration: resourceState(db, c.id).concentration ?? null,
+    secondWindUses: secondWindMax ? resources.secondWindUses ?? secondWindMax : 0, secondWindMax,
     protectionAvailable: stats.choices?.fightingStyle === 'protection' && equipment.some(item => item.equipped && item.armorCategory === 'shield'),
     deathSuccesses: s.deathSuccesses ?? 0, deathFailures: s.deathFailures ?? 0 });
 }
@@ -280,6 +283,22 @@ export function handleBattles(db, user, path, method, body, send) {
                 const hit = roll !== 1 && (roll === 20 || roll + attack.bonus >= target.ac);
                 log(b, `${actor.name} → ${target.name}: ${roll} + ${attack.bonus}: ${hit ? roll === 20 ? 'trafienie krytyczne' : 'trafienie' : 'pudło'}.`);
                 if (hit) b.pending = { kind: 'damage', actorId: actor.id, targetId: target.id, attack, critical: roll === 20, attackTotal: roll + attack.bonus };
+              } else if (kind === 'second-wind') {
+                requireValue(actor.characterId && actor.secondWindMax > 0, 'Drugi oddech jest dostępny tylko dla wojownika.');
+                requireValue(body.slot === 'bonus', 'Drugi oddech wymaga akcji bonusowej.');
+                requireValue(!actor.bonus, 'Akcja bonusowa została już wykorzystana.');
+                requireValue(actor.hp > 0 && actor.hp < actor.maxHp, 'Drugi oddech nie jest teraz potrzebny.');
+                requireValue(actor.secondWindUses > 0, 'Brak dostępnych użyć Drugiego oddechu.');
+                requireValue(int(body.roll, 1, 10), 'Podaj wynik k10 (1–10).');
+                const healed = Math.min(actor.maxHp - actor.hp, body.roll + actor.level);
+                actor.hp += healed;
+                actor.bonus = 'Drugi oddech';
+                actor.secondWindUses--;
+                const state = resourceState(db, actor.characterId);
+                state.secondWindUses = actor.secondWindUses;
+                saveResources(db, actor.characterId, state);
+                persistVitals(db, actor);
+                log(b, `${actor.name}: Drugi oddech przywraca ${healed} PW.`);
               } else if (kind === 'request') {
                 requireValue(['action', 'bonus', 'reaction'].includes(body.slot) && !actor[body.slot], 'Ten rodzaj działania został wykorzystany.');
                 requireValue(typeof body.description === 'string' && body.description.trim() && body.description.length <= 1000 && (body.roll == null || int(body.roll, 1, 20)), 'Opisz działanie i ewentualny wynik k20.');

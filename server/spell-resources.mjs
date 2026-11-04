@@ -6,10 +6,13 @@ import { emptyStatistics } from './statistics.mjs';
 export const resourceState = (db, id) => {
   const row = db.prepare('SELECT data FROM character_spell_resources WHERE character_id = ?').get(id);
   if (row) return JSON.parse(row.data);
-  const initial = { spent: Array(9).fill(0), pactSpent: 0, arcanum: {}, version: 0 };
+  const initial = { spent: Array(9).fill(0), pactSpent: 0, arcanum: {}, secondWindUses: null, version: 0 };
   db.prepare('INSERT INTO character_spell_resources (character_id, data) VALUES (?, ?)').run(id, JSON.stringify(initial));
   return initial;
 };
+export const secondWindMaximum = character => character.class?.includes('Fighter')
+  ? character.level >= 17 ? 5 : character.level >= 10 ? 4 : character.level >= 4 ? 3 : 2
+  : 0;
 export function saveResources(db, id, state) {
   state.version++;
   db.prepare(`INSERT INTO character_spell_resources (character_id, data) VALUES (?, ?)
@@ -75,8 +78,12 @@ export function handleSpellResources(db, user, path, method, body, send) {
     WHERE m.game_id = ? AND m.status = 'accepted' AND s.ended_at IS NULL`).all(gameId);
   if (!characters.length) return reply(409, { error: 'Brak postaci w bieżącej sesji.' });
   for (const { character_id: id } of characters) {
+    const character = db.prepare('SELECT class, level FROM characters WHERE id = ?').get(id);
     const state = resourceState(db, id);
-    if (body.rest === 'long') { state.spent = Array(9).fill(0); state.arcanum = {}; state.concentration = null; state.lastLongRest = Date.now(); }
+    const maxSecondWind = secondWindMaximum(character);
+    if (body.rest === 'long') {
+      state.spent = Array(9).fill(0); state.arcanum = {}; state.concentration = null; state.secondWindUses = maxSecondWind; state.lastLongRest = Date.now();
+    } else if (maxSecondWind) state.secondWindUses = Math.min(maxSecondWind, (state.secondWindUses ?? maxSecondWind - 1) + 1);
     state.pactSpent = 0; state.lastRest = Date.now(); saveResources(db, id, state);
   }
   return reply(200, { restored: characters.length });
