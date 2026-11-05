@@ -8,6 +8,9 @@ export function ChoicesTab({ character, active }: { character: Character; active
   const [abilityScores, setAbilityScores] = useState<Record<string, number | null>>({});
   const [choices, setChoices] = useState<string[]>([]);
   const [fightingStyle, setFightingStyle] = useState('');
+  const [fastCrafting, setFastCrafting] = useState('');
+  const [fastCraftingOptions, setFastCraftingOptions] = useState<{ value: string; name: string; toolLabel: string }[]>([]);
+  const [hasCrafter, setHasCrafter] = useState(false);
   const [draftFightingStyle, setDraftFightingStyle] = useState('');
   const [draftArcaneWarrior, setDraftArcaneWarrior] = useState({ cantrips: ['', ''], ability: '' });
   const [draft, setDraft] = useState<string[]>([]);
@@ -18,14 +21,23 @@ export function ChoicesTab({ character, active }: { character: Character; active
   const hasFightingStyle = fightingStyleCount(character) > 0;
   useEffect(() => {
     if (!active) return;
+    setHasCrafter(character.background === 'Rzemieślnik (Artisan)');
     api<{ statistics: CharacterStatistics }>(`/characters/${character.id}/statistics`)
       .then(({ statistics }) => {
         setAbilityScores(statistics.values);
         setChoices(statistics.choices?.weaponMastery ?? []);
         setFightingStyle(statistics.choices?.fightingStyle ?? '');
+        setFastCrafting(statistics.choices?.fastCrafting ?? '');
         const savedArcaneWarrior = statistics.choices?.arcaneWarrior ?? { cantrips: [], ability: '' };
         setDraftArcaneWarrior({ cantrips: [savedArcaneWarrior.cantrips[0] ?? '', savedArcaneWarrior.cantrips[1] ?? ''], ability: savedArcaneWarrior.ability });
         setDraftFightingStyle('');
+        setFastCraftingOptions([]);
+        void api<{ choices: CharacterStatistics['choices']; fastCraftingOptions?: { value: string; name: string; toolLabel: string }[]; hasCrafter?: boolean }>(`/characters/${character.id}/choices`)
+          .then(data => {
+            setFastCraftingOptions(data.fastCraftingOptions ?? []);
+            setHasCrafter(data.hasCrafter === true);
+          })
+          .catch(e => setError(e instanceof Error ? e.message : 'Nie udało się wczytać tabeli Szybkie wytwarzanie.'));
         setError('');
       })
       .catch(e => setError(e instanceof Error ? e.message : 'Nie udało się wczytać wyborów.'));
@@ -47,12 +59,13 @@ export function ChoicesTab({ character, active }: { character: Character; active
       if (selectedStyle === 'arcane-warrior' && (selectedArcaneWarrior.cantrips.some(value => !value) || new Set(selectedArcaneWarrior.cantrips).size !== 2 || !selectedArcaneWarrior.ability)) {
         setError('Wybierz dwie różne sztuczki i cechę czarowania dla Arcane Warrior.'); return;
       }
-      await api(`/characters/${character.id}/choices`, { weaponMastery: values, fightingStyle: selectedStyle, arcaneWarrior: selectedArcaneWarrior });
+      await api(`/characters/${character.id}/choices`, { weaponMastery: values, fightingStyle: selectedStyle, arcaneWarrior: selectedArcaneWarrior, fastCrafting });
       setChoices(values); setDraft([]); setFightingStyle(selectedStyle); setDraftFightingStyle(''); setDraftArcaneWarrior(selectedArcaneWarrior); setMessage('Wybory zapisane.');
     } catch (e) { setError(e instanceof Error ? e.message : 'Nie udało się zapisać wyborów.'); }
     finally { setPending(false); }
   }
-  if (!count && !hasFightingStyle) return <Cardless heading="Wybory"><p className="statistics-help">Ta postać nie ma obecnie wyborów zależnych od odpoczynku ani awansu.</p></Cardless>;
+  const hasFastCrafting = hasCrafter;
+  if (!count && !hasFightingStyle && !hasFastCrafting) return <Cardless heading="Wybory"><p className="statistics-help">Ta postać nie ma obecnie wyborów zależnych od odpoczynku ani awansu.</p></Cardless>;
   const values = draft.length ? draft : choices;
   const selectedStyle = fightingStyles.find(style => style.id === (draftFightingStyle || fightingStyle));
   const selectedStyleId = draftFightingStyle || fightingStyle;
@@ -93,6 +106,11 @@ export function ChoicesTab({ character, active }: { character: Character; active
       <button className="primary-button" disabled={pending} onClick={() => void save()}>{pending ? 'Zapisywanie…' : 'Zapisz wybory'}</button>
     </section>}
     {count > 0 && <section className="card"><h3>Co Short Rest</h3><p className="statistics-help">Brak wyborów zależnych od krótkiego odpoczynku dla tej postaci.</p></section>}
+    {hasFastCrafting && <section className="card"><h3>Co Long Rest</h3><p className="statistics-help">Wybierz jeden przedmiot, który wytworzysz po długim odpoczynku. Przedmiot zostanie dodany do plecaka przy zapisie wyboru.</p>
+      {fastCraftingOptions.length ? <label>Szybkie wytwarzanie<select value={fastCrafting} disabled={pending} onChange={event => setFastCrafting(event.target.value)}><option value="">Nie wytwarzaj</option>{fastCraftingOptions.map(option => <option key={option.value} value={option.value}>{option.name} — {option.toolLabel}</option>)}</select></label>
+        : <p className="statistics-help">Wybierz najpierw narzędzia w sekcji Crafter albo dodaj odpowiednie narzędzie do plecaka.</p>}
+      <button className="primary-button" disabled={pending || !fastCraftingOptions.length} onClick={() => void save()}>{pending ? 'Zapisywanie…' : 'Zapisz wybory'}</button>
+    </section>}
   </section>;
 }
 

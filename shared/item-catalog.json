@@ -128,6 +128,14 @@
     "cost": "2 GP"
   },
   {
+    "id": "case",
+    "name": "Pojemnik",
+    "description": "Pojemnik służy do przechowywania niewielkich przedmiotów.",
+    "slot": "backpack",
+    "weight": 1,
+    "cost": "1 GP"
+  },
+  {
     "id": "bucket",
     "name": "Wiadro",
     "description": "Wiadro mieści do pół stopy sześciennej zawartości.",

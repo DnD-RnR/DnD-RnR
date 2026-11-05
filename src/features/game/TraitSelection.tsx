@@ -24,6 +24,7 @@ export function TraitSelection({ character, statistics, onChange }: Props) {
       <div><dt>Narzędzia i instrumenty</dt><dd>{profile.tools.join(', ') || 'Brak / wybierz poniżej'}</dd></div>
       <div><dt>Języki</dt><dd>{profile.languages.map(language => language.label).join(', ')}</dd></div>
       <div><dt>Atuty pochodzenia</dt><dd>{profile.feats.join(', ') || 'Nie wybrano'}</dd></div>
+      {Object.entries(profile.originFeatDescriptions).map(([name, description]) => <div key={name}><dt>{name}</dt><dd>{description}</dd></div>)}
       <div><dt>Rozmiar</dt><dd>{profile.size ?? '—'}</dd></div>
       <div><dt>Podstawowa szybkość gatunku</dt><dd>{profile.baseSpeed ?? '—'} stóp</dd></div>
       <div><dt>Zmysły</dt><dd>{profile.senses.join('; ') || 'Brak dodatkowych zmysłów'}</dd></div>

@@ -4,6 +4,7 @@ import { characterTraits, emptyTraitSelection, validateTraitSelection } from '..
 import { armorClassFromEquipment, armorSpeedPenalty, armorTrainingEffects, hasArmorTraining, hasStealthDisadvantage, speedFromEquipment } from './armor-class.mjs';
 import { weaponMasteryChoicesValid } from '../shared/weapon-mastery.mjs';
 import { fightingStyleChoicesValid, wizardCantrips } from '../shared/fighting-style.mjs';
+import { fastCraftingOptions } from '../shared/crafter.mjs';
 
 const emptyArcaneWarrior = () => ({ cantrips: [], ability: '' });
 const validArcaneWarrior = value => value && typeof value === 'object' && !Array.isArray(value)
@@ -21,7 +22,7 @@ export function emptyStatistics() {
     skills: Object.fromEntries(definitions.skills.map(skill => [skill.id, 0])),
     spellAbility: '',
     notes: Object.fromEntries(definitions.notes.map(field => [field.id, ''])),
-    choices: { weaponMastery: [], fightingStyle: '', arcaneWarrior: emptyArcaneWarrior() },
+    choices: { weaponMastery: [], fightingStyle: '', arcaneWarrior: emptyArcaneWarrior(), fastCrafting: '' },
   };
 }
 function validStatistics(stats) {
@@ -49,23 +50,59 @@ export function handleStatistics(db, user, path, method, body, send) {
     if (method === 'GET') {
       const stored = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(characterId);
       const choices = stored ? JSON.parse(stored.data).choices ?? {} : {};
-      send(200, { choices: {
+      const currentStats = stored ? JSON.parse(stored.data) : emptyStatistics();
+      const craftingProfile = characterTraits(character, currentStats);
+      const ownedTools = new Set(db.prepare('SELECT name FROM character_items WHERE character_id = ?').all(characterId).map(item => item.name));
+      const craftingOptions = craftingProfile.feats.includes('Crafter') ? fastCraftingOptions([...new Set([...craftingProfile.tools, ...ownedTools])]).map(option => {
+        const catalog = option.kind === 'item'
+          ? db.prepare('SELECT name FROM item_catalog WHERE source_id = ?').get(option.id)
+          : db.prepare('SELECT name FROM weapon_catalog WHERE id = ?').get(option.id);
+        return { value: `${option.kind}:${option.id}`, name: catalog?.name ?? option.id, toolLabel: option.toolLabel };
+      }).filter(option => option.name) : [];
+      const hasCrafter = craftingProfile.feats.includes('Crafter') || character.background === 'Rzemieślnik (Artisan)';
+      send(200, { hasCrafter, choices: {
         weaponMastery: choices.weaponMastery ?? [],
         fightingStyle: choices.fightingStyle ?? '',
         arcaneWarrior: choices.arcaneWarrior ?? emptyArcaneWarrior(),
-      } });
+        fastCrafting: choices.fastCrafting ?? '',
+      }, fastCraftingOptions: craftingOptions });
     } else if (method === 'POST') {
       const arcaneWarrior = body?.arcaneWarrior;
+      const stored = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(characterId);
+      const currentStats = stored ? JSON.parse(stored.data) : emptyStatistics();
+      const profile = characterTraits(character, currentStats);
+      const ownedTools = new Set(db.prepare('SELECT name FROM character_items WHERE character_id = ?').all(characterId).map(item => item.name));
+      const availableCrafting = (profile.feats.includes('Crafter') || character.background === 'Rzemieślnik (Artisan)')
+        ? fastCraftingOptions([...new Set([...profile.tools, ...ownedTools])])
+        : [];
+      const fastCrafting = Object.hasOwn(body, 'fastCrafting') ? body.fastCrafting : currentStats.choices?.fastCrafting ?? '';
       if (!body || !weaponMasteryChoicesValid(character, body.weaponMastery) || !fightingStyleChoicesValid(character, body.fightingStyle ?? '')
+        || typeof fastCrafting !== 'string'
+        || (fastCrafting !== '' && !availableCrafting.some(option => `${option.kind}:${option.id}` === fastCrafting))
         || (body.fightingStyle === 'arcane-warrior' && !validArcaneWarrior(arcaneWarrior))) {
         send(400, { error: 'Wybierz poprawne, niepowtarzające się bronie do Weapon Mastery.' }); return true;
       }
-      const stored = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(characterId);
-      const stats = stored ? JSON.parse(stored.data) : emptyStatistics();
+      const stats = currentStats;
+      if (fastCrafting !== '' && fastCrafting !== stats.choices?.fastCrafting) {
+        const [kind, id] = fastCrafting.split(':');
+        db.exec('BEGIN IMMEDIATE');
+        try {
+          const option = availableCrafting.find(value => value.kind === kind && value.id === id);
+          const item = kind === 'item'
+            ? db.prepare('SELECT source_id AS sourceId, name, description, slot, weight, cost FROM item_catalog WHERE source_id = ?').get(id)
+            : db.prepare('SELECT id, name, weight, cost FROM weapon_catalog WHERE id = ?').get(id);
+          if (!option || !item) { db.exec('ROLLBACK'); send(409, { error: 'Wybrany przedmiot nie jest już dostępny w tabeli Szybkie wytwarzanie.' }); return true; }
+          db.prepare(`INSERT INTO character_items
+            (character_id, name, description, quantity, slot, equipped, weapon_id, weight, cost)
+            VALUES (?, ?, ?, 1, 'backpack', 0, ?, ?, ?)`).run(characterId, item.name, item.description ?? '', kind === 'weapon' ? item.id : null, item.weight, item.cost);
+          db.exec('COMMIT');
+        } catch (error) { db.exec('ROLLBACK'); throw error; }
+      }
       stats.choices = {
         weaponMastery: body.weaponMastery,
         fightingStyle: body.fightingStyle ?? '',
         arcaneWarrior: body.fightingStyle === 'arcane-warrior' ? arcaneWarrior : emptyArcaneWarrior(),
+        fastCrafting,
       };
       db.prepare('INSERT INTO character_statistics (character_id, data) VALUES (?, ?) ON CONFLICT(character_id) DO UPDATE SET data = excluded.data').run(characterId, JSON.stringify(stats));
       send(200, { choices: stats.choices });
@@ -78,6 +115,7 @@ export function handleStatistics(db, user, path, method, body, send) {
     statistics.choices ??= { weaponMastery: [], fightingStyle: '', arcaneWarrior: emptyArcaneWarrior() };
     statistics.choices.fightingStyle ??= '';
     statistics.choices.arcaneWarrior ??= emptyArcaneWarrior();
+    statistics.choices.fastCrafting ??= '';
     statistics.spellAbility = spellcastingProfile(character, statistics.spells).ability || statistics.spellAbility;
     statistics.proficiency = 2 + Math.floor((character.level - 1) / 4);
     const equipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.armor_class AS armorClass, a.strength,
@@ -126,6 +164,7 @@ export function handleStatistics(db, user, path, method, body, send) {
       weaponMastery: choices.weaponMastery,
       fightingStyle: choices.fightingStyle ?? '',
       arcaneWarrior: choices.fightingStyle === 'arcane-warrior' ? choices.arcaneWarrior : emptyArcaneWarrior(),
+      fastCrafting: choices.fastCrafting ?? '',
     };
     stats.spellAbility = spellcastingProfile(character, spells).ability || body.spellAbility;
     stats.proficiency = 2 + Math.floor((character.level - 1) / 4);

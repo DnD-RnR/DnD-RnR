@@ -48,13 +48,13 @@ export function fightingStyleDamageBonus(fightingStyle, weapon, equippedWeapons 
   return equippedWeapons.some(item => item?.slot === 'off-hand') ? 0 : 2;
 }
 
-export function unarmedStrikeProfile(fightingStyle, equippedWeapons = [], hasShield = false, abilityModifier = 0) {
+export function unarmedStrikeProfile(fightingStyle, equippedWeapons = [], hasShield = false, abilityModifier = 0, tavernBrawler = false) {
   const enhanced = fightingStyle === 'unarmed-fighting';
   const holdingWeaponOrShield = equippedWeapons.length > 0 || hasShield;
   return {
-    dice: enhanced ? 1 : 0,
-    sides: enhanced ? (holdingWeaponOrShield ? 6 : 8) : 0,
-    damageBonus: enhanced ? abilityModifier : Math.max(0, 1 + abilityModifier),
+    dice: enhanced || tavernBrawler ? 1 : 0,
+    sides: enhanced ? (holdingWeaponOrShield ? 6 : 8) : tavernBrawler ? 4 : 0,
+    damageBonus: enhanced || tavernBrawler ? abilityModifier : Math.max(0, 1 + abilityModifier),
   };
 }
 

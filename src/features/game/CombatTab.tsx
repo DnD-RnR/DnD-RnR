@@ -45,7 +45,9 @@ function UnarmedStrike({ character, statistics, equippedItems }: { character: Ch
   const modifier = (ability: string) => statistics.values[ability] == null ? null : Math.floor((statistics.values[ability]! - 10) / 2);
   const strength = modifier('str');
   const attackBonus = strength === null ? null : strength + statistics.proficiency;
-  const unarmed = strength === null ? null : unarmedStrikeProfile(statistics.choices?.fightingStyle, weapons, equippedItems.some(item => item.armor?.category === 'shield'), strength);
+  const traits = characterTraits(character, statistics);
+  const hasTavernBrawler = traits.feats.includes('Tavern Brawler');
+  const unarmed = strength === null ? null : unarmedStrikeProfile(statistics.choices?.fightingStyle, weapons, equippedItems.some(item => item.armor?.category === 'shield'), strength, hasTavernBrawler);
   const savingThrowDC = strength === null ? null : 8 + strength + statistics.proficiency;
   const mainHand = weapons.find(item => item.slot === 'main-hand');
   const offHand = weapons.find(item => item.slot === 'off-hand');
@@ -64,6 +66,7 @@ function UnarmedStrike({ character, statistics, equippedItems }: { character: Ch
         <li><details><summary>Obrażenia</summary>
           <p>Wykonujesz rzut na atak przeciwko celowi. Twoja premia do rzutu wynosi modyfikator Siły plus premia z biegłości: <strong>{value(attackBonus)}</strong>.</p>
           <p>Przy trafieniu cel otrzymuje obrażenia obuchowe: <strong>{unarmed ? `${unarmed.dice}k${unarmed.sides} ${signed(unarmed.damageBonus)}` : 'brak danych'}</strong>.</p>
+          {hasTavernBrawler && <><p><strong>Enhanced Unarmed Strike:</strong> zamiast normalnych obrażeń ciosu bez broni zadajesz 1k4 + modyfikator Siły obrażeń obuchowych.</p><p><strong>Damage Rerolls:</strong> gdy na kości obrażeń ciosu bez broni wypadnie 1, możesz przerzucić tę kość, ale musisz użyć nowego wyniku.</p><p><strong>Push:</strong> gdy trafisz istotę ciosem bez broni w ramach akcji Atak, możesz zadać jej obrażenia i dodatkowo odepchnąć ją o 5 stóp. Możesz użyć tego efektu tylko raz na turę.</p></>}
         </details></li>
         {hasFreeHand && <li><details><summary>Pochwycenie</summary>
           <p>Cel musi wykonać udany rzut obronny na Siłę lub Zręczność (wybiera cel), w przeciwnym razie otrzymuje stan Pochwycony. ST rzutu obronnego i prób ucieczki wynosi 8 plus modyfikator Siły i premia z biegłości: <strong>{calculatedValue(savingThrowDC)}</strong>.</p>
@@ -204,6 +207,11 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
     !isTwoHandedWeapon(mainHand) && !isTwoHandedWeapon(offHand));
   const actionWeapons = equippedWeapons.filter(item => item.slot !== 'off-hand' || item.weapon?.mastery === 'Nick');
   const bonusWeapons: InventoryItem[] = dualWield && offHand && offHand.weapon?.mastery !== 'Nick' ? [offHand] : [];
+  const actionEntries = statistics && characterTraits(character, statistics).feats.includes('Healer')
+    ? actions.map(([name, description]) => name === 'Użycie przedmiotu'
+      ? [name, `${description} Jeśli masz zestaw uzdrowiciela, możesz zużyć jedno jego użycie i w ramach tej akcji opatrzyć istotę w odległości do 5 stóp od siebie. Ta istota może wydać jedną ze swoich Kości Wytrzymałości, a ty wykonujesz rzut tą kością. Istota odzyskuje liczbę Punktów Wytrzymałości równą wynikowi rzutu plus premia z biegłości: ${signed(statistics.proficiency)}.`] as const
+      : [name, description] as const)
+    : actions;
 
   return (
     <div className="combat-tab">
@@ -216,7 +224,7 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
       {error && <p className="form-error" role="alert">{error}</p>}
       <SpellResources characterId={character.id} /><div className="combat-sections">
         <Card title="Akcja" eyebrow="TURA">
-          <ActionList entries={actions} spells={combatSpells.action} weapons={actionWeapons} character={character} statistics={statistics} equippedItems={equippedItems} />
+          <ActionList entries={actionEntries} spells={combatSpells.action} weapons={actionWeapons} character={character} statistics={statistics} equippedItems={equippedItems} />
         </Card>
         <Card title="Akcja bonusowa" eyebrow="TURA">
           <ActionList entries={character.class.includes('Fighter') ? [['Drugi oddech', 'Masz ograniczony zapas fizycznej i mentalnej wytrzymałości, z którego możesz czerpać. W ramach akcji bonusowej możesz go wykorzystać, aby odzyskać punkty życia (PW) w liczbie 1k10 + poziom wojownika.'] as const] : []} spells={combatSpells.bonus} />

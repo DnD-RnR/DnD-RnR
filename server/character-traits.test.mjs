@@ -109,8 +109,25 @@ test('origin feats, species and tool selections combine without overwriting note
   stats.traits = { humanFeat: ['Skilled'] };
   profile = characterTraits(hero('Bard', 1, 'Szlachcic (Noble)', 'Człowiek (Human)'), stats);
   assert.equal(group(profile, 'skilled').limit, 6);
+  assert.match(validateTraitSelection(hero('Bard', 1, 'Skryba (Scribe)'), { ...stats, traits: {}, requireCompleteTraits: true }), /Skilled.*3/);
+  stats.traits = { skilled: ['skill:acrobatics', 'tool:Dice', 'skill:athletics'] };
+  assert.equal(validateTraitSelection(hero('Bard', 1, 'Skryba (Scribe)'), { ...stats, requireCompleteTraits: true }), null);
+  assert.equal(characterTraits(hero('Bard', 1, 'Skryba (Scribe)'), stats).effectiveSkills.acrobatics, 1);
+  assert.ok(characterTraits(hero('Bard', 1, 'Skryba (Scribe)'), stats).tools.includes('Dice'));
   assert.equal(stats.notes.languages, 'A language agreed with the GM');
   assert.equal(group(characterTraits(hero('Bard', 1, 'Artysta (Entertainer)'), emptyStatistics()), 'musician').limit, 3);
+});
+
+test('Tavern Brawler exposes its origin proficiency description', () => {
+  const profile = characterTraits(hero('Wojownik (Fighter)', 1, 'Żeglarz (Sailor)'), emptyStatistics());
+  assert.ok(profile.feats.includes('Tavern Brawler'));
+  assert.equal(profile.originFeatDescriptions['Biegłość w broni improwizowanej'], 'Zyskujesz biegłość w broni improwizowanej.');
+});
+
+test('Healer exposes its healing rerolls origin ability', () => {
+  const profile = characterTraits(hero('Wojownik (Fighter)', 1, 'Pustelnik (Hermit)'), emptyStatistics());
+  assert.ok(profile.feats.includes('Healer'));
+  assert.match(profile.originFeatDescriptions['Healing Rerolls (Przerzuty leczenia)'], /przerzucić kość/);
 });
 
 test('gnome lineage requires a lineage and spellcasting ability and applies gnome size', () => {

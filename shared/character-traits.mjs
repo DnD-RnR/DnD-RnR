@@ -1,6 +1,7 @@
 import data from './trait-data.json' with { type: 'json' };
 import options from './trait-options.json' with { type: 'json' };
 import definitions from './statistics.json' with { type: 'json' };
+import { crafterDescription, crafterTools } from './crafter.mjs';
 
 export const emptyTraitSelection = () => ({});
 const skillOptions = definitions.skills.map(skill => ({ id: skill.id, label: skill.label }));
@@ -86,7 +87,7 @@ export function characterTraits(character, stats) {
     ...skillOptions.filter(skill => !skills[skill.id]).map(skill => ({ ...skill, id: `skill:${skill.id}` })),
     ...namedOptions([...options.artisanTools, ...options.instruments, ...options.gamingSets, ...options.otherTools].filter(name => !tools.has(name))).map(tool => ({ id: `tool:${tool.id}`, label: tool.label })),
   ], 'mixed');
-  if (feats.has('Crafter')) toolGroup('crafter', 'Crafter — trzy narzędzia rzemieślnicze', 3, options.artisanTools);
+  if (feats.has('Crafter')) toolGroup('crafter', 'Crafter — trzy narzędzia rzemieślnicze', 3, crafterTools);
   if (feats.has('Musician')) toolGroup('musician', 'Musician — trzy instrumenty', 3, options.instruments);
   let expertise = classId === 'rogue' ? level >= 6 ? 4 : 2 : classId === 'bard' && level >= 2 ? level >= 9 ? 4 : 2 : classId === 'ranger' && level >= 2 ? level >= 9 ? 3 : 1 : 0;
   if (classId === 'wizard' && level >= 2) expertise = 1;
@@ -127,6 +128,18 @@ export function characterTraits(character, stats) {
     );
   }
   const features = [...new Map([...classFeatures, ...subclassFeatures, ...lineageFeatures].map(feature => [`${feature.source}:${feature.name}`, feature])).values()];
+  const originFeatDescriptions = {};
+  if (feats.has('Crafter')) Object.assign(originFeatDescriptions, {
+    'Biegłość w narzędziach': crafterDescription.toolProficiency,
+    Rabat: crafterDescription.discount,
+    'Szybkie wytwarzanie': crafterDescription.fastCrafting,
+  });
+  if (feats.has('Tavern Brawler')) Object.assign(originFeatDescriptions, {
+    'Biegłość w broni improwizowanej': 'Zyskujesz biegłość w broni improwizowanej.',
+  });
+  if (feats.has('Healer')) Object.assign(originFeatDescriptions, {
+    'Healing Rerolls (Przerzuty leczenia)': 'Za każdym razem, gdy wykonujesz rzut kością, aby określić liczbę Punktów Wytrzymałości odzyskanych dzięki czarowi lub atutowi Healer — Medycyna bitewna, możesz przerzucić kość, jeśli wypadnie na niej 1. Musisz użyć nowego wyniku.',
+  });
   const darkvision = species === 'Krasnolud (Dwarf)' || species === 'Ork (Orc)' ? 120 : ['Aasimar', 'Smokowiec (Dragonborn)', 'Elf', 'Gnom (Gnome)', 'Diabelstwo (Tiefling)'].includes(species) ? 60 : 0;
   const senses = darkvision ? [`Widzenie w ciemności: ${darkvision} stóp (gatunek)`] : [];
   if (classId === 'ranger' && level >= 18) senses.push('Ślepowidzenie: 30 stóp (Feral Senses)');
@@ -145,7 +158,7 @@ export function characterTraits(character, stats) {
     classId, source: cls?.url ?? data.source, groups, skills, effectiveSkills: allSkills,
     savingThrows: [...new Set(savingThrows)], effectiveSavingThrows: [...new Set([...savingThrows, ...(stats.savingThrows ?? [])])],
     skillSources: sourceLabels, skillBonuses, languages: options.languages.filter(language => languages.has(language.id)),
-    tools: [...tools], armor: armor.filter(Boolean), weapons: weapons.filter(Boolean), feats: [...feats], features,
+    tools: [...tools], armor: armor.filter(Boolean), weapons: weapons.filter(Boolean), feats: [...feats], originFeatDescriptions, features,
     hitDie: die, hitDiceTotal: level, size: species === 'Gnom (Gnome)' ? 'Small' : null,
     baseSpeed: species === 'Goliat (Goliath)' ? 35 : species ? 30 : null,
     senses, defenses, resources, hpBonus, firstLevelMaxHp: level === 1 && die && con !== null ? Math.max(1, die + con) + hpBonus : null,
@@ -163,7 +176,10 @@ export function validateTraitSelection(character, stats) {
     const values = selection[group.id] ?? [];
     if (values.length > group.limit) return `${group.label}: limit wynosi ${group.limit}.`;
     if (values.some(id => !group.options.some(option => option.id === id))) return `${group.label}: wybierz dostępną, niepowtarzającą się pozycję.`;
-    if (stats.requireCompleteTraits && character.species === 'Gnom (Gnome)' && ['gnomeLineage', 'gnomeSpellAbility'].includes(group.id) && values.length !== group.limit) return `${group.label}: wybierz jedną opcję.`;
+    if (stats.requireCompleteTraits && values.length !== group.limit
+      && (group.id === 'skilled' || character.species === 'Gnom (Gnome)' && ['gnomeLineage', 'gnomeSpellAbility'].includes(group.id))) {
+      return `${group.label}: wybierz ${group.limit} opcji.`;
+    }
   }
   return null;
 }

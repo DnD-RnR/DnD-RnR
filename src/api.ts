@@ -29,7 +29,9 @@ export type CharacterStatistics = {
   stealthDisadvantage?: boolean;
   untrainedArmor?: boolean; untrainedShield?: boolean; d20StrengthDexDisadvantage?: boolean; spellcastingBlocked?: boolean;
   notes: Record<string, string>;
-  choices: { weaponMastery: string[]; fightingStyle: string; arcaneWarrior?: { cantrips: string[]; ability: string } };
+  choices: { weaponMastery: string[]; fightingStyle: string; arcaneWarrior?: { cantrips: string[]; ability: string }; fastCrafting?: string };
+  fastCraftingOptions?: { value: string; name: string; toolLabel: string }[];
+  hasCrafter?: boolean;
 };
 
 export async function api<T>(path: string, body?: unknown): Promise<T> {

@@ -132,6 +132,16 @@ test('attacks use server weapon bonuses, critical dice and do not apply damage t
   } finally { db.close(); }
 });
 
+test('Tavern Brawler changes the server unarmed strike to 1d4 plus Strength', () => {
+  const { db, start } = fixture();
+  try {
+    db.prepare('UPDATE characters SET background = ? WHERE id = 1').run('Żeglarz (Sailor)');
+    const started = start();
+    const unarmed = started.battle.fighters[0].attacks.find(attack => attack.id === 'unarmed');
+    assert.deepEqual({ dice: unarmed.dice, sides: unarmed.sides, damageBonus: unarmed.damageBonus }, { dice: 1, sides: 4, damageBonus: 3 });
+  } finally { db.close(); }
+});
+
 test('fighter second wind heals from a d10, consumes a use and bonus action', () => {
   const { db, call, start, player } = fixture();
   try {
