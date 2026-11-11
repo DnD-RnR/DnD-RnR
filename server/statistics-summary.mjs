@@ -19,7 +19,7 @@ export function statisticsSummary(character, stored, equipment = []) {
     const extra = traits.skillBonuses[skill.id];
     return [skill.id, mod === null || extra === null ? null : mod + proficiency * traits.effectiveSkills[skill.id] + extra];
   }));
-  const spellAbility = spellcastingProfile(character, stats.spells).ability || stats.spellAbility;
+  const spellAbility = spellcastingProfile(character, stats.spells, stats.traits).ability || stats.spellAbility;
   const spellMod = spellAbility ? modifier(spellAbility) : null;
   const dex = modifier('dex');
   return {

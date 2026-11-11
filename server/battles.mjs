@@ -3,7 +3,7 @@ import { statisticsSummary } from './statistics-summary.mjs';
 import { emptyStatistics } from './statistics.mjs';
 import { characterTraits } from '../shared/character-traits.mjs';
 import { fightingStyleAttackBonus, fightingStyleDamageBonus, unarmedStrikeProfile } from '../shared/fighting-style.mjs';
-import { publicCaster, resourceState, saveResources, secondWindMaximum } from './spell-resources.mjs';
+import { publicCaster, resourceState, saveResources, secondWindMaximum, speciesResourceState, proficiencyBonus } from './spell-resources.mjs';
 import { handleCombatSpell } from './spell-combat.mjs';
 
 const int = (n, min, max) => Number.isInteger(n) && n >= min && n <= max;
@@ -63,9 +63,19 @@ function characterFighter(db, sessionId, memberId) {
     : /Barbarian|Monk|Paladin|Ranger/.test(c.class) && c.level >= 5 ? 2 : 1;
   const secondWindMax = secondWindMaximum(c);
   const resources = resourceState(db, c.id);
+  const speciesResources = speciesResourceState(db, c.id, c);
   return fresh({ id: randomUUID(), name: c.name, memberId, characterId: c.id, ownerId: c.user_id, level: c.level, hp: s.hp, maxHp: s.maxHp, tempHp: s.tempHp ?? 0,
     ac: s.ac, speed: s.speed ?? 0, saves: s.savingThrows, notes: '', attacks, maxAttacks, concentration: resourceState(db, c.id).concentration ?? null,
     secondWindUses: secondWindMax ? resources.secondWindUses ?? secondWindMax : 0, secondWindMax,
+    adrenalineRushUses: speciesResources.adrenalineRushUses, adrenalineRushMax: speciesResources.maxAdrenalineRush,
+    relentlessEnduranceAvailable: speciesResources.relentlessEnduranceAvailable,
+    breathWeaponUses: speciesResources.breathWeaponUses, breathWeaponMax: speciesResources.maxBreathWeapon,
+    breathWeaponDamage: speciesResources.breathWeaponDamage, breathWeaponType: speciesResources.breathWeaponType,
+    breathWeaponDC: speciesResources.maxBreathWeapon && s.abilities.con.modifier !== null ? 8 + s.abilities.con.modifier + s.proficiency : null,
+    goliathAncestry: speciesResources.goliathAncestry, giantAncestryUses: speciesResources.giantAncestryUses, giantAncestryMax: speciesResources.maxGiantAncestry,
+    largeFormAvailable: speciesResources.largeFormAvailable,
+    damageResistance: traits.ancestry?.damageType ?? traits.fiendishLegacy?.damageType ?? null,
+    draconicFlightAvailable: speciesResources.draconicFlightAvailable,
     protectionAvailable: stats.choices?.fightingStyle === 'protection' && equipment.some(item => item.equipped && item.armorCategory === 'shield'),
     deathSuccesses: s.deathSuccesses ?? 0, deathFailures: s.deathFailures ?? 0 });
 }
@@ -76,7 +86,8 @@ function persistVitals(db, f) {
   db.prepare(`INSERT INTO character_statistics (character_id, data) VALUES (?, ?)
     ON CONFLICT(character_id) DO UPDATE SET data = excluded.data`).run(f.characterId, JSON.stringify(stats));
 }
-function damage(db, f, amount, critical = false) {
+function damage(db, f, amount, critical = false, damageType = null) {
+  if (damageType && f.damageResistance === damageType) amount = Math.floor(amount / 2);
   f.damageTaken = (f.damageTaken ?? Math.max(0, f.maxHp - f.hp)) + amount;
   const before = f.hp;
   const absorbed = Math.min(f.tempHp, amount);
@@ -86,6 +97,14 @@ function damage(db, f, amount, critical = false) {
   f.lastDamage = { amount, hpBefore: before, tempHpAbsorbed: absorbed, hpLost: Math.min(before, remaining), excess };
   f.overkillDamage = (f.overkillDamage ?? 0) + excess;
   f.hp = Math.max(0, f.hp - remaining);
+  if (f.characterId && before > 0 && f.hp === 0 && f.relentlessEnduranceAvailable) {
+    f.hp = 1;
+    f.relentlessEnduranceAvailable = false;
+    const state = resourceState(db, f.characterId);
+    state.relentlessEnduranceAvailable = false;
+    saveResources(db, f.characterId, state);
+    f.lastDamage.relentlessEndurance = true;
+  }
   if (f.characterId && before > 0 && f.hp === 0) { f.deathSuccesses = 0; f.deathFailures = 0; }
   if (f.characterId && amount > 0 && before === 0) {
     if (f.deathSuccesses >= 3) { f.deathSuccesses = 0; f.deathFailures = 0; }
@@ -213,7 +232,7 @@ export function handleBattles(db, user, path, method, body, send) {
           if (body.targetId) {
             const target = b.fighters.find(f => f.id === body.targetId);
             requireValue(target && int(body.amount, 0, 9999) && ['damage', 'heal'].includes(body.effect), 'Wybierz cel, efekt i wartość.');
-            if (body.effect === 'damage') damage(db, target, body.amount);
+            if (body.effect === 'damage') damage(db, target, body.amount, false, body.damageType ?? null);
             else { requireValue(target.deathFailures < 3, 'Zwykłe leczenie nie przywraca życia.'); target.hp = Math.min(target.maxHp, target.hp + body.amount); if (target.hp > 0) { target.deathFailures = 0; target.deathSuccesses = 0; } persistVitals(db, target); }
           }
           log(b, `GM: ${body.note}${body.targetId ? ` (${body.effect === 'damage' ? 'obrażenia' : 'leczenie'}: ${body.amount})` : ''}`); b.pending = null;
@@ -299,6 +318,41 @@ export function handleBattles(db, user, path, method, body, send) {
                 saveResources(db, actor.characterId, state);
                 persistVitals(db, actor);
                 log(b, `${actor.name}: Drugi oddech przywraca ${healed} PW.`);
+              } else if (kind === 'adrenaline-rush') {
+                requireValue(actor.characterId && actor.adrenalineRushMax > 0, 'Adrenaline Rush jest dostępne tylko dla Orka.');
+                requireValue(body.slot === 'bonus' && !actor.bonus, 'Adrenaline Rush wymaga dostępnej akcji bonusowej.');
+                requireValue(actor.adrenalineRushUses > 0, 'Brak dostępnych użyć Adrenaline Rush.');
+                actor.bonus = 'Adrenaline Rush';
+                actor.extraMove += actor.speed;
+                actor.tempHp = proficiencyBonus(actor.level);
+                actor.adrenalineRushUses--;
+                const state = resourceState(db, actor.characterId);
+                state.adrenalineRushUses = actor.adrenalineRushUses;
+                saveResources(db, actor.characterId, state);
+                persistVitals(db, actor);
+                log(b, `${actor.name}: Adrenaline Rush — Zryw i ${proficiencyBonus(actor.level)} tymczasowych PW.`);
+              } else if (kind === 'breath-weapon') {
+                requireValue(actor.characterId && actor.breathWeaponMax > 0, 'Broń Oddechowa jest dostępna tylko dla Smokowca z wybranym przodkiem.');
+                requireValue(body.slot === 'action' && !actor.action, 'Broń Oddechowa wymaga dostępnej akcji.');
+                requireValue(actor.breathWeaponUses > 0, 'Brak dostępnych użyć Broni Oddechowej.');
+                actor.action = 'Broń Oddechowa';
+                actor.breathWeaponUses--;
+                const state = resourceState(db, actor.characterId);
+                state.breathWeaponUses = actor.breathWeaponUses;
+                saveResources(db, actor.characterId, state);
+                b.pending = { kind: 'request', actorId: actor.id, slot: 'action', description: `Broń Oddechowa: stożek 15 stóp lub linia 5 × 30 stóp; rzut obronny na ZR lub KON, ST ${actor.breathWeaponDC}; obrażenia ${actor.breathWeaponDamage}k10 (${actor.breathWeaponType}). GM wybiera cele i rozstrzyga obszar.`, breathWeapon: true };
+                log(b, `${actor.name}: Broń Oddechowa (${actor.breathWeaponType}), pozostałe użycia: ${actor.breathWeaponUses}.`);
+              } else if (kind === 'draconic-flight') {
+                requireValue(actor.characterId && actor.draconicFlightAvailable, 'Lot Smoka jest niedostępny.');
+                requireValue(body.slot === 'bonus' && !actor.bonus, 'Lot Smoka wymaga dostępnej akcji bonusowej.');
+                actor.bonus = 'Lot Smoka';
+                actor.flying = true;
+                actor.flySpeed = actor.speed;
+                actor.draconicFlightAvailable = false;
+                const state = resourceState(db, actor.characterId);
+                state.draconicFlightAvailable = false;
+                saveResources(db, actor.characterId, state);
+                log(b, `${actor.name}: Lot Smoka — szybkość lotu ${actor.flySpeed} stóp przez 10 minut.`);
               } else if (kind === 'request') {
                 requireValue(['action', 'bonus', 'reaction'].includes(body.slot) && !actor[body.slot], 'Ten rodzaj działania został wykorzystany.');
                 requireValue(typeof body.description === 'string' && body.description.trim() && body.description.length <= 1000 && (body.roll == null || int(body.roll, 1, 20)), 'Opisz działanie i ewentualny wynik k20.');

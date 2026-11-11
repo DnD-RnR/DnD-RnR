@@ -2,10 +2,10 @@ import { formatDice } from '../../lib/dice';
 import type { Character } from '../../api';
 import { emptySpellSelection, spellById, spellcastingProfile, validateSpellSelection, type SpellSelection as Selection } from '../../../shared/spellcasting.mjs';
 
-type Props = { character: Character; value: Selection; onChange?: (value: Selection) => void; legacyNotes?: string };
+type Props = { character: Character; value: Selection; traits?: Record<string, string[]>; onChange?: (value: Selection) => void; legacyNotes?: string };
 
-export function SpellSelection({ character, value, onChange, legacyNotes }: Props) {
-  const profile = spellcastingProfile(character, value);
+export function SpellSelection({ character, value, traits, onChange, legacyNotes }: Props) {
+  const profile = spellcastingProfile(character, value, traits);
   const error = validateSpellSelection(character, value);
   const chosen = value.selections;
   const prepared = profile.groups.find(group => group.id === 'prepared');

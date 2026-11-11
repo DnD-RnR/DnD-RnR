@@ -39,7 +39,7 @@ export function StatisticsTab({ character }: { character: Character }) {
   const modifier = (id: string) => stats.values[id] == null ? null : Math.floor((stats.values[id]! - 10) / 2);
   const bonus = (ability: string, rank: number) => { const mod = modifier(ability); return mod === null ? null : mod + proficiency * rank; };
   const dex = modifier('dex');
-  const spellAbility = spellcastingProfile(character, stats.spells).ability || stats.spellAbility;
+  const spellAbility = spellcastingProfile(character, stats.spells, stats.traits).ability || stats.spellAbility;
   const spellMod = spellAbility ? modifier(spellAbility) : null;
   const skillBonus = (id: string, ability: string) => { const base = bonus(ability, traits.effectiveSkills[id]); const extra = traits.skillBonuses[id]; return base === null || extra === null ? null : base + extra; };
   const perception = skillBonus('perception', 'wis');
@@ -57,7 +57,7 @@ export function StatisticsTab({ character }: { character: Character }) {
       <h3>Cechy</h3><div className="statistics-fields">{definitions.abilities.map(field => numberField(field.id, field.label, 1, 30))}</div>
       <h3>Walka i zasoby</h3><div className="statistics-fields">{definitions.numbers.map(field => numberField(field.id, field.label, field.min, field.max))}</div>
       <p>Cecha bazowa magii klasy: <strong>{definitions.abilities.find(ability => ability.id === spellAbility)?.label ?? 'Nie dotyczy'}</strong></p>
-      <SpellSelection character={character} value={draft.spells} onChange={spells => setDraft({ ...draft, spells })} legacyNotes={draft.notes.spells} />
+      <SpellSelection character={character} value={draft.spells} traits={draft.traits} onChange={spells => setDraft({ ...draft, spells })} legacyNotes={draft.notes.spells} />
       <TraitSelection character={character} statistics={draft} onChange={traits => setDraft({ ...draft, traits })} />
       <details className="trait-details"><summary>Dodatkowe biegłości i ekspertyzy spoza automatycznych wpisów</summary><p>Używaj tych pól dla dodatkowych atutów, efektów i ustaleń z MG. Zwykłe wybory klasy wykonuj w sekcji automatycznych wpisów.</p>
       <h3>Dodatkowe biegłości w rzutach obronnych</h3><div className="statistics-checks">{definitions.abilities.map(ability => <label key={ability.id}><input type="checkbox" checked={draft.savingThrows.includes(ability.id)} onChange={event => setDraft({ ...draft, savingThrows: event.target.checked ? [...draft.savingThrows, ability.id] : draft.savingThrows.filter(id => id !== ability.id) })} />{ability.label}</label>)}</div>

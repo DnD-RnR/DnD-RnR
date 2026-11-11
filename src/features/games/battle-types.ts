@@ -5,7 +5,10 @@ export type Combatant = {
   hidden?: boolean; damageTaken?: number; attackDisadvantage?: boolean;
   id: string; name: string; memberId?: number; characterId?: number; ownerId?: number;
   initiative: number; level?: number; hp: number; maxHp: number; tempHp: number; ac: number | null; speed: number;
-  secondWindUses?: number; secondWindMax?: number;
+  secondWindUses?: number; secondWindMax?: number; adrenalineRushUses?: number; adrenalineRushMax?: number; relentlessEnduranceAvailable?: boolean;
+  breathWeaponUses?: number; breathWeaponMax?: number; breathWeaponDamage?: number; breathWeaponType?: string | null; breathWeaponDC?: number | null;
+  goliathAncestry?: { id: string; label: string } | null; giantAncestry?: { id: string; label: string } | null; giantAncestryUses?: number; giantAncestryMax?: number; largeFormAvailable?: boolean;
+  draconicFlightAvailable?: boolean; flying?: boolean; flySpeed?: number; damageResistance?: string | null;
   saves: Record<string, number | null>; notes: string; attacks: Attack[]; maxAttacks: number;
   action: string; bonus: string; reaction: string; moved: number; extraMove: number;
   attacksLeft: number; usedWeapons: string[]; dodge: boolean; deathSuccesses: number; deathFailures: number;
@@ -18,10 +21,10 @@ export type Combat = {
   version: number; sessionId: number; active: boolean; round: number; turn: number;
   fighters: Combatant[]; log: string[];
   pending: null | SpellPending | { kind: 'waiting'; actorId: string } | { kind: 'damage'; actorId: string; targetId: string; attack: Attack; critical: boolean }
-    | { kind: 'request'; actorId: string; slot: 'action' | 'bonus' | 'reaction'; description: string; roll?: number };
+    | { kind: 'request'; actorId: string; slot: 'action' | 'bonus' | 'reaction'; description: string; roll?: number; breathWeapon?: boolean };
 };
 export type CombatResponse = { battle: Combat | null; gm: boolean; controlledIds: string[] };
 export type SpellEffect = { mode: 'attack' | 'save' | 'heal' | 'shield'; dice: number; sides: number; area?: boolean; bonus?: number; ability?: boolean; cantrip?: boolean; perLevel?: number; half?: boolean; save?: string; type?: string };
 export type SpellChoice = { id: string; name: string; level: number; action: 'action' | 'bonus' | 'reaction' | null; effect: SpellEffect | null; arcanum: boolean; arcanumRemaining: boolean; description?: string; upgrade?: string; range?: string; duration?: string; url: string };
-export type SpellcastingState = { slots: Array<{ level: number; total: number; remaining: number; source: string }>; spells: SpellChoice[]; ability: number | null; attack: number | null; dc: number | null; error: string | null; resourceVersion: number };
+export type SpellcastingState = { slots: Array<{ level: number; total: number; remaining: number; source: string }>; spells: SpellChoice[]; ability: number | null; attack: number | null; dc: number | null; error: string | null; resourceVersion: number; species?: { heroicInspirationAvailable?: boolean } };
 export type SpellPending = { kind: 'spell'; actorId: string; spellName: string; stage: 'attack' | 'save' | 'effect'; spec: SpellEffect; targets: Array<{ id: string; saved?: boolean; defenseReady?: boolean; multiplier?: number }>; critical?: boolean; dc: number; attackBonus: number };

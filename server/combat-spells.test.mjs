@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { openDatabase } from './db.mjs';
 import { emptyStatistics } from './statistics.mjs';
 import { handleBattles } from './battles.mjs';
-import { handleSpellResources, resourceState, publicCaster } from './spell-resources.mjs';
+import { handleSpellResources, resourceState, publicCaster, saveResources, speciesResourceState } from './spell-resources.mjs';
 import progression from '../shared/spell-progression.json' with { type: 'json' };
 import { exportRows, hydrate } from './firestore.mjs';
 
@@ -140,6 +140,41 @@ test('long rests restore ordinary slots; short rests only restore Pact Magic, ne
       assert.deepEqual(resourceState(db, 1).arcanum, {});
     } finally { db.close(); }
   }
+});
+
+test('Human Resourceful grants Heroic Inspiration and restores it on a long rest', () => {
+  const { db, rest } = setup();
+  try {
+    db.prepare('UPDATE characters SET species = ? WHERE id = 1').run('Człowiek (Human)');
+    const state = resourceState(db, 1);
+    state.heroicInspirationAvailable = false;
+    saveResources(db, 1, state);
+    assert.equal(speciesResourceState(db, 1).heroicInspirationAvailable, false);
+    assert.equal(rest('long').status, 200);
+    assert.equal(speciesResourceState(db, 1).heroicInspirationAvailable, true);
+  } finally { db.close(); }
+});
+
+test('Goliath Giant Ancestry uses proficiency bonus and restores on a long rest', () => {
+  const { db, rest } = setup();
+  try {
+    db.prepare('UPDATE characters SET species = ?, level = 5 WHERE id = 1').run('Goliat (Goliath)');
+    const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 1').get().data);
+    stats.traits = { giantAncestry: ['stone'] };
+    db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = 1').run(JSON.stringify(stats));
+    const state = speciesResourceState(db, 1);
+    assert.equal(state.goliathAncestry.id, 'stone');
+    assert.equal(state.maxGiantAncestry, 3);
+    assert.equal(state.giantAncestryUses, 3);
+    const resources = resourceState(db, 1);
+    resources.giantAncestryUses = 1;
+    resources.largeFormAvailable = false;
+    saveResources(db, 1, resources);
+    assert.equal(rest('long').status, 200);
+    const restored = speciesResourceState(db, 1);
+    assert.equal(restored.giantAncestryUses, 3);
+    assert.equal(restored.largeFormAvailable, true);
+  } finally { db.close(); }
 });
 
 test('concentration persists as a character resource, damage prompts a CON save and zero HP ends it', () => {

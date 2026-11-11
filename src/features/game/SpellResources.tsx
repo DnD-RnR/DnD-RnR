@@ -15,6 +15,6 @@ export function SpellResources({ characterId }: { characterId: number }) {
     return () => { alive = false; window.clearInterval(timer); window.removeEventListener('focus', load); };
   }, [characterId]);
   if (error) return <p role="alert" className="form-error">{error}</p>;
-  if (!state || !state.slots.length) return null;
-  return <section aria-label="Miejsca na czary"><h3>Pozostałe miejsca na czary</h3><dl className="gm-vitals">{state.slots.map(s => <div key={`${s.source}-${s.level}`}><dt>{s.level}. krąg{s.source === 'pact' ? ' · Pact Magic' : ''}</dt><dd>{s.remaining}/{s.total}</dd></div>)}</dl><p>Sztuczki nie zużywają miejsc. Zasoby są przypisane do postaci i pozostają zużyte po zakończeniu walki.</p></section>;
+  if (!state || (!state.slots.length && !state.species?.heroicInspirationAvailable)) return null;
+  return <section aria-label="Miejsca na czary i zasoby gatunku"><h3>Pozostałe miejsca na czary i zasoby</h3><dl className="gm-vitals">{state.slots.map(s => <div key={`${s.source}-${s.level}`}><dt>{s.level}. krąg{s.source === 'pact' ? ' · Pact Magic' : ''}</dt><dd>{s.remaining}/{s.total}</dd></div>)}{state.species?.heroicInspirationAvailable && <div><dt>Heroic Inspiration</dt><dd>Dostępna</dd></div>}</dl><p>Sztuczki nie zużywają miejsc. Zasoby są przypisane do postaci i pozostają zużyte po zakończeniu walki.</p></section>;
 }

@@ -36,7 +36,6 @@ const isTwoHandedWeapon = (item: InventoryItem) => hasProperty(item, 'dwuręczna
 const qualifiesForGreatWeaponFighting = (item: InventoryItem) => item.grip === 'two' && isMeleeWeapon(item)
   && hasProperty(item, 'dwuręczna', 'two-handed', 'wszechstronna', 'versatile');
 
-const characterSize = (species: string) => ['Gnom (Gnome)', 'Niziołek (Halfling)'].includes(species) ? 'Mała' : 'Średnia';
 const weaponDisplayOrder = (item: InventoryItem) => item.slot === 'main-hand' ? 0 : item.weapon?.type === 'dystansowa' ? 1 : item.slot === 'off-hand' ? 2 : 3;
 
 function UnarmedStrike({ character, statistics, equippedItems }: { character: Character; statistics: CharacterStatistics | null; equippedItems: readonly InventoryItem[] }) {
@@ -55,7 +54,7 @@ function UnarmedStrike({ character, statistics, equippedItems }: { character: Ch
   const hasFreeHand = !hasTwoHandedWeapon && (!mainHand || !offHand);
   const value = (number: number | null) => number === null ? 'brak danych' : signed(number);
   const calculatedValue = (number: number | null) => number === null ? 'brak danych' : String(number);
-  const size = characterSize(character.species);
+  const size = traits.size ?? 'brak danych';
 
   return <details className="unarmed-strike">
     <summary>Cios bez broni</summary>
@@ -187,7 +186,7 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
 
   const combatSpells = useMemo(() => {
     if (!statistics) return { action: [], bonus: [], reaction: [] } as Record<'action' | 'bonus' | 'reaction', Spell[]>;
-    const profile = spellcastingProfile(character, statistics.spells);
+    const profile = spellcastingProfile(character, statistics.spells, statistics.traits);
     const ids = [...profile.automatic.map(spell => spell.id), ...Object.entries(statistics.spells.selections)
       .filter(([groupId]) => groupId !== 'book')
       .flatMap(([, selected]) => selected), ...(statistics.choices?.fightingStyle === 'arcane-warrior' ? statistics.choices.arcaneWarrior?.cantrips ?? [] : [])];
@@ -224,10 +223,17 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
       {error && <p className="form-error" role="alert">{error}</p>}
       <SpellResources characterId={character.id} /><div className="combat-sections">
         <Card title="Akcja" eyebrow="TURA">
-          <ActionList entries={actionEntries} spells={combatSpells.action} weapons={actionWeapons} character={character} statistics={statistics} equippedItems={equippedItems} />
+          <ActionList entries={[
+            ...(character.species === 'Smokowiec (Dragonborn)' ? [['Broń Oddechowa', `Wydalasz niszczycielską energię w stożku o długości 15 stóp albo linii o długości 30 stóp i szerokości 5 stóp. Cel wykonuje rzut obronny na Zręczność lub Kondycję (ST ${statistics?.values.con == null ? '8 + premia z biegłości + modyfikator Kondycji' : 8 + statistics.proficiency + Math.floor((statistics.values.con - 10) / 2)}). Obrażenia zależą od poziomu i typu wybranego przodka; obszar i rzuty rozstrzyga GM.`] as const] : []),
+            ...actionEntries,
+          ]} spells={combatSpells.action} weapons={actionWeapons} character={character} statistics={statistics} equippedItems={equippedItems} />
         </Card>
         <Card title="Akcja bonusowa" eyebrow="TURA">
-          <ActionList entries={character.class.includes('Fighter') ? [['Drugi oddech', 'Masz ograniczony zapas fizycznej i mentalnej wytrzymałości, z którego możesz czerpać. W ramach akcji bonusowej możesz go wykorzystać, aby odzyskać punkty życia (PW) w liczbie 1k10 + poziom wojownika.'] as const] : []} spells={combatSpells.bonus} />
+          <ActionList entries={[
+            ...(character.class.includes('Fighter') ? [['Drugi oddech', 'Masz ograniczony zapas fizycznej i mentalnej wytrzymałości, z którego możesz czerpać. W ramach akcji bonusowej możesz go wykorzystać, aby odzyskać punkty życia (PW) w liczbie 1k10 + poziom wojownika.'] as const] : []),
+            ...(character.species === 'Ork (Orc)' ? [['Adrenaline Rush', `W ramach akcji bonusowej wykonujesz Zryw i zyskujesz tymczasowe PW równe premii z biegłości (${statistics?.proficiency ?? '—'}). Możesz użyć tej cechy ${statistics ? statistics.proficiency : 'premii z biegłości'} razy na długi odpoczynek.`] as const] : []),
+            ...(character.species === 'Smokowiec (Dragonborn)' && character.level >= 5 ? [['Draconic Flight', 'W ramach akcji bonusowej zyskujesz szybkość lotu równą szybkości chodzenia na 10 minut. Możesz użyć tej cechy raz na długi odpoczynek.'] as const] : []),
+          ]} spells={combatSpells.bonus} />
           {!!bonusWeapons.length && <WeaponList weapons={bonusWeapons} character={character} statistics={statistics} showMastery />}
           {!combatSpells.bonus.length && !bonusWeapons.length && <p className="statistics-help">Brak czarów lub ataków z czasem wykonania „Akcja bonusowa”.</p>}
         </Card>

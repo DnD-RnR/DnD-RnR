@@ -116,7 +116,7 @@ export function handleStatistics(db, user, path, method, body, send) {
     statistics.choices.fightingStyle ??= '';
     statistics.choices.arcaneWarrior ??= emptyArcaneWarrior();
     statistics.choices.fastCrafting ??= '';
-    statistics.spellAbility = spellcastingProfile(character, statistics.spells).ability || statistics.spellAbility;
+    statistics.spellAbility = spellcastingProfile(character, statistics.spells, statistics.traits).ability || statistics.spellAbility;
     statistics.proficiency = 2 + Math.floor((character.level - 1) / 4);
     const equipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.armor_class AS armorClass, a.strength,
       a.stealth_disadvantage AS stealthDisadvantage
@@ -166,7 +166,7 @@ export function handleStatistics(db, user, path, method, body, send) {
       arcaneWarrior: choices.fightingStyle === 'arcane-warrior' ? choices.arcaneWarrior : emptyArcaneWarrior(),
       fastCrafting: choices.fastCrafting ?? '',
     };
-    stats.spellAbility = spellcastingProfile(character, spells).ability || body.spellAbility;
+    stats.spellAbility = spellcastingProfile(character, spells, traits).ability || body.spellAbility;
     stats.proficiency = 2 + Math.floor((character.level - 1) / 4);
     const equipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.strength
       FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(characterId);

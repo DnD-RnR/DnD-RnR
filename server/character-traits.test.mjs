@@ -47,6 +47,65 @@ test('languages follow 2024 origins rather than inferring an Elvish language fro
   assert.equal(group(characterTraits(hero('Łowca (Ranger)', 2), emptyStatistics()), 'classLanguages').limit, 2);
 });
 
+test('Orc has the species features, Medium size, and darkvision', () => {
+  const profile = characterTraits(hero('Wojownik (Fighter)', 5, '', 'Ork (Orc)'), emptyStatistics());
+  assert.equal(profile.size, 'Medium');
+  assert.ok(profile.senses.includes('Widzenie w ciemności: 120 stóp (gatunek)'));
+  assert.deepEqual(profile.features.filter(feature => feature.source === 'Ork (Orc)').map(feature => feature.name), [
+    'Adrenaline Rush — Zryw jako akcja bonusowa; tymczasowe PW równe premii z biegłości',
+    'Relentless Endurance — pozostajesz na 1 PW zamiast spaść do 0 PW',
+  ]);
+});
+
+test('Dragonborn requires an ancestry and grants matching resistance and features', () => {
+  const dragonborn = hero('Wojownik (Fighter)', 5, '', 'Smokowiec (Dragonborn)');
+  const stats = emptyStatistics();
+  let profile = characterTraits(dragonborn, stats);
+  assert.equal(profile.size, 'Medium');
+  assert.equal(profile.ancestry, null);
+  assert.equal(validateTraitSelection(dragonborn, { ...stats, requireCompleteTraits: true }), 'Draconic Ancestry — przodek: wybierz 1 opcji.');
+  stats.traits = { dragonbornAncestry: ['fire'] };
+  profile = characterTraits(dragonborn, stats);
+  assert.equal(profile.ancestry.damageType, 'ogień');
+  assert.ok(profile.defenses.includes('Odporność na obrażenia: ogień.'));
+  assert.ok(profile.features.some(feature => feature.name.includes('Breath Weapon')));
+  assert.ok(profile.features.some(feature => feature.name.includes('Draconic Flight')));
+  assert.equal(validateTraitSelection(dragonborn, { ...stats, requireCompleteTraits: true }), null);
+});
+
+test('Tiefling requires legacy, spellcasting ability, and size choices', () => {
+  const tiefling = hero('Bard', 5, '', 'Diabelstwo (Tiefling)');
+  const stats = emptyStatistics();
+  assert.equal(characterTraits(tiefling, stats).size, 'Medium');
+  assert.equal(validateTraitSelection(tiefling, { ...stats, requireCompleteTraits: true }).includes('Fiendish Legacy'), true);
+  stats.traits = { tieflingLegacy: ['infernal'], tieflingSpellAbility: ['cha'], tieflingSize: ['small'] };
+  const profile = characterTraits(tiefling, stats);
+  assert.equal(profile.size, 'Small');
+  assert.equal(profile.fiendishLegacy.damageType, 'ogień');
+  assert.ok(profile.defenses.includes('Odporność na obrażenia: ogień.'));
+  assert.ok(profile.features.some(feature => feature.name.includes('Otherworldly Presence')));
+  assert.equal(validateTraitSelection(tiefling, { ...stats, requireCompleteTraits: true }), null);
+});
+
+test('Human grants the three species traits and requires the chosen size', () => {
+  const human = hero('Wojownik (Fighter)', 1, '', 'Człowiek (Human)');
+  const stats = emptyStatistics();
+  assert.equal(characterTraits(human, stats).size, 'Medium');
+  assert.match(validateTraitSelection(human, { ...stats, requireCompleteTraits: true }), /Human.*Skillful/);
+  stats.traits = { humanSkill: ['perception'], humanFeat: ['Skilled'], humanSize: ['small'], skilled: ['skill:acrobatics', 'skill:athletics', 'tool:Dice'] };
+  const profile = characterTraits(human, stats);
+  assert.equal(profile.size, 'Small');
+  assert.equal(profile.effectiveSkills.perception, 1);
+  assert.equal(profile.effectiveSkills.acrobatics, 1);
+  assert.ok(profile.tools.includes('Dice'));
+  assert.deepEqual(profile.features.filter(feature => feature.source === 'Człowiek (Human)').map(feature => feature.name), [
+    'Resourceful — Heroic Inspiration po długim odpoczynku',
+    'Skillful — biegłość w jednej umiejętności',
+    'Versatile — atut pochodzenia',
+  ]);
+  assert.equal(validateTraitSelection(human, { ...stats, requireCompleteTraits: true }), null);
+});
+
 test('limited choices reject invalid options, duplicates, extra picks and choices from other classes', () => {
   const fighter = hero('Wojownik (Fighter)', 1, 'Żołnierz (Soldier)');
   const stats = emptyStatistics();
@@ -157,6 +216,22 @@ test('gnome validation allows an incomplete draft but requires both choices for 
   stats.traits = { gnomeLineage: ['rock'] };
   assert.equal(validateTraitSelection(gnome, stats), null);
   assert.match(validateTraitSelection(gnome, { ...stats, requireCompleteTraits: true }), /cecha czarowania/);
+});
+
+test('Goliath requires giant ancestry and gains Powerful Build and Large Form at level 5', () => {
+  const goliath = hero('Wojownik (Fighter)', 5, 'Żołnierz (Soldier)', 'Goliat (Goliath)');
+  const stats = emptyStatistics();
+  const draft = characterTraits(goliath, stats);
+  assert.equal(draft.baseSpeed, 35);
+  assert.equal(draft.size, 'Medium');
+  assert.equal(group(draft, 'giantAncestry').limit, 1);
+  assert.match(validateTraitSelection(goliath, { ...stats, requireCompleteTraits: true }), /Giant Ancestry/);
+  stats.traits = { giantAncestry: ['stone'] };
+  const profile = characterTraits(goliath, stats);
+  assert.equal(profile.goliathAncestry.id, 'stone');
+  assert.ok(profile.features.some(feature => feature.name.startsWith('Powerful Build')));
+  assert.ok(profile.features.some(feature => feature.name.startsWith('Large Form')));
+  assert.equal(validateTraitSelection(goliath, { ...stats, requireCompleteTraits: true }), null);
 });
 
 test('all supported backgrounds and subclass levels have valid trait metadata', () => {

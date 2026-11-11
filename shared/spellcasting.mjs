@@ -1,12 +1,13 @@
 import catalog from './spell-catalog.json' with { type: 'json' };
 import progression from './spell-progression.json' with { type: 'json' };
 import subclassSpells from './subclass-spells.json' with { type: 'json' };
+import { tieflingLegacyProfile } from './character-traits.mjs';
 
 export const emptySpellSelection = () => ({ choices: {}, selections: {} });
 export const spellById = new Map(catalog.spells.map(spell => [spell.id, spell]));
 const abilities = { bard: 'cha', cleric: 'wis', druid: 'wis', paladin: 'cha', ranger: 'wis', sorcerer: 'cha', warlock: 'cha', wizard: 'int', 'Eldritch Knight': 'int', 'Arcane Trickster': 'int' };
 
-export function spellcastingProfile(character, selection = emptySpellSelection()) {
+export function spellcastingProfile(character, selection = emptySpellSelection(), traits = {}) {
   const level = character.level;
   const classId = Object.entries(progression).find(([id, value]) => !id.includes(' ') && value.name === character.class)?.[0] ?? '';
   const thirdCaster = character.class === 'Wojownik (Fighter)' && character.subclass === 'Eldritch Knight' || character.class === 'Łotrzyk (Rogue)' && character.subclass === 'Arcane Trickster';
@@ -17,6 +18,13 @@ export function spellcastingProfile(character, selection = emptySpellSelection()
   const choices = selection?.choices ?? {};
   const automatic = new Map();
   const grant = (ids, reason) => { for (const id of ids) { const spell = spellById.get(id); if (!spell) throw new Error(`Unknown granted spell: ${id}`); automatic.set(id, { ...spell, reason }); } };
+  const legacy = character.species === 'Diabelstwo (Tiefling)' ? tieflingLegacyProfile(traits.tieflingLegacy?.[0]) : null;
+  if (legacy) {
+    grant(['thaumaturgy', legacy.spells[0]], 'Fiendish Legacy — poziom 1');
+    if (level >= 3) grant([legacy.spells[1]], 'Fiendish Legacy — poziom 3');
+    if (level >= 5) grant([legacy.spells[2]], 'Fiendish Legacy — poziom 5');
+    profile.ability = traits.tieflingSpellAbility?.[0] ?? profile.ability;
+  }
   const choice = (id, label, options) => profile.choices.push({ id, label, options });
   const maxLevel = row ? caster === 'warlock' ? row.slotLevel : row.slots.reduce((max, count, index) => count ? index + 1 : max, 0) : 0;
   const fromLists = (lists, min, max) => catalog.spells.filter(spell => spell.level >= min && spell.level <= max && spell.classes.some(id => lists.includes(id)));

@@ -9,5 +9,5 @@ export type SpellcastingProfile = {
 type Character = { class: string; level: number; subclass: string };
 export function emptySpellSelection(): SpellSelection;
 export const spellById: Map<string, Spell>;
-export function spellcastingProfile(character: Character, selection?: SpellSelection): SpellcastingProfile;
+export function spellcastingProfile(character: Character, selection?: SpellSelection, traits?: Record<string, string[]>): SpellcastingProfile;
 export function validateSpellSelection(character: Character, selection: SpellSelection): string | null;

@@ -2,13 +2,51 @@ import { spellcastingProfile, spellById, validateSpellSelection } from '../share
 import { spellEffects, spellAction } from '../shared/combat-spells.mjs';
 import { statisticsSummary } from './statistics-summary.mjs';
 import { emptyStatistics } from './statistics.mjs';
+import { characterTraits, dragonbornAncestryProfile, goliathAncestryProfile, tieflingLegacyProfile } from '../shared/character-traits.mjs';
 
 export const resourceState = (db, id) => {
   const row = db.prepare('SELECT data FROM character_spell_resources WHERE character_id = ?').get(id);
   if (row) return JSON.parse(row.data);
-  const initial = { spent: Array(9).fill(0), pactSpent: 0, arcanum: {}, secondWindUses: null, version: 0 };
+  const initial = { spent: Array(9).fill(0), pactSpent: 0, arcanum: {}, tieflingLegacyUses: {}, secondWindUses: null, adrenalineRushUses: null, breathWeaponUses: null, giantAncestryUses: null, largeFormAvailable: true, draconicFlightAvailable: true, relentlessEnduranceAvailable: true, heroicInspirationAvailable: null, version: 0 };
   db.prepare('INSERT INTO character_spell_resources (character_id, data) VALUES (?, ?)').run(id, JSON.stringify(initial));
   return initial;
+};
+export const proficiencyBonus = level => 2 + Math.floor((level - 1) / 4);
+export const speciesResourceState = (db, id, character = null) => {
+  const c = character ?? db.prepare('SELECT class, level, species FROM characters WHERE id = ?').get(id);
+  const state = resourceState(db, id);
+  const maxAdrenalineRush = c?.species === 'Ork (Orc)' ? proficiencyBonus(c.level) : 0;
+  const row = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(id);
+  const stats = row ? JSON.parse(row.data) : emptyStatistics();
+  const traits = character ? characterTraits(character, stats) : null;
+  const dragonborn = c?.species === 'Smokowiec (Dragonborn)' ? traits?.ancestry ?? dragonbornAncestryProfile(stats.traits?.dragonbornAncestry?.[0]) : null;
+  const maxBreathWeapon = dragonborn ? proficiencyBonus(c.level) : 0;
+  const tieflingLegacy = c?.species === 'Diabelstwo (Tiefling)' ? tieflingLegacyProfile(stats.traits?.tieflingLegacy?.[0]) : null;
+  const maxFlight = dragonborn && c.level >= 5 ? 1 : 0;
+  const goliathAncestry = c?.species === 'Goliat (Goliath)'
+    ? traits?.goliathAncestry ?? goliathAncestryProfile(stats.traits?.giantAncestry?.[0])
+    : null;
+  const maxGiantAncestry = goliathAncestry ? proficiencyBonus(c.level) : 0;
+  const maxLargeForm = goliathAncestry && c.level >= 5 ? 1 : 0;
+  const human = c?.species === 'Człowiek (Human)';
+  if (maxAdrenalineRush && state.adrenalineRushUses == null) state.adrenalineRushUses = maxAdrenalineRush;
+  if (maxBreathWeapon && state.breathWeaponUses == null) state.breathWeaponUses = maxBreathWeapon;
+  if (state.draconicFlightAvailable == null) state.draconicFlightAvailable = true;
+  if (state.relentlessEnduranceAvailable == null) state.relentlessEnduranceAvailable = true;
+  if (human && state.heroicInspirationAvailable == null) state.heroicInspirationAvailable = true;
+  if (maxGiantAncestry && state.giantAncestryUses == null) state.giantAncestryUses = maxGiantAncestry;
+  if (state.largeFormAvailable == null) state.largeFormAvailable = true;
+  return {
+    maxAdrenalineRush, adrenalineRushUses: Math.min(maxAdrenalineRush, state.adrenalineRushUses ?? maxAdrenalineRush),
+    maxBreathWeapon, breathWeaponUses: Math.min(maxBreathWeapon, state.breathWeaponUses ?? maxBreathWeapon),
+    breathWeaponDamage: maxBreathWeapon ? (c.level >= 17 ? 4 : c.level >= 11 ? 3 : c.level >= 5 ? 2 : 1) : 0,
+    breathWeaponType: dragonborn?.damageType ?? null, draconicFlightAvailable: Boolean(maxFlight && state.draconicFlightAvailable !== false),
+    goliathAncestry, giantAncestry: goliathAncestry, maxGiantAncestry, giantAncestryUses: Math.min(maxGiantAncestry, state.giantAncestryUses ?? maxGiantAncestry),
+    largeFormAvailable: Boolean(maxLargeForm && state.largeFormAvailable !== false),
+    tieflingLegacy, tieflingLegacyUses: tieflingLegacy ? Object.fromEntries(tieflingLegacy.spells.filter((spell, index) => index > 0 && (c.level >= (index === 1 ? 3 : 5))).map(spell => [spell, state.tieflingLegacyUses?.[spell] !== true])) : {},
+    relentlessEnduranceAvailable: c?.species === 'Ork (Orc)' && state.relentlessEnduranceAvailable !== false,
+    heroicInspirationAvailable: human ? state.heroicInspirationAvailable !== false : false,
+  };
 };
 export const secondWindMaximum = character => character.class?.includes('Fighter')
   ? character.level >= 17 ? 5 : character.level >= 10 ? 4 : character.level >= 4 ? 3 : 2
@@ -22,7 +60,7 @@ export function casterData(db, id) {
   const character = db.prepare('SELECT * FROM characters WHERE id = ?').get(id);
   const row = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(id);
   const stats = row ? JSON.parse(row.data) : emptyStatistics();
-  const profile = spellcastingProfile(character, stats.spells);
+  const profile = spellcastingProfile(character, stats.spells, stats.traits);
   const error = validateSpellSelection(character, stats.spells);
   const ids = new Set(profile.automatic.map(s => s.id));
   for (const group of profile.groups.filter(g => g.id !== 'book')) for (const id of stats.spells.selections[group.id] ?? []) if (group.options.some(s => s.id === id)) ids.add(id);
@@ -34,17 +72,23 @@ export function casterData(db, id) {
     const arcanum = profile.groups.find(g => g.id.startsWith('arcanum') && stats.spells.selections[g.id]?.includes(spell.id));
     return { ...spell, action: spellAction(spell), effect: spellEffects[spell.id] ?? null, arcanum: Boolean(arcanum), arcanumRemaining: arcanum ? !state.arcanum[spell.id] : false };
   });
-  return { character, stats, profile, state, blocked: s.spellcastingBlocked, ability: s.abilities[profile.ability]?.modifier ?? null, attack: s.spellAttack, dc: s.spellDc, slots, spells, error };
+  const species = speciesResourceState(db, id, character);
+  return { character, stats, profile, state, blocked: s.spellcastingBlocked, ability: s.abilities[profile.ability]?.modifier ?? null, attack: s.spellAttack, dc: s.spellDc, slots, spells, species, error };
 }
 export function publicCaster(db, id) {
   const c = casterData(db, id);
-  return { slots: c.slots, spells: c.spells, ability: c.ability, attack: c.attack, dc: c.dc, error: c.error, resourceVersion: c.state.version };
+  return { slots: c.slots, spells: c.spells, ability: c.ability, attack: c.attack, dc: c.dc, error: c.error, species: c.species, resourceVersion: c.state.version };
 }
 export function spendSpell(db, id, spellId, level, source) {
   const c = casterData(db, id), spell = c.spells.find(s => s.id === spellId);
   if (c.error || !spell) throw new Error(c.error || 'Ten czar nie jest przygotowany ani dostępny dla postaci.');
   if (!spell.action) throw new Error('Ten czar wymaga dłuższego czasu rzucania; rozstrzyga go GM.');
-  if (spell.level === 0) {
+  const free = c.species?.tieflingLegacyUses?.[spellId] === true;
+  if (free) {
+    c.state.tieflingLegacyUses ??= {};
+    c.state.tieflingLegacyUses[spellId] = true;
+    saveResources(db, id, c.state);
+  } else if (spell.level === 0) {
     if (level !== 0) throw new Error('Sztuczki nie zużywają miejsc na czary.');
   } else if (source === 'arcanum') {
     if (!spell.arcanum || !spell.arcanumRemaining || level !== spell.level) throw new Error('Mystic Arcanum jest niedostępne.');
@@ -66,7 +110,7 @@ export function handleSpellResources(db, user, path, method, body, send) {
     const id = Number(own[1]);
     if (!db.prepare('SELECT 1 FROM characters WHERE id = ? AND user_id = ?').get(id, user.id)) return reply(404, { error: 'Nie znaleziono postaci.' });
     if (method !== 'GET') return reply(405, { error: 'Niedozwolona metoda.' });
-    return reply(200, { spellcasting: publicCaster(db, id) });
+    return reply(200, { spellcasting: publicCaster(db, id), species: speciesResourceState(db, id) });
   }
   const gameId = Number(rest[1]);
   if (user.role !== 'gm' || !db.prepare('SELECT 1 FROM games WHERE id = ? AND gm_id = ?').get(gameId, user.id)) return reply(404, { error: 'Nie znaleziono gry.' });
@@ -78,11 +122,24 @@ export function handleSpellResources(db, user, path, method, body, send) {
     WHERE m.game_id = ? AND m.status = 'accepted' AND s.ended_at IS NULL`).all(gameId);
   if (!characters.length) return reply(409, { error: 'Brak postaci w bieżącej sesji.' });
   for (const { character_id: id } of characters) {
-    const character = db.prepare('SELECT class, level FROM characters WHERE id = ?').get(id);
+    const character = db.prepare('SELECT class, level, species FROM characters WHERE id = ?').get(id);
     const state = resourceState(db, id);
     const maxSecondWind = secondWindMaximum(character);
     if (body.rest === 'long') {
-      state.spent = Array(9).fill(0); state.arcanum = {}; state.concentration = null; state.secondWindUses = maxSecondWind; state.lastLongRest = Date.now();
+      state.spent = Array(9).fill(0); state.arcanum = {}; state.concentration = null; state.secondWindUses = maxSecondWind;
+      const maxAdrenalineRush = character.species === 'Ork (Orc)' ? proficiencyBonus(character.level) : 0;
+      const row = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(id);
+      const stats = row ? JSON.parse(row.data) : emptyStatistics();
+      const dragonborn = character.species === 'Smokowiec (Dragonborn)' && dragonbornAncestryProfile(stats.traits?.dragonbornAncestry?.[0]);
+      state.adrenalineRushUses = maxAdrenalineRush;
+      state.breathWeaponUses = dragonborn ? proficiencyBonus(character.level) : 0;
+      const goliath = character.species === 'Goliat (Goliath)' && goliathAncestryProfile(stats.traits?.giantAncestry?.[0]);
+      state.giantAncestryUses = goliath ? proficiencyBonus(character.level) : 0;
+      state.largeFormAvailable = true;
+      state.tieflingLegacyUses = {};
+      state.draconicFlightAvailable = true;
+      state.relentlessEnduranceAvailable = true; state.lastLongRest = Date.now();
+      if (character.species === 'Człowiek (Human)') state.heroicInspirationAvailable = true;
     } else if (maxSecondWind) state.secondWindUses = Math.min(maxSecondWind, (state.secondWindUses ?? maxSecondWind - 1) + 1);
     state.pactSpent = 0; state.lastRest = Date.now(); saveResources(db, id, state);
   }

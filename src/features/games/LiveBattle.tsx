@@ -138,8 +138,11 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
   const choices = [
     ...(canAttack ? [{ id: 'attack', label: 'Atak' }] : []),
     ...(slot === 'action' ? [{ id: 'move', label: 'Ruch' }, { id: 'dash', label: 'Zryw' }, { id: 'dodge', label: 'Unik' }, { id: 'disengage', label: 'Wycofanie' }, { id: 'help', label: 'Pomoc' }] : []),
+    ...(slot === 'action' && actor.breathWeaponMax ? [{ id: 'breath-weapon', label: 'Broń Oddechowa' }] : []),
     ...(actor.spellcasting?.spells.some(s => s.action === slot) ? [{ id: 'spell', label: 'Rzuć czar' }] : []),
     ...(slot === 'bonus' && actor.secondWindMax ? [{ id: 'second-wind', label: 'Drugi oddech' }] : []),
+    ...(slot === 'bonus' && actor.adrenalineRushMax ? [{ id: 'adrenaline-rush', label: 'Adrenaline Rush' }] : []),
+    ...(slot === 'bonus' && actor.draconicFlightAvailable ? [{ id: 'draconic-flight', label: 'Lot Smoka' }] : []),
     ...(slot === 'reaction' && actor.protectionAvailable && !actor.reaction && !actor.reactionDeferred ? [{ id: 'protection', label: 'Ochrona' }] : []),
     { id: 'request', label: 'Zdolność / inne' },
   ];
@@ -165,6 +168,9 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
     </>}
     {kind === 'move' && <label>Ruch w stopach (pozostało {Math.max(0, actor.speed + actor.extraMove - actor.moved)})<input required type="number" min={1} max={Math.max(1, actor.speed + actor.extraMove - actor.moved)} value={feet} onChange={e => setFeet(e.target.value)} /></label>}
     {kind === 'second-wind' && <><p>Odzyskujesz 1k10 + {actor.level} PW. Pozostałe użycia: {actor.secondWindUses ?? 0} / {actor.secondWindMax}.</p><label>Wynik k10<input required type="number" min={1} max={10} value={roll} onChange={e => setRoll(e.target.value)} /></label></>}
+    {kind === 'adrenaline-rush' && <p>Wykonujesz Zryw i zyskujesz tymczasowe PW równe premii z biegłości. Pozostałe użycia: {actor.adrenalineRushUses ?? 0} / {actor.adrenalineRushMax}.</p>}
+    {kind === 'breath-weapon' && <p>Obrażenia: {actor.breathWeaponDamage}k10 ({actor.breathWeaponType}), ST rzutu: {actor.breathWeaponDC ?? '—'}. Pozostałe użycia: {actor.breathWeaponUses ?? 0} / {actor.breathWeaponMax}. GM rozstrzygnie obszar i rzuty obronne.</p>}
+    {kind === 'draconic-flight' && <p>Zyskujesz szybkość lotu {actor.speed} stóp na 10 minut. Możesz użyć tej cechy raz na długi odpoczynek.</p>}
     {kind === 'request' && <><label>Opis czaru / zdolności, cel i oczekiwany efekt<textarea required maxLength={1000} value={description} onChange={e => setDescription(e.target.value)} /></label><label>Wynik k20 (jeśli GM wymaga rzutu)<input type="number" min={1} max={20} value={roll} onChange={e => setRoll(e.target.value)} /></label></>}
     {slot === 'bonus' && <p>Akcja bonusowa wymaga odpowiedniej zdolności. Atak inną lekką bronią jest dostępny po ataku lekką bronią w tej turze.</p>}
     <div className="battle-toolbar"><button className="primary-button" disabled={pending || (kind === 'attack' && !attack)}>Użyj wybranej opcji</button><button type="button" className="text-button" disabled={pending} onClick={() => void mutate('act', { kind: 'skip', slot })}>{slot === 'action' && actor.action === 'Atak' ? 'Pomiń pozostałe ataki' : 'Pomiń ten krok'}</button></div>
@@ -186,10 +192,11 @@ function ResolveForm({ controller }: { controller: Controller }) {
   const [targetId, setTargetId] = useState('');
   const [effect, setEffect] = useState('damage');
   const [amount, setAmount] = useState('');
-  return <form className="stack-form" onSubmit={async e => { e.preventDefault(); if (await controller.mutate('act', { kind: 'resolve', note, targetId, effect, amount: Number(amount) })) { setNote(''); setAmount(''); } }}>
+  const [damageType, setDamageType] = useState('');
+  return <form className="stack-form" onSubmit={async e => { e.preventDefault(); if (await controller.mutate('act', { kind: 'resolve', note, targetId, effect, amount: Number(amount), damageType: effect === 'damage' ? damageType : '' })) { setNote(''); setAmount(''); setDamageType(''); } }}>
     <label>Rozstrzygnięcie (uwzględnij rzuty obronne, odporności i zdolności)<textarea required maxLength={1000} value={note} onChange={e => setNote(e.target.value)} /></label>
     <label>Cel zmiany PW<select value={targetId} onChange={e => setTargetId(e.target.value)}><option value="">Bez zmiany PW</option>{controller.response!.battle!.fighters.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></label>
-    {targetId && <><label>Efekt<select value={effect} onChange={e => setEffect(e.target.value)}><option value="damage">Obrażenia</option><option value="heal">Leczenie</option></select></label><label>Końcowa wartość po uwzględnieniu zasad<input required type="number" min={0} max={9999} value={amount} onChange={e => setAmount(e.target.value)} /></label></>}
+    {targetId && <><label>Efekt<select value={effect} onChange={e => setEffect(e.target.value)}><option value="damage">Obrażenia</option><option value="heal">Leczenie</option></select></label>{effect === 'damage' && <label>Typ obrażeń<select value={damageType} onChange={e => setDamageType(e.target.value)}><option value="">Nie określono</option>{['kwas', 'zimno', 'ogień', 'błyskawice', 'trucizna'].map(type => <option key={type} value={type}>{type}</option>)}</select></label>}<label>Końcowa wartość po uwzględnieniu zasad<input required type="number" min={0} max={9999} value={amount} onChange={e => setAmount(e.target.value)} /></label></>}
     <button className="primary-button" disabled={controller.pending}>Zastosuj rozstrzygnięcie</button>
   </form>;
 }

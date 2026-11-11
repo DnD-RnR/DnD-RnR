@@ -88,6 +88,14 @@ test('always-prepared subclass spells do not consume or duplicate ordinary prepa
   assert.ok(spellcastingProfile(character('Barbarzyńca (Barbarian)', 10, 'Path of the Wild Heart')).automatic.some(spell => spell.id === 'commune-with-nature'));
 });
 
+test('Tiefling Fiendish Legacy grants the selected spells and spellcasting ability', () => {
+  const tiefling = { ...character('Bard', 5), species: 'Diabelstwo (Tiefling)' };
+  const profile = spellcastingProfile(tiefling, emptySpellSelection(), { tieflingLegacy: ['infernal'], tieflingSpellAbility: ['cha'] });
+  assert.equal(profile.ability, 'cha');
+  assert.deepEqual(profile.automatic.map(spell => spell.id).sort(), ['darkness', 'fire-bolt', 'hellish-rebuke', 'thaumaturgy'].sort());
+  assert.ok(!group(profile, 'cantrips').options.some(spell => spell.id === 'fire-bolt'));
+});
+
 test('Wizard spellbook can grow by copying while prepared spells must belong to it', () => {
   const wizard = character('Czarodziej (Wizard)', 1);
   const book = ['alarm', 'burning-hands', 'charm-person', 'color-spray', 'comprehend-languages', 'detect-magic', 'disguise-self'];

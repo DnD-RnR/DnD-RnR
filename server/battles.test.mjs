@@ -142,6 +142,45 @@ test('Tavern Brawler changes the server unarmed strike to 1d4 plus Strength', ()
   } finally { db.close(); }
 });
 
+test('Orc Adrenaline Rush uses a bonus action and Relentless Endurance prevents dropping to zero', () => {
+  const { db, call, start, player } = fixture();
+  try {
+    db.prepare('UPDATE characters SET species = ? WHERE id = 1').run('Ork (Orc)');
+    const started = start();
+    const hero = started.battle.fighters.find(f => f.characterId === 1);
+    assert.equal(hero.adrenalineRushUses, 3);
+    const rushed = call('act', { kind: 'adrenaline-rush', slot: 'bonus' }, player);
+    const rushedHero = rushed.battle.fighters.find(f => f.characterId === 1);
+    assert.equal(rushedHero.bonus, 'Adrenaline Rush');
+    assert.equal(rushedHero.adrenalineRushUses, 2);
+    assert.equal(rushedHero.extraMove, rushedHero.speed);
+    assert.equal(rushedHero.tempHp, 3);
+    const result = call('act', { kind: 'resolve', note: 'Relentless Endurance', targetId: rushedHero.id, effect: 'damage', amount: 999 });
+    const survived = result.battle.fighters.find(f => f.characterId === 1);
+    assert.equal(survived.hp, 1);
+    assert.equal(survived.relentlessEnduranceAvailable, false);
+  } finally { db.close(); }
+});
+
+test('Dragonborn breath weapon and draconic flight are server-controlled resources', () => {
+  const { db, call, start, player } = fixture();
+  try {
+    db.prepare('UPDATE characters SET species = ?, level = 5 WHERE id = 1').run('Smokowiec (Dragonborn)');
+    const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 1').get().data);
+    stats.traits = { dragonbornAncestry: ['fire'] };
+    db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = 1').run(JSON.stringify(stats));
+    const started = start();
+    const hero = started.battle.fighters.find(f => f.characterId === 1);
+    assert.equal(hero.breathWeaponUses, 3);
+    assert.equal(hero.breathWeaponDamage, 2);
+    assert.equal(hero.breathWeaponType, 'ogień');
+    assert.equal(hero.draconicFlightAvailable, true);
+    const breath = call('act', { kind: 'breath-weapon', slot: 'action' }, player);
+    assert.equal(breath.battle.pending.breathWeapon, true);
+    assert.equal(breath.battle.fighters.find(f => f.characterId === 1).breathWeaponUses, 2);
+  } finally { db.close(); }
+});
+
 test('fighter second wind heals from a d10, consumes a use and bonus action', () => {
   const { db, call, start, player } = fixture();
   try {

@@ -113,6 +113,26 @@ Arcanum; krótki tylko Pact Magic. GM potwierdza wymagany upływ czasu i warunki
 odpoczynku w świecie gry; czas rzeczywisty komputera nie jest czasem gry.
 To odnowienie zasobów magicznych, nie pełna obsługa odpoczynku i kości wytrzymałości.
 
+Zasoby gatunku Ork są przechowywane razem ze stanem zasobów postaci. **Adrenaline
+Rush** jest akcją bonusową, wykonuje Zryw i daje tymczasowe PW równe premii
+z biegłości; **Relentless Endurance** automatycznie pozostawia postać na 1 PW
+zamiast obniżyć ją do 0 PW. Obie cechy odnawiają się podczas długiego odpoczynku,
+a serwer egzekwuje ich limity. Rozmiar gatunku jest częścią wspólnego profilu
+traitów i jest używany między innymi przy ciosie bez broni oraz pochwyceniu.
+
+Smokowiec wymaga wyboru Draconic Ancestry. Wybór określa odporność na kwas,
+zimno, ogień, błyskawice albo truciznę. Broń Oddechowa zużywa użycie zależne od
+premii z biegłości i jest rozstrzygana przez GM względem obszaru oraz rzutów
+obronnych; od 5. poziomu Lot Smoka jest akcją bonusową odnawianą po długim
+odpoczynku.
+
+Diabelstwo wymaga wyboru dziedzictwa: Abyssal, Chthonic albo Infernal, cechy
+czarowania (INT, WIS lub CHA) oraz rozmiaru Medium lub Small. Dziedzictwo nadaje
+odporność, Thaumaturgy i odpowiednią sztuczkę, a od 3. i 5. poziomu kolejne
+czary. Każdy czar dziedzictwa może być raz rzucony bez użycia komórki i odnawia
+się po długim odpoczynku; właściwe użycie oraz odporność są kontrolowane przez
+serwer.
+
 Pełny katalog ma 391 czarów. Czary bez jawnej definicji automatycznej nadal
 można wybrać i opłacić właściwym zasobem, ale efekty rozstrzyga GM; interfejs
 oznacza je przed rzuceniem. GM weryfikuje też zasięg, widoczność, komponenty,
@@ -222,8 +242,11 @@ klasowe Druidic / Thieves’ Cant. Dwa języki standardowe i dodatkowe języki
 klasowe wybiera gracz; gatunek Elf nie dopisuje automatycznie języka Elvish.
 
 W edycji dostępne są ograniczone listy umiejętności klasy, ekspertyz, narzędzi,
-instrumentów i języków oraz wybory Skilled, Crafter i Musician. Obsługiwane są
-także dodatkowe biegłości Human, Elf, College of Lore, Fey Wanderer i Assassin.
+instrumentów i języków oraz wybory Skilled, Crafter i Musician. Obsługiwane są także dodatkowe biegłości Human, Elf, College of Lore, Fey
+Wanderer i Assassin. Człowiek wybiera jedną umiejętność, atut pochodzenia oraz
+rozmiar Medium albo Small. Resourceful zapewnia Heroic Inspiration po długim
+odpoczynku; stan zasobu jest przechowywany przy zasobach postaci i odnawiany
+przez serwer.
 API sprawdza liczbę wyborów, duplikaty, uprawnienia i zależności ekspertyzy od
 biegłości. Niekompletny wybór można zapisać; karta pokazuje, co zostało do uzupełnienia.
 

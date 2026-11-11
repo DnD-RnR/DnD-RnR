@@ -4,6 +4,33 @@ import definitions from './statistics.json' with { type: 'json' };
 import { crafterDescription, crafterTools } from './crafter.mjs';
 
 export const emptyTraitSelection = () => ({});
+export const dragonbornAncestries = [
+  { id: 'acid', label: 'Kwas — odporność na kwas' },
+  { id: 'cold', label: 'Zimno — odporność na zimno' },
+  { id: 'fire', label: 'Ogień — odporność na ogień' },
+  { id: 'lightning', label: 'Błyskawice — odporność na błyskawice' },
+  { id: 'poison', label: 'Trucizna — odporność na truciznę' },
+];
+const dragonbornDamageTypes = Object.fromEntries(dragonbornAncestries.map(entry => [entry.id, entry.label.split(' — ')[0].toLowerCase()]));
+export const dragonbornAncestryProfile = ancestry => {
+  const entry = dragonbornAncestries.find(value => value.id === ancestry);
+  return entry ? { id: entry.id, label: entry.label, damageType: dragonbornDamageTypes[entry.id] } : null;
+};
+export const tieflingLegacies = [
+  { id: 'abyssal', label: 'Abyssal — odporność na truciznę', damageType: 'trucizna', spells: ['poison-spray', 'ray-of-sickness', 'hold-person'] },
+  { id: 'chthonic', label: 'Chthonic — odporność na nekrotyczne', damageType: 'nekrotyczne', spells: ['chill-touch', 'false-life', 'ray-of-enfeeblement'] },
+  { id: 'infernal', label: 'Infernal — odporność na ogień', damageType: 'ogień', spells: ['fire-bolt', 'hellish-rebuke', 'darkness'] },
+];
+export const tieflingLegacyProfile = legacy => tieflingLegacies.find(value => value.id === legacy) ?? null;
+export const goliathAncestries = [
+  { id: 'cloud', label: "Cloud's Jaunt — teleportacja do 30 stóp" },
+  { id: 'fire', label: "Fire's Burn — dodatkowe 1k10 obrażeń od ognia" },
+  { id: 'frost', label: "Frost's Chill — dodatkowe 1k6 obrażeń od zimna i -10 stóp szybkości" },
+  { id: 'hill', label: "Hill's Tumble — powalenie dużej lub mniejszej istoty" },
+  { id: 'stone', label: "Stone's Endurance — redukcja obrażeń o 1k12 + modyfikator Kondycji" },
+  { id: 'storm', label: "Storm's Thunder — 1k8 obrażeń od gromu jako reakcja" },
+];
+export const goliathAncestryProfile = ancestry => goliathAncestries.find(value => value.id === ancestry) ?? null;
 const skillOptions = definitions.skills.map(skill => ({ id: skill.id, label: skill.label }));
 const namedOptions = names => names.map(name => ({ id: name, label: name }));
 const matchingSkills = text => Object.entries(options.skillNames).filter(([name]) => text?.includes(name)).map(([, id]) => id);
@@ -52,6 +79,7 @@ export function characterTraits(character, stats) {
   if (species === 'Człowiek (Human)') {
     skillGroup('humanSkill', 'Human — Skillful', 1);
     group('humanFeat', 'Human — Versatile: atut pochodzenia', 1, namedOptions(options.originFeats.filter(name => name !== bg?.Feat || name === 'Skilled')), 'feat');
+    group('humanSize', 'Human — rozmiar', 1, [{ id: 'medium', label: 'Średni (Medium)' }, { id: 'small', label: 'Mały (Small)' }], 'size');
   }
   if (species === 'Elf') skillGroup('elfSkill', 'Elf — Keen Senses', 1, ['insight', 'perception', 'survival']);
   if (species === 'Gnom (Gnome)') {
@@ -65,6 +93,15 @@ export function characterTraits(character, stats) {
       { id: 'cha', label: 'Charyzma' },
     ], 'ability');
   }
+  if (species === 'Smokowiec (Dragonborn)') group('dragonbornAncestry', 'Draconic Ancestry — przodek', 1, dragonbornAncestries, 'ancestry');
+  if (species === 'Diabelstwo (Tiefling)') {
+    group('tieflingLegacy', 'Fiendish Legacy — dziedzictwo', 1, tieflingLegacies.map(({ id, label }) => ({ id, label })), 'lineage');
+    group('tieflingSpellAbility', 'Fiendish Legacy — cecha czarowania', 1, [
+      { id: 'int', label: 'Inteligencja' }, { id: 'wis', label: 'Mądrość' }, { id: 'cha', label: 'Charyzma' },
+    ], 'ability');
+    group('tieflingSize', 'Tiefling — rozmiar', 1, [{ id: 'medium', label: 'Średni (Medium)' }, { id: 'small', label: 'Mały (Small)' }], 'size');
+  }
+  if (species === 'Goliat (Goliath)') group('giantAncestry', 'Giant Ancestry — dziedzictwo giganta', 1, goliathAncestries, 'ancestry');
   if (cls) {
     const text = cls.core['Skill Proficiencies'];
     const count = Number(text?.match(/Choose\s+(?:any\s+)?(\d+)/i)?.[1]) || 0;
@@ -111,6 +148,10 @@ export function characterTraits(character, stats) {
   const subclassFeatures = (data.subclasses[character.subclass]?.features ?? []).filter(feature => feature.level <= level).map(feature => ({ ...feature, source: character.subclass }));
   const lineage = chosen.gnomeLineage?.[0];
   const spellAbility = chosen.gnomeSpellAbility?.[0];
+  const ancestry = dragonbornAncestryProfile(chosen.dragonbornAncestry?.[0]);
+  const fiendishLegacy = tieflingLegacyProfile(chosen.tieflingLegacy?.[0]);
+  const goliathAncestry = goliathAncestryProfile(chosen.giantAncestry?.[0]);
+  const tieflingSpellAbility = chosen.tieflingSpellAbility?.[0];
   const lineageFeatures = [];
   if (species === 'Gnom (Gnome)' && lineage === 'forest') {
     lineageFeatures.push(
@@ -125,6 +166,42 @@ export function characterTraits(character, stats) {
   if (species === 'Gnom (Gnome)' && spellAbility) {
     lineageFeatures.push(
       { level: 1, name: `Gnomish Lineage — cecha czarowania: ${spellAbility === 'int' ? 'Inteligencja' : spellAbility === 'wis' ? 'Mądrość' : 'Charyzma'}`, url: 'https://dnd2024.wikidot.com/species:gnome#Gnomish-Lineage', source: 'Gnom (Gnome)' },
+    );
+  }
+  if (species === 'Ork (Orc)') {
+    lineageFeatures.push(
+      { level: 1, name: 'Adrenaline Rush — Zryw jako akcja bonusowa; tymczasowe PW równe premii z biegłości', url: 'https://dnd2024.wikidot.com/species:orc#Adrenaline-Rush', source: 'Ork (Orc)' },
+      { level: 1, name: 'Relentless Endurance — pozostajesz na 1 PW zamiast spaść do 0 PW', url: 'https://dnd2024.wikidot.com/species:orc#Relentless-Endurance', source: 'Ork (Orc)' },
+    );
+  }
+  if (species === 'Smokowiec (Dragonborn)' && ancestry) {
+    lineageFeatures.push(
+      { level: 1, name: `Draconic Ancestry — ${ancestry.label}`, url: 'https://dnd2024.wikidot.com/species:dragonborn#Draconic-Ancestry', source: 'Smokowiec (Dragonborn)' },
+      { level: 1, name: 'Breath Weapon — Broń Oddechowa', url: 'https://dnd2024.wikidot.com/species:dragonborn#Breath-Weapon', source: 'Smokowiec (Dragonborn)' },
+      ...(level >= 5 ? [{ level: 5, name: 'Draconic Flight — Lot Smoka', url: 'https://dnd2024.wikidot.com/species:dragonborn#Draconic-Flight', source: 'Smokowiec (Dragonborn)' }] : []),
+    );
+  }
+  if (species === 'Diabelstwo (Tiefling)' && fiendishLegacy) {
+    lineageFeatures.push(
+      { level: 1, name: `Fiendish Legacy — ${fiendishLegacy.label}`, url: 'https://dnd2024.wikidot.com/species:tiefling#Fiendish-Legacy', source: 'Diabelstwo (Tiefling)' },
+      { level: 1, name: 'Otherworldly Presence — Thaumaturgy', url: 'https://dnd2024.wikidot.com/spell:thaumaturgy', source: 'Diabelstwo (Tiefling)' },
+      { level: 3, name: `Fiendish Legacy — ${fiendishLegacy.spells[1]}`, url: 'https://dnd2024.wikidot.com/species:tiefling#Fiendish-Legacies', source: 'Diabelstwo (Tiefling)' },
+      { level: 5, name: `Fiendish Legacy — ${fiendishLegacy.spells[2]}`, url: 'https://dnd2024.wikidot.com/species:tiefling#Fiendish-Legacies', source: 'Diabelstwo (Tiefling)' },
+    );
+    if (tieflingSpellAbility) lineageFeatures.push({ level: 1, name: `Fiendish Legacy — cecha czarowania: ${tieflingSpellAbility === 'int' ? 'Inteligencja' : tieflingSpellAbility === 'wis' ? 'Mądrość' : 'Charyzma'}`, url: 'https://dnd2024.wikidot.com/species:tiefling#Fiendish-Legacy', source: 'Diabelstwo (Tiefling)' });
+  }
+  if (species === 'Człowiek (Human)') {
+    lineageFeatures.push(
+      { level: 1, name: 'Resourceful — Heroic Inspiration po długim odpoczynku', url: 'https://dnd2024.wikidot.com/species:human#Resourceful', source: 'Człowiek (Human)' },
+      { level: 1, name: 'Skillful — biegłość w jednej umiejętności', url: 'https://dnd2024.wikidot.com/species:human#Skillful', source: 'Człowiek (Human)' },
+      { level: 1, name: 'Versatile — atut pochodzenia', url: 'https://dnd2024.wikidot.com/species:human#Versatile', source: 'Człowiek (Human)' },
+    );
+  }
+  if (species === 'Goliat (Goliath)') {
+    lineageFeatures.push(
+      ...(goliathAncestry ? [{ level: 1, name: `Giant Ancestry — ${goliathAncestry.label}`, url: 'https://dnd2024.wikidot.com/species:goliath#Giant-Ancestry', source: 'Goliat (Goliath)' }] : []),
+      { level: 1, name: 'Powerful Build — ułatwienie zakończenia stanu Grappled; udźwig jak dla większej kategorii rozmiaru', url: 'https://dnd2024.wikidot.com/species:goliath#Powerful-Build', source: 'Goliat (Goliath)' },
+      ...(level >= 5 ? [{ level: 5, name: 'Large Form — rozmiar Large, ułatwienie testów Siły i +10 stóp szybkości', url: 'https://dnd2024.wikidot.com/species:goliath#Large-Form', source: 'Goliat (Goliath)' }] : []),
     );
   }
   const features = [...new Map([...classFeatures, ...subclassFeatures, ...lineageFeatures].map(feature => [`${feature.source}:${feature.name}`, feature])).values()];
@@ -148,6 +225,8 @@ export function characterTraits(character, stats) {
   if (species === 'Aasimar') defenses.push('Odporność na obrażenia nekrotyczne i od światłości.');
   if (species === 'Elf') defenses.push('Ułatwienie rzutów przeciw zauroczeniu; magia nie usypia postaci.');
   if (species === 'Gnom (Gnome)') defenses.push('Ułatwienie rzutów obronnych z Inteligencji, Mądrości i Charyzmy.');
+  if (species === 'Smokowiec (Dragonborn)' && ancestry) defenses.push(`Odporność na obrażenia: ${ancestry.damageType}.`);
+  if (species === 'Diabelstwo (Tiefling)' && fiendishLegacy) defenses.push(`Odporność na obrażenia: ${fiendishLegacy.damageType}.`);
   const die = Number(cls?.core['Hit Point Die']?.match(/D(\d+)/i)?.[1]) || null;
   const hpBonus = (species === 'Krasnolud (Dwarf)' ? level : 0) + (feats.has('Tough') ? 2 * level : 0);
   const con = abilityMod(stats, 'con');
@@ -159,7 +238,12 @@ export function characterTraits(character, stats) {
     savingThrows: [...new Set(savingThrows)], effectiveSavingThrows: [...new Set([...savingThrows, ...(stats.savingThrows ?? [])])],
     skillSources: sourceLabels, skillBonuses, languages: options.languages.filter(language => languages.has(language.id)),
     tools: [...tools], armor: armor.filter(Boolean), weapons: weapons.filter(Boolean), feats: [...feats], originFeatDescriptions, features,
-    hitDie: die, hitDiceTotal: level, size: species === 'Gnom (Gnome)' ? 'Small' : null,
+    hitDie: die, hitDiceTotal: level,
+    size: ['Diabelstwo (Tiefling)', 'Człowiek (Human)'].includes(species)
+      ? (chosen[species === 'Człowiek (Human)' ? 'humanSize' : 'tieflingSize']?.[0] === 'small' ? 'Small' : 'Medium')
+      : ['Gnom (Gnome)', 'Niziołek (Halfling)'].includes(species) ? 'Small' : species ? 'Medium' : null,
+    ancestry, fiendishLegacy,
+    goliathAncestry, giantAncestry: goliathAncestry,
     baseSpeed: species === 'Goliat (Goliath)' ? 35 : species ? 30 : null,
     senses, defenses, resources, hpBonus, firstLevelMaxHp: level === 1 && die && con !== null ? Math.max(1, die + con) + hpBonus : null,
     initiativeBonus: feats.has('Alert') ? proficiency : 0,
@@ -177,7 +261,11 @@ export function validateTraitSelection(character, stats) {
     if (values.length > group.limit) return `${group.label}: limit wynosi ${group.limit}.`;
     if (values.some(id => !group.options.some(option => option.id === id))) return `${group.label}: wybierz dostępną, niepowtarzającą się pozycję.`;
     if (stats.requireCompleteTraits && values.length !== group.limit
-      && (group.id === 'skilled' || character.species === 'Gnom (Gnome)' && ['gnomeLineage', 'gnomeSpellAbility'].includes(group.id))) {
+      && (group.id === 'skilled' || character.species === 'Człowiek (Human)' && ['humanSkill', 'humanFeat', 'humanSize'].includes(group.id)
+        || character.species === 'Gnom (Gnome)' && ['gnomeLineage', 'gnomeSpellAbility'].includes(group.id)
+        || character.species === 'Smokowiec (Dragonborn)' && group.id === 'dragonbornAncestry'
+        || character.species === 'Diabelstwo (Tiefling)' && ['tieflingLegacy', 'tieflingSpellAbility', 'tieflingSize'].includes(group.id)
+        || character.species === 'Goliat (Goliath)' && group.id === 'giantAncestry')) {
       return `${group.label}: wybierz ${group.limit} opcji.`;
     }
   }
