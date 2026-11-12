@@ -19,10 +19,10 @@ export default async function handler(req, res) {
     req.url = '/api/' + route.replace(/^\/+/, '');
   }
 
-  // Liveness is independent from Firebase setup; it does not expose any secrets.
-  if (req.method === 'GET' && new URL(req.url, 'http://localhost').pathname === '/api/health') {
-    return json(res, 200, { ok: true });
-  }
+  // Readiness checks verify that Firestore is configured and accessible.
+  // No database content or credentials are included in the response.
+  const isHealth = req.method === 'GET' &&
+    new URL(req.url, 'http://localhost').pathname === '/api/health';
 
   try {
     if (!listenerPromise) {
@@ -38,6 +38,7 @@ export default async function handler(req, res) {
       });
     }
     const listener = await listenerPromise;
+    if (isHealth) return json(res, 200, { ok: true, database: 'ready' });
     return await listener(req, res);
   } catch (error) {
     console.error('DnD-RnR API unavailable:', error);
