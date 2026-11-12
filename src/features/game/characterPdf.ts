@@ -55,7 +55,7 @@ export async function createCharacterPdf(character: Character, stats: CharacterS
   text('pr z b', signed(proficiency));
   text('ins', stats.values.inspiration == null ? '' : stats.values.inspiration ? 'Tak' : 'Nie');
   text('kp', stats.values.ac);
-  text('ini', signed(mod('dex') === null ? null : mod('dex')! + traits.initiativeBonus + (stats.values.initiativeBonus ?? 0)));
+  text('ini', signed(mod('dex') === null ? null : mod('dex')! + traits.initiativeBonus));
   text('szyb', stats.values.speed ?? traits.baseSpeed);
   text('max PW', stats.values.maxHp ?? traits.firstLevelMaxHp);
   text('akt PW', stats.values.hp);

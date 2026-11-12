@@ -1,6 +1,7 @@
+import { combatOtherAbilities } from './combatOtherAbilities';
 import { psiResources } from '../../../shared/psi-warrior.mjs';
 import definitions from '../../../shared/statistics.json' with { type: 'json' };
-import { rageProfile, rageDescription, primalSkills, dangerSenseDescription, recklessAttackDescription } from '../../../shared/barbarian.mjs';
+import { rageProfile, rageDescription, primalSkills, dangerSenseDescription } from '../../../shared/barbarian.mjs';
 import { SpellResources } from './SpellResources';
 import { Card } from '../../components/ui/Card';
 import { useEffect, useMemo, useState } from 'react';
@@ -208,6 +209,7 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
       return groups;
     }, { action: [], bonus: [], reaction: [] } as Record<'action' | 'bonus' | 'reaction', Spell[]>);
   }, [character, statistics]);
+  const additionalAbilities = combatOtherAbilities(character, statistics);
   const psi = psiResources(character, {});
   const psiInt = statistics?.values.int == null ? null : Math.floor((statistics.values.int - 10) / 2);
   const psiAmount = `1k${psi.psiSides} ${psiInt === null ? '+ modyfikator Inteligencji' : signed(psiInt)}`;
@@ -236,15 +238,9 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}
       <SpellResources characterId={character.id} />
-      {!!psi.psiMax && <Card title="Psionic Power"><p>Pula Psionic Energy: {psi.psiMax}k{psi.psiSides}. Te kości służą wyłącznie zdolnościom Psi Warriora. Po krótkim odpoczynku odzyskujesz jedną zużytą kość, a po długim wszystkie. Zdolność wymagająca kości jest niedostępna, gdy pula jest wyczerpana.</p><p><strong>Psionic Strike — bez akcji:</strong> raz w każdej swojej turze, bezpośrednio po trafieniu celu w 30 stopach i zadaniu mu obrażeń bronią, możesz wydać jedną kość Psionic Energy. Cel otrzymuje dodatkowe {psiAmount} obrażeń mocy (Force). Kość nie jest podwajana przy trafieniu krytycznym.</p><p><strong>Odnowienie Telekinetic Movement — bez akcji:</strong> wydaj jedną kość Psionic Energy, aby odzyskać zużyte użycie tej zdolności. Nie rzucasz tą kością.</p></Card>}
-      {rageProfile(character).dangerSense && <Card title="Zdolności barbarzyńcy"><p>{dangerSenseDescription}</p><p>{recklessAttackDescription}</p></Card>}
-      {rageProfile(character).primalKnowledge && statistics && <details><summary>Primal Knowledge — testy Siły w Szale</summary><p>Możesz zastąpić zwykłą cechę Siłą, zachowując biegłość lub ekspertyzę. Te testy mają ułatwienie dzięki Szałowi.</p><dl className="gm-vitals">{definitions.skills.filter(skill => primalSkills.includes(skill.id)).map(skill => {
-        const traits = characterTraits(character, statistics);
-        const str = statistics.values.str;
-        const extra = traits.skillBonuses[skill.id];
-        const bonus = str == null || extra == null ? null : Math.floor((str - 10) / 2) + statistics.proficiency * traits.effectiveSkills[skill.id] + extra;
-        return <div key={skill.id}><dt>{skill.label} (Siła)</dt><dd>{bonus == null ? '—' : signed(bonus)} · ułatwienie</dd></div>;
-      })}</dl></details>}<div className="combat-sections">
+      {!!psi.psiMax && <Card title="Psionic Power"><p>Pula Psionic Energy: {psi.psiMax}k{psi.psiSides}. Te kości służą wyłącznie zdolnościom Psi Warriora. Po krótkim odpoczynku odzyskujesz jedną zużytą kość, a po długim wszystkie. Zdolność wymagająca kości jest niedostępna, gdy pula jest wyczerpana.</p></Card>}
+      {rageProfile(character).dangerSense && <Card title="Zdolności barbarzyńcy"><p>{dangerSenseDescription}</p></Card>}
+      <div className="combat-sections">
         <Card title="Akcja" eyebrow="TURA">
           <ActionList entries={[
             ...(character.species === 'Smokowiec (Dragonborn)' ? [['Broń Oddechowa', `Wydalasz niszczycielską energię w stożku o długości 15 stóp albo linii o długości 30 stóp i szerokości 5 stóp. Cel wykonuje rzut obronny na Zręczność lub Kondycję (ST ${statistics?.values.con == null ? '8 + premia z biegłości + modyfikator Kondycji' : 8 + statistics.proficiency + Math.floor((statistics.values.con - 10) / 2)}). Obrażenia zależą od poziomu i typu wybranego przodka; obszar i rzuty rozstrzyga GM.`] as const] : []),
@@ -262,13 +258,12 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
           {!!bonusWeapons.length && <WeaponList weapons={bonusWeapons} character={character} statistics={statistics} showMastery />}
           {!rageProfile(character).max && !combatSpells.bonus.length && !bonusWeapons.length && <p className="statistics-help">Brak czarów lub ataków z czasem wykonania „Akcja bonusowa”.</p>}
         </Card>
-        <Card title="Reakcja" eyebrow="POZA TURĄ">
+        <Card title="Reakcje i inne">
+          <details className="combat-reactions"><summary className="combat-action-summary">Reakcje</summary>
           <ActionList entries={[
             ...(psi.psiMax ? [['Protective Field', `Gdy ty lub inna widoczna istota w 30 stopach otrzymuje obrażenia, możesz użyć reakcji i wydać jedną kość Psionic Energy. Zmniejsz te obrażenia o ${psiAmount} (minimum 1).`] as const] : []),
             ['Atak okazyjny', 'Możesz wykonać atak okazyjny, gdy widziana przez ciebie istota opuszcza twój zasięg, wykorzystując do tego akcję, akcję bonusową, reakcję lub jedną ze swoich Szybkości. Aby wykonać atak okazyjny, użyj reakcji i wykonaj jeden atak wręcz bronią lub cios bez użycia broni przeciwko prowokującej istocie. Atak następuje bezpośrednio przed opuszczeniem przez nią twojego zasięgu.'],
-            ...(character.class.includes('Fighter')
-              ? [['Action Surge', 'You can push yourself beyond your normal limits for a moment. On your turn, you can take one additional action, except the Magic action.'] as const]
-              : []),
+            ...additionalAbilities.reaction,
             ...(statistics?.choices?.fightingStyle === 'interception'
               ? [['Interception (Przechwycenie)', `Gdy widziana przez ciebie istota trafia inną istotę w odległości do 1,5 metra od ciebie, możesz użyć reakcji, aby zmniejszyć zadane obrażenia o 1k10 ${signed(statistics.proficiency)}. Musisz trzymać tarczę albo broń prostą lub wojenną.`] as const]
               : []),
@@ -277,6 +272,21 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
               : []),
           ]} weapons={equippedWeapons} character={character} statistics={statistics} equippedItems={equippedItems} />
           {!!combatSpells.reaction.length && <SpellList spells={combatSpells.reaction} />}
+          </details>
+          <ActionList entries={[
+            ...(psi.psiMax ? [
+              ['Psionic Strike — bez akcji', `Raz w każdej swojej turze, bezpośrednio po trafieniu celu w 30 stopach i zadaniu mu obrażeń bronią, możesz wydać jedną kość Psionic Energy. Cel otrzymuje dodatkowe ${psiAmount} obrażeń mocy (Force). Kość nie jest podwajana przy trafieniu krytycznym.`] as const,
+              ['Odnowienie Telekinetic Movement — bez akcji', 'Wydaj jedną kość Psionic Energy, aby odzyskać zużyte użycie tej zdolności. Nie rzucasz tą kością.'] as const,
+            ] : []),
+            ...additionalAbilities.other,
+          ]} />
+      {rageProfile(character).primalKnowledge && statistics && <details><summary>Primal Knowledge — testy Siły w Szale</summary><p>Możesz zastąpić zwykłą cechę Siłą, zachowując biegłość lub ekspertyzę. Te testy mają ułatwienie dzięki Szałowi.</p><dl className="gm-vitals">{definitions.skills.filter(skill => primalSkills.includes(skill.id)).map(skill => {
+        const traits = characterTraits(character, statistics);
+        const str = statistics.values.str;
+        const extra = traits.skillBonuses[skill.id];
+        const bonus = str == null || extra == null ? null : Math.floor((str - 10) / 2) + statistics.proficiency * traits.effectiveSkills[skill.id] + extra;
+        return <div key={skill.id}><dt>{skill.label} (Siła)</dt><dd>{bonus == null ? '—' : signed(bonus)} · ułatwienie</dd></div>;
+      })}</dl></details>}
         </Card>
       </div>
     </div>

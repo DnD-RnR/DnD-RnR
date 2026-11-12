@@ -52,6 +52,10 @@ main { width: 100%; max-width: 1280px; padding: 60px clamp(24px, 5vw, 80px); mar
 .combat-action-list summary::marker { color: var(--muted); }
 .combat-action-list > li > details > .combat-action-summary { padding: 2px 0 6px; color: var(--text); font-size: 1rem; font-weight: 750; }
 .combat-action-list p { margin: 4px 0 0; font-size: .85rem; }
+.combat-reactions { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.combat-reactions > summary { padding: 10px 12px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 6px; background: var(--raised); color: var(--accent); font-size: 1rem; font-weight: 750; cursor: pointer; }
+.combat-reactions > summary:hover { border-color: var(--accent); }
+.combat-reactions[open] > summary { margin-bottom: 16px; }
 .unarmed-strike { margin-top: 12px; border-top: 1px solid var(--border); }
 .unarmed-strike > summary { padding: 12px 0; color: var(--accent); font-weight: 700; }
 .unarmed-strike-content { padding-top: 2px; }

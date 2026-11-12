@@ -20,6 +20,13 @@ export function spellcastingProfile(character, selection = emptySpellSelection()
   const automatic = new Map();
   const grant = (ids, reason) => { for (const id of ids) { const spell = spellById.get(id); if (!spell) throw new Error(`Unknown granted spell: ${id}`); automatic.set(id, { ...spell, reason }); } };
   for (const entry of originSpellGrants(selectedOriginFeats(character, traits), traits)) grant([entry.id], entry.reason);
+  if (character.species === 'Gnom (Gnome)' && traits.gnomeLineage?.[0] === 'rock') {
+    grant(['mending', 'prestidigitation'], 'Gnomish Lineage (Rock Gnome)');
+    for (const id of ['mending', 'prestidigitation']) {
+      automatic.set(id, { ...automatic.get(id), spellcastingAbility: traits.gnomeSpellAbility?.[0] ?? '' });
+    }
+    if (!profile.ability) profile.ability = traits.gnomeSpellAbility?.[0] ?? '';
+  }
   const legacy = character.species === 'Diabelstwo (Tiefling)' ? tieflingLegacyProfile(traits.tieflingLegacy?.[0]) : null;
   if (legacy) {
     grant(['thaumaturgy', legacy.spells[0]], 'Fiendish Legacy — poziom 1');

@@ -19,7 +19,7 @@ test('GM numeric summaries match character modifiers, proficiencies and manual o
   assert.equal(summary.maxHp, 9);
   assert.equal(summary.ac, 13);
   assert.equal(summary.speed, 30);
-  assert.equal(summary.initiative, 5);
+  assert.equal(summary.initiative, 3);
   assert.equal(summary.proficiency, 2);
   assert.equal(summary.passivePerception, 16);
   assert.equal(summary.savingThrows.dex, 5);
@@ -38,6 +38,18 @@ test('GM numeric summaries match character modifiers, proficiencies and manual o
   assert.equal(missing.initiative, null);
   assert.equal(missing.passivePerception, null);
   assert.equal(missing.spellAttack, null);
+});
+
+test('initiative follows Dexterity and automatic Alert bonus, ignoring legacy manual values', () => {
+  const character = { class: 'Bard', species: 'Elf', background: 'Przestępca (Criminal)', level: 1, subclass: '' };
+  const statistics = emptyStatistics();
+  assert.equal(Object.hasOwn(statistics.values, 'initiativeBonus'), false);
+  Object.assign(statistics.values, { dex: 16, initiativeBonus: 12 });
+  assert.equal(statisticsSummary(character, statistics).initiative, 5);
+  statistics.values.dex = 8;
+  assert.equal(statisticsSummary(character, statistics).initiative, 1);
+  statistics.values.dex = null;
+  assert.equal(statisticsSummary(character, statistics).initiative, null);
 });
 
 function seed(db) {

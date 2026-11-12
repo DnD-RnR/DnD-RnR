@@ -135,3 +135,15 @@ test('malformed and invented spell selection categories are rejected safely', ()
     assert.ok(validateSpellSelection(character('Bard', 1), invalid));
   }
 });
+
+test('rock gnome fighter receives lineage cantrips without class spell selections', () => {
+  const hero = { ...character('Wojownik (Fighter)', 3, 'Psi Warrior'), species: 'Gnom (Gnome)' };
+  const traits = { gnomeLineage: ['rock'], gnomeSpellAbility: ['wis'] };
+  const profile = spellcastingProfile(hero, emptySpellSelection(), traits);
+  assert.equal(profile.groups.length, 0);
+  assert.deepEqual(profile.automatic.map(spell => spell.id).sort(), ['mending', 'prestidigitation']);
+  assert.ok(profile.automatic.every(spell => spell.spellcastingAbility === 'wis'));
+  assert.equal(profile.ability, 'wis');
+  assert.equal(spellcastingProfile(hero).automatic.length, 0);
+  assert.equal(spellcastingProfile({ ...hero, species: 'Elf' }, emptySpellSelection(), traits).automatic.length, 0);
+});

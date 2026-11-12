@@ -33,7 +33,6 @@
     { "id": "tempHp", "label": "Tymczasowe PW", "min": 0, "max": 9999 },
     { "id": "ac", "label": "Klasa pancerza", "min": 0, "max": 99 },
     { "id": "speed", "label": "Szybkość (stopy)", "min": 0, "max": 999 },
-    { "id": "initiativeBonus", "label": "Dodatkowa premia do inicjatywy", "min": -30, "max": 30 },
     { "id": "hitDice", "label": "Pozostałe kości wytrzymałości", "min": 0, "max": 20 },
     { "id": "deathSuccesses", "label": "Rzuty przeciw śmierci: sukcesy", "min": 0, "max": 3 },
     { "id": "deathFailures", "label": "Rzuty przeciw śmierci: porażki", "min": 0, "max": 3 },
