@@ -5,7 +5,7 @@ import { rageProfile, dangerSenseDescription } from '../../../shared/barbarian.m
 import { SpellSelection } from './SpellSelection';
 import { spellcastingProfile } from '../../../shared/spellcasting.mjs';
 import { useEffect, useState, type FormEvent } from 'react';
-import { api, type Character, type CharacterStatistics } from '../../api';
+import { api, type Character, type CharacterStatistics, type InventoryItem } from '../../api';
 import definitions from '../../../shared/statistics.json' with { type: 'json' };
 
 const signed = (value: number | null) => value === null ? '—' : value >= 0 ? `+${value}` : String(value);
@@ -17,6 +17,7 @@ export function StatisticsTab({ character }: { character: Character }) {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [pending, setPending] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const path = `/characters/${character.id}/statistics`;
   useEffect(() => {
     let active = true;
@@ -32,6 +33,20 @@ export function StatisticsTab({ character }: { character: Character }) {
       setStatistics(result.statistics); setDraft(null); setMessage('Statystyki zapisane.');
     } catch (e) { setError(e instanceof Error ? e.message : 'Nie udało się zapisać statystyk.'); }
     finally { setPending(false); }
+  }
+  async function exportPdf() {
+    if (exporting) return;
+    setExporting(true); setError(''); setMessage('');
+    try {
+      const [{ statistics: saved }, { items }, { downloadCharacterPdf }] = await Promise.all([
+        api<{ statistics: CharacterStatistics }>(path),
+        api<{ items: InventoryItem[] }>(`/characters/${character.id}/inventory`),
+        import('./characterPdf'),
+      ]);
+      await downloadCharacterPdf(character, saved, items);
+      setMessage('Karta PDF została przygotowana do pobrania.');
+    } catch (e) { setError(e instanceof Error ? e.message : 'Nie udało się wyeksportować karty PDF.'); }
+    finally { setExporting(false); }
   }
   const stats = draft ?? statistics;
   if (!stats) return error ? <p role="alert" className="form-error">{error}</p> : <p role="status">Wczytywanie statystyk…</p>;
@@ -51,7 +66,7 @@ export function StatisticsTab({ character }: { character: Character }) {
     }} /></label>;
   }
   return <div className="statistics-tab">
-    <div className="inventory-section-heading"><div><p className="eyebrow">KARTA BOHATERA</p><h2>Statystyki</h2></div>{!draft && <button className="primary-button" onClick={() => { setDraft(structuredClone(stats)); setMessage(''); setError(''); }}>Uzupełnij / edytuj</button>}</div>
+    <div className="inventory-section-heading"><div><p className="eyebrow">KARTA BOHATERA</p><h2>Statystyki</h2></div>{!draft && <div className="admin-actions"><button className="text-button" disabled={exporting} onClick={() => void exportPdf()}>{exporting ? 'Przygotowywanie PDF…' : 'Eksportuj PDF'}</button><button className="primary-button" disabled={exporting} onClick={() => { setDraft(structuredClone(stats)); setMessage(''); setError(''); }}>Uzupełnij / edytuj</button></div>}</div>
     {error && <p className="form-error" role="alert">{error}</p>}{message && <p role="status">{message}</p>}
     {rageProfile(character).dangerSense && <p>{dangerSenseDescription}</p>}
     {rageProfile(character).primalKnowledge && <p>Primal Knowledge: wybierz dodatkową biegłość z listy umiejętności barbarzyńcy w sekcji cech postaci. W Szale możesz używać Siły do Akrobatyki, Zastraszania, Percepcji, Skradania się i Sztuki przetrwania, zachowując biegłość lub ekspertyzę oraz ułatwienie Szału.</p>}
