@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { poll } from '../../lib/poll';
 import { api, type Character, type CharacterSession } from '../../api';
 import { GamePage } from '../game/GamePage';
 import { LiveBattle, useBattle } from './LiveBattle';
@@ -29,11 +30,8 @@ export function PlayerSessionPage({ character, sessionId, onBack }: { character:
       } catch (e) { if (alive) setError(e instanceof Error ? e.message : 'Błąd połączenia.'); }
       finally { if (alive) setLoading(false); }
     };
-    void refresh();
-    const timer = window.setInterval(() => void refresh(), 5000);
-    const focus = () => void refresh();
-    window.addEventListener('focus', focus);
-    return () => { alive = false; window.clearInterval(timer); window.removeEventListener('focus', focus); };
+    const stop = poll(refresh, 5000);
+    return () => { alive = false; stop(); };
   }, [character.id, sessionId]);
   async function leave() {
     setPending(true); setError('');

@@ -31,13 +31,23 @@ function characterError(body) {
 }
 const publicUser = ({ id, username, name, role }) => ({ id, username, name, role });
 export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0.1:5173') {
+  const metricsInstance = randomBytes(8).toString('hex');
+  let requestCount = 0;
   const attempts = new Map();
   const gameEvents = createGameEvents(db);
   const dummyHash = hashPassword(randomBytes(32).toString('hex'));
   const allowedOrigins = new Set([origin]);
   if (!process.env.APP_ORIGIN && origin === 'http://127.0.0.1:5173') allowedOrigins.add('http://localhost:5173');
   return createServer(async (req, res) => {
+    requestCount++;
+    const started = performance.now();
     res.once('finish', () => {
+      if (process.env.DND_METRICS === '1') console.log(JSON.stringify({
+        event: 'api_request', instance: metricsInstance, requestCount, method: req.method,
+        route: new URL(req.url, 'http://localhost').pathname.replace(/\/\d+(?=\/|$)/g, '/:id'),
+        status: res.statusCode, durationMs: Math.round(performance.now() - started),
+        database: db.metrics?.(),
+      }));
       if (req.method === 'POST' && res.statusCode >= 200 && res.statusCode < 300) gameEvents.publish();
     });
     res.setHeader('Cache-Control', 'no-store');
@@ -104,6 +114,15 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         return send(200, { user: publicUser(found) });
       }
       if (!user) return send(401, { error: 'Zaloguj się, aby kontynuować.' });
+      const snapshotRoute = path.match(/^\/api\/games\/([1-9]\d*)\/snapshot$/);
+      if (snapshotRoute && req.method === 'GET') {
+        let status, snapshot, items, armors;
+        handleGames(db, user, `/api/games/${snapshotRoute[1]}`, 'GET', {}, (code, data) => { status = code; snapshot = data; });
+        if (status !== 200) return send(status, snapshot);
+        handleItems(db, user, '/api/items', 'GET', {}, (_code, data) => { items = data.items; });
+        handleArmors(db, user, '/api/armors', 'GET', {}, (_code, data) => { armors = data.armors; });
+        return send(200, { ...snapshot, items, armors });
+      }
       if (handleAdvancement(db, user, path, req.method, body, send)) return;
       if (handleWeapons(db, user, path, req.method, body, send)) return;
       if (handleOriginFeats(db, user, path, req.method, body, send)) return;
@@ -112,7 +131,9 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
       if (eventsRoute && req.method === 'GET') {
         const gameId = Number(eventsRoute[1]);
         if (user.role !== 'gm' || !db.prepare('SELECT id FROM games WHERE id = ? AND gm_id = ?').get(gameId, user.id)) return send(404, { error: 'Nie znaleziono gry.' });
-        respond = () => gameEvents.subscribe(req, res, { gameId, userId: user.id, token: digest(token) });
+        const client = { gameId, userId: user.id, token: digest(token) };
+        client.fingerprint = gameEvents.fingerprint(client);
+        respond = () => gameEvents.subscribe(req, res, client);
         return;
       }
       if (path === '/api/me' && req.method === 'GET') return send(200, { user: publicUser(user) });

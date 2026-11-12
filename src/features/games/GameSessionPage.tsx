@@ -1,4 +1,5 @@
 import { SpellRestControls } from './SpellRestControls';
+import { poll } from '../../lib/poll';
 import { MilestoneControls } from './MilestoneControls';
 import { BattlePage } from './BattlePage';
 import { MonstersPage } from './MonstersPage';
@@ -9,6 +10,7 @@ import { api, type CatalogItem } from '../../api';
 import { Card } from '../../components/ui/Card';
 
 type Session = { game: { id: number; name: string; description: string }; members: Member[]; activeSession: { id: number; startedAt: number } | null; activeBattle: { sessionId: number } | null };
+type Snapshot = Session & { items: CatalogItem[]; armors: Array<{ id: string; name: string; category: 'light' | 'medium' | 'heavy' | 'shield'; weight: number | null; cost: string }> };
 
 export function GameSessionPage({ gameId, userId }: { gameId: number; userId: number }) {
   const [editing, setEditing] = useState(false);
@@ -20,12 +22,8 @@ export function GameSessionPage({ gameId, userId }: { gameId: number; userId: nu
   const [message, setMessage] = useState('');
   const [connectionLost, setConnectionLost] = useState(false);
   const load = useCallback(async () => {
-    const [data, i, a] = await Promise.all([
-      api<Session>(`/games/${gameId}`),
-      api<{ items: CatalogItem[] }>('/items'),
-      api<{ armors: Array<{ id: string; name: string; category: 'light' | 'medium' | 'heavy' | 'shield'; weight: number | null; cost: string }> }>('/armors'),
-    ]);
-    setSession(data); setCatalog([...i.items, ...a.armors.map((armor, index) => ({ id: -(index + 1), name: armor.name, description: '', slot: armor.category === 'shield' ? 'off-hand' : 'armor', weight: armor.weight, cost: armor.cost, armorId: armor.id, armorCategory: armor.category }))]);
+    const data = await api<Snapshot>(`/games/${gameId}/snapshot`);
+    setSession(data); setCatalog([...data.items, ...data.armors.map((armor, index) => ({ id: -(index + 1), name: armor.name, description: '', slot: armor.category === 'shield' ? 'off-hand' : 'armor', weight: armor.weight, cost: armor.cost, armorId: armor.id, armorCategory: armor.category }))]);
   }, [gameId]);
   useEffect(() => {
     if (editing) return;
@@ -47,9 +45,13 @@ export function GameSessionPage({ gameId, userId }: { gameId: number; userId: nu
     events.onopen = () => { setConnectionLost(false); void refresh(); };
     events.onerror = () => { if (alive) setConnectionLost(true); };
     events.addEventListener('change', () => void refresh());
-    void refresh();
+    // SSE connections can expire in serverless runtimes. Keep an independent
+    // fallback while disconnected, so a GM still sees other instances' writes.
+    const stopFallback = poll(async () => {
+      if (events.readyState !== EventSource.OPEN) await refresh();
+    }, 20000);
     window.addEventListener('focus', refresh);
-    return () => { alive = false; events.close(); window.removeEventListener('focus', refresh); };
+    return () => { alive = false; stopFallback(); events.close(); window.removeEventListener('focus', refresh); };
   }, [load, editing, gameId]);
   useEffect(() => {
     const previous = document.title;

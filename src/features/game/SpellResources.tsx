@@ -1,4 +1,5 @@
 import { WarlockResources } from './WarlockResources';
+import { poll } from '../../lib/poll';
 import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import type { SpellcastingState } from '../games/battle-types';
@@ -12,8 +13,8 @@ export function SpellResources({ characterId }: { characterId: number }) {
       try { const data = await api<{ spellcasting: SpellcastingState }>(`/characters/${characterId}/spell-resources`); if (alive) { setState(data.spellcasting); setError(''); } }
       catch (e) { if (alive) setError(e instanceof Error ? e.message : 'Błąd odczytu miejsc na czary.'); }
     };
-    void load(); const timer = window.setInterval(() => void load(), 10000); window.addEventListener('focus', load);
-    return () => { alive = false; window.clearInterval(timer); window.removeEventListener('focus', load); };
+    const stop = poll(load, 10000);
+    return () => { alive = false; stop(); };
   }, [characterId]);
   if (error) return <p role="alert" className="form-error">{error}</p>;
   if (!state || (!state.slots.length && !state.species?.heroicInspirationAvailable && !state.barbarian?.max && !state.psiWarrior?.psiMax)) return null;

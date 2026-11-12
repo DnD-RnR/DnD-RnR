@@ -11,6 +11,8 @@ import { emptyStatistics } from './statistics.mjs';
 import samples from '../shared/sample-monsters.json' with { type: 'json' };
 import { createHash } from 'node:crypto';
 import { resourceState } from './spell-resources.mjs';
+import { createGameEvents } from './game-events.mjs';
+import { EventEmitter } from 'node:events';
 
 test('HTTP battle end retries an aborted transaction without consuming its body twice or duplicating the summary', async () => {
   const firestore = cloud();
@@ -153,15 +155,17 @@ function cloud() {
     collection,
     failNextCommit() { reject = true; },
     data,
-    async runTransaction(work) {
+    async runTransaction(work, { maxAttempts = 1 } = {}) {
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const snapshot = new Map([...data].map(([key, value]) => [key, structuredClone(value)]));
       const writes = [];
       const output = await work({
         get: async ref => {
           if (ref.path.split('/').length % 2 === 0) {
-            const value = structuredClone(data.get(ref.path));
+            const value = structuredClone(snapshot.get(ref.path));
             return { exists: value !== undefined, get: field => value?.[field] };
           }
-          return { docs: [...data].filter(([key]) => key.startsWith(ref.path + '/') && key.split('/').length === ref.path.split('/').length + 1)
+          return { docs: [...snapshot].filter(([key]) => key.startsWith(ref.path + '/') && key.split('/').length === ref.path.split('/').length + 1)
             .map(([, value]) => ({ data: () => structuredClone(value) })) };
         },
         set: (ref, value) => writes.push(() => data.set(ref.path, structuredClone(value))),
@@ -169,11 +173,129 @@ function cloud() {
         update: (ref, value) => writes.push(() => data.set(ref.path, { ...data.get(ref.path), ...value })),
       });
       if (reject) { reject = false; throw new Error('Cloud unavailable'); }
+      if (data.get(root).revision !== snapshot.get(root).revision) {
+        if (attempt + 1 === maxAttempts) throw new Error('Transaction contention');
+        continue;
+      }
       for (const write of writes) write();
       return output;
+      }
     },
   };
 }
+
+test('SSE coalesces refreshes and never publishes a change from a failed transaction', async () => {
+  const firestore = cloud();
+  const db = await openFirestoreDatabase(firestore);
+  await db.run(() => {
+    db.exec("UPDATE users SET role = 'gm' WHERE id = 1; INSERT INTO games (id, gm_id, name) VALUES (1, 1, 'Events');");
+    db.prepare('INSERT INTO sessions VALUES (?, 1, ?)').run('events', Date.now() + 60000);
+  });
+  const events = createGameEvents(db);
+  const clients = [];
+  try {
+    for (let i = 0; i < 2; i++) {
+      const client = { gameId: 1, userId: 1, token: 'events' };
+      await db.run(() => { client.fingerprint = events.fingerprint(client); });
+      const res = new EventEmitter(); res.messages = []; res.writeHead = () => {};
+      res.write = message => { res.messages.push(message); return true; };
+      res.end = () => { res.emit('close'); }; res.destroy = res.end;
+      events.subscribe(new EventEmitter(), res, client); clients.push(res);
+    }
+    await db.run(() => db.prepare("UPDATE games SET name = 'Changed' WHERE id = 1").run());
+    const before = db.metrics();
+    await Promise.all([events.publish(), events.publish()]);
+    assert.equal(db.metrics().transactions - before.transactions, 1);
+    for (const res of clients) assert.equal(res.messages.filter(message => message.includes('event: change')).length, 1);
+    await db.run(() => db.prepare("UPDATE games SET name = 'Another' WHERE id = 1").run());
+    firestore.failNextCommit();
+    await events.publish();
+    for (const res of clients) assert.equal(res.messages.filter(message => message.includes('event: change')).length, 1);
+  } finally { clients.forEach(res => res.end()); db.close(); }
+});
+
+test('startup uses one transaction and unchanged reads query only the root', async () => {
+  const db = await openFirestoreDatabase(cloud());
+  try {
+    assert.equal(db.metrics().transactions, 1);
+    assert.equal(db.metrics().fullReloads, 1);
+    const before = db.metrics();
+    await db.run(() => {});
+    assert.equal(db.metrics().documentReads - before.documentReads, 1);
+    assert.equal(db.metrics().collectionQueries, before.collectionQueries);
+    assert.equal(db.metrics().documentWrites, before.documentWrites);
+  } finally { db.close(); }
+});
+
+test('partial refresh spans skipped revisions, deletes and legacy writers safely', async () => {
+  const firestore = cloud();
+  const first = await openFirestoreDatabase(firestore);
+  // Establish tracking, as an existing migrated database has no table metadata.
+  await first.run(() => first.prepare("UPDATE users SET name = 'Tracked' WHERE id = 1").run());
+  const second = await openFirestoreDatabase(firestore);
+  try {
+    await first.run(() => first.prepare("UPDATE users SET name = 'New' WHERE id = 1").run());
+    await first.run(() => first.prepare("INSERT INTO sessions VALUES ('token', 1, 123)").run());
+    const before = second.metrics();
+    await second.run(() => {
+      assert.equal(second.prepare('SELECT name FROM users WHERE id = 1').get().name, 'New');
+      assert.equal(second.prepare('SELECT COUNT(*) AS n FROM sessions').get().n, 1);
+    });
+    assert.equal(second.metrics().collectionQueries - before.collectionQueries, 2);
+    await first.run(() => first.prepare('DELETE FROM sessions').run());
+    await second.run(() => assert.equal(second.prepare('SELECT COUNT(*) AS n FROM sessions').get().n, 0));
+    assert.equal(second.metrics().fullReloads, before.fullReloads);
+    // Old scripts preserve unknown metadata and increment only global revision.
+    firestore.data.get('dnd_rnr/main').revision++;
+    firestore.data.get('dnd_rnr/main/users/1').name = 'Legacy';
+    await second.run(() => assert.equal(second.prepare('SELECT name FROM users WHERE id = 1').get().name, 'Legacy'));
+    assert.equal(second.metrics().fullReloads, before.fullReloads + 1);
+  } finally { first.close(); second.close(); }
+});
+
+test('simultaneous instances retry against fresh state without losing another writer changes', async () => {
+  const firestore = cloud();
+  const first = await openFirestoreDatabase(firestore);
+  const second = await openFirestoreDatabase(firestore);
+  try {
+    await Promise.all([
+      first.run(async () => { await Promise.resolve(); first.prepare("UPDATE users SET name = 'Concurrent' WHERE id = 1").run(); }),
+      second.run(async () => { await Promise.resolve(); second.prepare("UPDATE users SET username = 'concurrent' WHERE id = 1").run(); }),
+    ]);
+    assert.ok(first.metrics().attempts + second.metrics().attempts > first.metrics().transactions + second.metrics().transactions);
+    for (const db of [first, second]) await db.run(() => {
+      const user = db.prepare('SELECT * FROM users WHERE id = 1').get();
+      assert.equal(user.name, 'Concurrent'); assert.equal(user.username, 'concurrent');
+    });
+  } finally { first.close(); second.close(); }
+});
+
+test('cost benchmark: seven instances, 30 writes and 210 synchronized reads', async t => {
+  async function scenario(legacy) {
+    const firestore = cloud();
+    const clients = [];
+    for (let i = 0; i < 7; i++) clients.push(await openFirestoreDatabase(firestore));
+    const started = performance.now();
+    try {
+      for (let turn = 0; turn < 30; turn++) {
+        const writer = clients[turn % clients.length];
+        await writer.run(() => writer.prepare('UPDATE users SET name = ? WHERE id = 1').run(`Turn ${turn}`));
+        // Reproduce the old global invalidation policy, with the same workload.
+        if (legacy) delete firestore.data.get('dnd_rnr/main').trackedRevision;
+        await Promise.all(clients.map(db => db.run(() => {
+          assert.equal(db.prepare('SELECT name FROM users WHERE id = 1').get().name, `Turn ${turn}`);
+        })));
+      }
+      const totals = {};
+      for (const db of clients) for (const [key, value] of Object.entries(db.metrics())) totals[key] = (totals[key] || 0) + value;
+      return { ...totals, wallMs: Math.round(performance.now() - started) };
+    } finally { clients.forEach(db => db.close()); }
+  }
+  const before = await scenario(true), after = await scenario(false);
+  assert.ok(after.documentReads < before.documentReads / 2);
+  assert.equal(before.documentWrites, after.documentWrites);
+  t.diagnostic(JSON.stringify({ before, after }));
+});
 
 test('Firestore preserves IDs and password hashes, refreshes between processes, and persists deletion', async () => {
   const firestore = cloud();

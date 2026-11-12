@@ -1,4 +1,5 @@
 import { formatDice } from '../../lib/dice';
+import { poll } from '../../lib/poll';
 import { StatisticsTab } from './StatisticsTab';
 import { CharacterGameInfo } from '../characters/CharacterGameInfo';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -27,11 +28,9 @@ export function GamePage({ character: initialCharacter, onBack }: { character: C
   const inventoryPath = `/characters/${character.id}/inventory`;
   useEffect(() => {
     let alive = true;
-    const refresh = () => { void api<{ characters: Character[] }>('/characters').then(data => { const next = data.characters.find(c => c.id === initialCharacter.id); if (alive && next) updateCharacter(next); }).catch(() => {}); };
-    refresh();
-    const timer = window.setInterval(refresh, 20000);
-    window.addEventListener('focus', refresh);
-    return () => { alive = false; window.clearInterval(timer); window.removeEventListener('focus', refresh); };
+    const refresh = () => api<{ characters: Character[] }>('/characters').then(data => { const next = data.characters.find(c => c.id === initialCharacter.id); if (alive && next) updateCharacter(next); }).catch(() => {});
+    const stop = poll(refresh, 20000);
+    return () => { alive = false; stop(); };
   }, [initialCharacter.id, updateCharacter]);
   async function load() {
     const data = await api<{ items: InventoryItem[] }>(inventoryPath);

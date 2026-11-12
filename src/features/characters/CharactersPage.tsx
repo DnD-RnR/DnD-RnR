@@ -1,4 +1,5 @@
 import { CharacterGameInfo } from './CharacterGameInfo';
+import { poll } from '../../lib/poll';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useEffect, useState } from 'react';
@@ -10,12 +11,14 @@ export function CharactersPage({ onSelect, onCreate, onEnter }: { onCreate: () =
   const [joining, setJoining] = useState<number | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
-    const load = () => api<{ characters: Character[] }>('/characters').then(data => setCharacters(data.characters));
-    const refresh = () => { void load().catch(e => setError(e.message)); };
-    load().catch(e => setError(e.message)).finally(() => setLoading(false));
-    const timer = window.setInterval(refresh, 5000);
-    window.addEventListener('focus', refresh);
-    return () => { window.clearInterval(timer); window.removeEventListener('focus', refresh); };
+    let alive = true;
+    const load = async () => {
+      try { const data = await api<{ characters: Character[] }>('/characters'); if (alive) setCharacters(data.characters); }
+      catch (e) { if (alive) setError(e instanceof Error ? e.message : 'Błąd połączenia.'); }
+      finally { if (alive) setLoading(false); }
+    };
+    const stop = poll(load, 5000);
+    return () => { alive = false; stop(); };
   }, []);
   async function join(character: Character) {
     if (joining !== null || !character.activeSessionId) return;
