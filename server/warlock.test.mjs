@@ -146,7 +146,7 @@ test('invocations enforce levels, dependencies, unique targets and known eligibl
   assert.ok(validate(2, ['eldritch-mind', 'eldritch-mind', 'armor-of-shadows']).error);
   assert.ok(validate(2, ['eldritch-mind', 'armor-of-shadows', 'thirsting-blade']).error);
   assert.ok(validate(2, ['agonizing-blast:prestidigitation', 'eldritch-mind', 'armor-of-shadows']).error);
-  assert.ok(validate(2, ['eldritch-spear:chill-touch', 'eldritch-mind', 'armor-of-shadows'], ['chill-touch']).error);
+  assert.ok(validate(2, ['eldritch-spear:chill-touch', 'eldritch-mind', 'armor-of-shadows'], ['poison-spray']).error);
   assert.ok(validate(2, ['repelling-blast:mind-sliver', 'eldritch-mind', 'armor-of-shadows'], ['mind-sliver']).error);
   assert.ok(validate(2, ['agonizing-blast:eldritch-blast', 'agonizing-blast:poison-spray', 'lessons-of-the-first-ones:Tough'], ['eldritch-blast','poison-spray']).history);
   assert.ok(validate(2, ['lessons-of-the-first-ones:Tough', 'lessons-of-the-first-ones:Alert', 'eldritch-mind']).history);
@@ -221,4 +221,257 @@ test('Tome choices exclude prepared spells, accept any class and enable targeted
   assert.ok(invocationOptions(hero(5), stats).some(i => i.id === 'repelling-blast:fire-bolt'));
   stats.traits.tomeRituals = ['hex'];
   assert.ok(validateTraitSelection(hero(5), stats));
+});
+
+
+// Levels 1–10: persistent resources and the same authorized combat routes as the UI.
+import { warlockProfile, bondAdvantage, hexDisadvantage } from '../shared/warlock.mjs';
+import { handleBattles } from './battles.mjs';
+import { publicCaster, resourceState, saveResources, handleSpellResources } from './spell-resources.mjs';
+import { restWarlock, useWarlockFeature } from './warlock-features.mjs';
+
+function patronSetup(subclass = 'Great Old One Patron', level = 10) {
+  const db = openDatabase(':memory:');
+  db.exec(`INSERT INTO users VALUES (1,'gm','GM','unused','gm'),(2,'warlock','Warlock','unused','player'),(3,'ally','Ally','unused','player');
+    INSERT INTO games (id,gm_id,name) VALUES (1,1,'Patrons');
+    INSERT INTO game_sessions (id,game_id,started_at) VALUES (1,1,1);
+    INSERT INTO characters (id,user_id,name,class,level) VALUES (1,2,'Warlock','Bard',3),(2,3,'Ally','Bard',1);
+    INSERT INTO game_members (id,game_id,character_id,status) VALUES (1,1,1,'accepted'),(2,1,2,'accepted');
+    INSERT INTO session_participants VALUES (1,1,1),(1,2,1);
+    INSERT INTO game_monster_entries VALUES (1,'enemy','Enemy',100,14,30,'','{"str":1,"dex":1,"con":1,"int":1,"wis":1,"cha":1}');`);
+  db.prepare('UPDATE characters SET class = ?, subclass = ?, level = ? WHERE id = 1').run(hero(level).class, subclass, level);
+  const stats = emptyStatistics();
+  Object.assign(stats.values, { str: 10, dex: 12, con: 14, int: 16, wis: 16, cha: 16, hp: 40, maxHp: 40, tempHp: 0, ac: 12, speed: 30 });
+  stats.spells.selections = { cantrips: ['poison-spray', 'toll-the-dead'], prepared: ['hellish-rebuke', ...(level < 10 || subclass !== 'Great Old One Patron' ? ['hex'] : [])] };
+  db.prepare('INSERT INTO character_statistics VALUES (1, ?)').run(JSON.stringify(stats));
+  db.prepare('INSERT INTO character_statistics VALUES (2, ?)').run(JSON.stringify({ ...stats, spells: emptyStatistics().spells }));
+  const gm = { id: 1, role: 'gm' }, player = { id: 2, role: 'player' }, ally = { id: 3, role: 'player' };
+  let version = 0;
+  const call = (action = '', body = {}, user = player) => {
+    let result;
+    handleBattles(db, user, `/api/games/1/battle${action ? '/' + action : ''}`, action ? 'POST' : 'GET', { sessionId: 1, version, ...body }, (status, data) => { result = { status, ...data }; });
+    if (result.battle) version = result.battle.version;
+    return result;
+  };
+  const start = () => call('start', { fighters: [{ memberId: 1, initiative: 20 }, { enemyId: 'enemy', initiative: 10 }, { memberId: 2, initiative: 5 }] }, gm);
+  const own = (body = {}, user = player) => {
+    let result;
+    handleSpellResources(db, user, '/api/characters/1/spell-resources', 'POST', { version: resourceState(db, 1).version, ...body }, (status, data) => { result = { status, ...data }; });
+    return result;
+  };
+  return { db, gm, player, ally, call, start, own };
+}
+
+test('both patrons match every progression threshold through ten and grant spells outside the ordinary budget', () => {
+  const prepared = [2,3,4,5,6,7,8,9,10,10], slots = [1,1,2,2,3,3,4,4,5,5];
+  for (const subclass of ['Fiend Patron', 'Great Old One Patron']) for (let level = 1; level <= 10; level++) {
+    const c = { ...hero(level), subclass };
+    const p = spellcastingProfile(c), w = warlockProfile(c, 16);
+    assert.equal(p.groups.find(g => g.id === 'prepared').limit, prepared[level-1]);
+    assert.equal(p.pactSlotLevel, slots[level-1]);
+    assert.equal(p.groups.find(g => g.id === 'cantrips').limit, level >= 10 ? 4 : level >= 4 ? 3 : 2);
+    assert.equal(invocationCount(c), [1,3,3,3,5,5,6,6,7,7][level-1]);
+    assert.equal(w.luckMax, subclass === 'Fiend Patron' && level >= 6 ? 3 : 0);
+    assert.equal(w.thoughtShield, subclass === 'Great Old One Patron' && level >= 10);
+    assert.equal(w.resilience, subclass === 'Fiend Patron' && level >= 10);
+    assert.equal(p.automatic.some(s => s.id === 'contact-other-plane'), level >= 9);
+    if (subclass === 'Great Old One Patron') assert.equal(p.automatic.some(s => s.id === 'hex'), level >= 10);
+    for (const spell of p.automatic) assert.ok(!p.groups.find(g => g.id === 'prepared').options.some(s => s.id === spell.id));
+  }
+  assert.equal(warlockProfile({ ...hero(10), subclass: 'Fiend Patron' }, 2).luckMax, 1);
+  assert.equal(warlockProfile({ ...hero(10), subclass: 'Great Old One Patron' }, null).telepathyMiles, null);
+});
+
+test('outside combat features enforce ownership, optimistic versions, resource limits and rest choices', () => {
+  const { db, own, ally, start } = patronSetup('Fiend Patron');
+  try {
+    const state = resourceState(db, 1); state.pactSpent = 2; saveResources(db, 1, state);
+    assert.equal(own({ kind: 'magical-cunning' }, ally).status, 404);
+    assert.equal(own({ kind: 'magical-cunning', version: -1 }).status, 409);
+    assert.equal(own({ kind: 'magical-cunning' }).status, 200);
+    assert.equal(resourceState(db, 1).pactSpent, 1);
+    assert.equal(own({ kind: 'magical-cunning' }).status, 409);
+    assert.equal(own({ kind: 'contact-patron', confirmed: true }).contactPatron.automaticSaveSuccess, true);
+    assert.equal(own({ kind: 'contact-patron', confirmed: true }).status, 409);
+    assert.equal(own({ kind: 'fiendish-resilience', damageType: 'moc' }).status, 409);
+    assert.equal(own({ kind: 'fiendish-resilience', damageType: 'ogień' }).status, 200);
+    assert.equal(own({ kind: 'fiendish-resilience', damageType: 'zimno' }).status, 409);
+    assert.equal(own({ kind: 'dark-ones-own-luck', rollId: 'wis-1', luckRoll: 10 }).status, 200);
+    assert.equal(own({ kind: 'dark-ones-own-luck', rollId: 'wis-1', luckRoll: 10 }).status, 409);
+    let s = resourceState(db, 1); restWarlock(s, 'short'); saveResources(db, 1, s);
+    assert.equal(own({ kind: 'fiendish-resilience', damageType: 'zimno' }).status, 200);
+    assert.equal(publicCaster(db, 1).warlock.luckRemaining, 2);
+    assert.equal(publicCaster(db, 1).warlock.cunningAvailable, false);
+    s = resourceState(db, 1); restWarlock(s, 'long'); saveResources(db, 1, s);
+    assert.equal(publicCaster(db, 1).warlock.luckRemaining, 3);
+    assert.equal(publicCaster(db, 1).warlock.cunningAvailable, true);
+    start(); assert.equal(own({ kind: 'contact-patron', confirmed: true }).status, 409);
+  } finally { db.close(); }
+});
+
+test('Clairvoyant Combatant requires a real authorized save, forces attack dice, renews with a pact slot and expires', () => {
+  const { db, call, start, gm, ally } = patronSetup('Great Old One Patron', 6);
+  try {
+    const b = start().battle, actor = b.fighters[0].id, target = b.fighters[1].id;
+    const request = { kind: 'awakened-mind', actorId: actor, targetId: target, combatant: true, confirmed: true };
+    assert.equal(call('act', request, ally).status, 409);
+    assert.equal(call('act', request).status, 200);
+    assert.equal(publicCaster(db, 1).warlock.clairvoyantAvailable, false);
+    assert.equal(call('act', { kind: 'resolve', note: 'skip' }, gm).status, 409);
+    assert.equal(call('act', { kind: 'clairvoyant-save', roll: 1 }).status, 409);
+    const failed = call('act', { kind: 'clairvoyant-save', roll: 1 }, gm);
+    assert.equal(failed.status, 200);
+    assert.equal(bondAdvantage(failed.battle.fighters[0], failed.battle.fighters[1]), true);
+    assert.equal(call('act', { kind: 'attack', attackId: 'unarmed', targetId: target, slot: 'action', roll: 2 }).status, 409);
+    assert.equal(call('act', { kind: 'attack', attackId: 'unarmed', targetId: target, slot: 'action', roll: 1, roll2: 2 }).status, 200);
+    assert.equal(call('act', { kind: 'clairvoyant-recover', actorId: actor }).status, 200);
+    assert.equal(resourceState(db, 1).pactSpent, 1);
+    assert.equal(call('act', { kind: 'clairvoyant-recover', actorId: actor }).status, 409);
+    const f = failed.battle.fighters[0]; f.warlockBond.expiresAt = Date.now() - 1;
+    assert.equal(bondAdvantage(f, failed.battle.fighters[1]), false);
+  } finally { db.close(); }
+});
+
+test('Fiend luck improves checks and concentration once per roll and rejects invalid dice', () => {
+  const { db, call, start, gm } = patronSetup('Fiend Patron', 6);
+  try {
+    const b = start().battle, actorId = b.fighters[0].id;
+    assert.equal(call('act', { kind: 'ability-check', actorId, ability: 'wis', roll: 2, luckRoll: 11 }).status, 409);
+    assert.equal(publicCaster(db, 1).warlock.luckRemaining, 3);
+    assert.equal(call('act', { kind: 'ability-check', actorId, ability: 'wis', roll: 2, luckRoll: 8 }).status, 200);
+    assert.equal(publicCaster(db, 1).warlock.luckRemaining, 2);
+    // Put the caster into concentration using a real spell, then resolve incoming damage.
+    assert.equal(call('act', { kind: 'cast', actorId, slot: 'bonus', spellId: 'hex', source: 'pact', level: 3, targetIds: [b.fighters[1].id], hexAbility: 'wis' }).status, 200);
+    assert.equal(call('act', { kind: 'resolve', note: 'hit', targetId: actorId, effect: 'damage', amount: 1 }, gm).status, 200);
+    const saved = call('act', { kind: 'concentration', actorId, roll: 1, luckRoll: 10 });
+    assert.equal(saved.status, 200); assert.equal(saved.battle.fighters[0].concentration, 'Hex');
+    assert.equal(call('act', { kind: 'concentration', actorId, roll: 1, luckRoll: 10 }).status, 409);
+    assert.equal(publicCaster(db, 1).warlock.luckRemaining, 1);
+  } finally { db.close(); }
+});
+
+test('Eldritch Hex applies saving throw disadvantage, critical bonus dice and ends with concentration', () => {
+  const { db, call, start, gm } = patronSetup();
+  try {
+    const b = start().battle, actorId = b.fighters[0].id, targetId = b.fighters[1].id;
+    const hex = call('act', { kind: 'cast', actorId, slot: 'bonus', spellId: 'hex', source: 'pact', level: 5, targetIds: [targetId], hexAbility: 'wis' });
+    assert.equal(hex.status, 200);
+    assert.equal(hexDisadvantage(hex.battle, hex.battle.fighters[1], 'wis'), true);
+    assert.equal(call('act', { kind: 'cast', slot: 'action', spellId: 'poison-spray', source: 'cantrip', level: 0, targetIds: [targetId] }).status, 200);
+    const hit = call('act', { kind: 'spell-attack', roll: 20 });
+    assert.equal(hit.status, 200); assert.equal(hit.battle.pending.hexDice, 2);
+    assert.equal(call('act', { kind: 'spell-defense', targetId, multiplier: 1 }, gm).status, 200);
+    assert.equal(call('act', { kind: 'spell-effect', rolls: [1,1,1,1], hexRolls: [6] }).status, 409);
+    const applied = call('act', { kind: 'spell-effect', rolls: [1,1,1,1], hexRolls: [6,6] });
+    assert.equal(applied.status, 200);
+    assert.equal(applied.battle.fighters[1].damageTaken, 16);
+    assert.equal(call('act', { kind: 'resolve', note: 'hit', targetId: actorId, effect: 'damage', amount: 1 }, gm).status, 200);
+    const lost = call('act', { kind: 'concentration', actorId, roll: 1 });
+    assert.equal(lost.status, 200); assert.equal(hexDisadvantage(lost.battle, lost.battle.fighters[1], 'wis'), false);
+  } finally { db.close(); }
+});
+
+test('Psychic Spells changes automated damage while Thought Shield and Fiend resistance mitigate once', () => {
+  const { db, call, start, gm } = patronSetup();
+  try {
+    const b = start().battle, actorId = b.fighters[0].id, targetId = b.fighters[1].id;
+    const cast = call('act', { kind: 'cast', slot: 'action', spellId: 'poison-spray', source: 'cantrip', level: 0, targetIds: [targetId], psychic: true });
+    assert.equal(cast.status, 200); assert.equal(cast.battle.pending.spec.type, 'Psychic');
+    assert.equal(call('act', { kind: 'spell-attack', roll: 19 }).status, 200);
+    assert.equal(call('act', { kind: 'spell-defense', targetId, multiplier: 1 }, gm).status, 200);
+    assert.equal(call('act', { kind: 'spell-effect', rolls: [2,2] }).status, 200);
+    const reflect = call('act', { kind: 'resolve', note: 'psychic hit', targetId: actorId, sourceId: targetId, effect: 'damage', damageType: 'psychiczne', amount: 11 }, gm);
+    assert.equal(reflect.status, 200); assert.equal(reflect.battle.fighters[0].hp, 35);
+    assert.equal(reflect.battle.fighters[1].damageTaken, 9);
+  } finally { db.close(); }
+});
+
+
+test('Fiendish Resilience halves automated spells once and luck changes a real spell save', () => {
+  const { db, own, call, start, gm } = patronSetup('Fiend Patron');
+  try {
+    assert.equal(own({ kind: 'fiendish-resilience', damageType: 'ogień' }).status, 200);
+    const b = start().battle, actorId = b.fighters[0].id;
+    assert.equal(call('act', { kind: 'cast', spellId: 'fireball', slot: 'action', source: 'pact', level: 5, targetIds: [actorId] }).status, 200);
+    const save = call('act', { kind: 'spell-save', targetId: actorId, roll: 7, luckRoll: 10 });
+    assert.equal(save.status, 200); assert.equal(save.battle.pending.targets[0].saved, true);
+    assert.equal(publicCaster(db, 1).warlock.luckRemaining, 2);
+    assert.equal(call('act', { kind: 'spell-save', targetId: actorId, roll: 7, luckRoll: 10 }).status, 409);
+    assert.equal(publicCaster(db, 1).warlock.luckRemaining, 2);
+    assert.equal(call('act', { kind: 'spell-defense', targetId: actorId, multiplier: 1 }, gm).status, 200);
+    const result = call('act', { kind: 'spell-effect', rolls: Array(10).fill(2) });
+    assert.equal(result.status, 200); assert.equal(result.battle.fighters[0].hp, 35); // 20, save halves to 10, resistance halves to 5.
+  } finally { db.close(); }
+});
+
+test('a successful Clairvoyant save gives no advantage, an existing bond gives incoming disadvantage', () => {
+  for (const roll of [1, 20]) {
+    const { db, call, start, gm } = patronSetup('Great Old One Patron', 6);
+    try {
+      const b = start().battle, actorId = b.fighters[0].id, targetId = b.fighters[1].id;
+      assert.equal(call('act', { kind: 'awakened-mind', actorId, targetId, confirmed: true, combatant: true }).status, 200);
+      const save = call('act', { kind: 'clairvoyant-save', roll }, gm);
+      assert.equal(save.status, 200); assert.equal(bondAdvantage(save.battle.fighters[0], save.battle.fighters[1]), roll === 1);
+      assert.equal(call('next', {}, gm).status, 200);
+      const attack = { kind: 'attack', slot: 'action', targetId: actorId, attack: { name: 'Claw', bonus: 1, dice: 1, sides: 6, damageBonus: 0, type: 'cięte' }, roll: 2 };
+      assert.equal(call('act', attack, gm).status, roll === 1 ? 409 : 200);
+      if (roll === 1) assert.equal(call('act', { ...attack, roll2: 3 }, gm).status, 200);
+    } finally { db.close(); }
+  }
+});
+
+test('Hex transfers only after defeat on a later turn, persists its expiry and preserves its selected ability', () => {
+  const { db, call, start, gm } = patronSetup();
+  try {
+    const b = start().battle, actorId = b.fighters[0].id, targetId = b.fighters[1].id, nextId = b.fighters[2].id;
+    const cast = call('act', { kind: 'cast', slot: 'bonus', spellId: 'hex', source: 'pact', level: 5, targetIds: [targetId], hexAbility: 'con' });
+    assert.equal(cast.status, 200);
+    const expiresAt = cast.battle.fighters[0].hex.expiresAt;
+    assert.equal(call('act', { kind: 'hex-transfer', actorId, targetId: nextId, confirmed: true }).status, 409);
+    assert.equal(call('act', { kind: 'resolve', note: 'defeat', targetId, effect: 'damage', amount: 100 }, gm).status, 200);
+    assert.equal(resourceState(db, 1).hex.targetDefeated, true);
+    assert.equal(call('next', {}, gm).status, 200); assert.equal(call('next', {}, gm).status, 200);
+    const transfer = call('act', { kind: 'hex-transfer', actorId, targetId: nextId, confirmed: true });
+    assert.equal(transfer.status, 200); assert.equal(transfer.battle.fighters[0].hex.ability, 'con');
+    assert.equal(transfer.battle.fighters[0].hex.expiresAt, expiresAt);
+    assert.equal(resourceState(db, 1).hex.targetId, nextId);
+  } finally { db.close(); }
+});
+
+test('short and long rest endpoints refresh only the matching Warlock resources', () => {
+  const { db, gm } = patronSetup('Fiend Patron');
+  try {
+    const state = resourceState(db, 1);
+    Object.assign(state, { magicalCunningUsed: true, contactPatronUsed: true, darkLuckSpent: 3, clairvoyantUsed: true, pactSpent: 2, fiendResistance: 'zimno', fiendResilienceChosenAt: 0 });
+    saveResources(db, 1, state);
+    const rest = type => {
+      let result;
+      handleSpellResources(db, gm, '/api/games/1/spell-rest', 'POST', { rest: type }, (status, data) => { result = { status, ...data }; });
+      return result;
+    };
+    assert.equal(rest('short').status, 200);
+    let p = publicCaster(db, 1).warlock;
+    assert.equal(p.cunningAvailable, false); assert.equal(p.contactPatronAvailable, false); assert.equal(p.luckRemaining, 0);
+    assert.equal(p.resistance, 'zimno'); assert.equal(p.resilienceChoiceAvailable, true);
+    assert.equal(resourceState(db, 1).pactSpent, 0); assert.equal(resourceState(db, 1).clairvoyantUsed, false);
+    assert.equal(rest('long').status, 200);
+    p = publicCaster(db, 1).warlock;
+    assert.equal(p.cunningAvailable, true); assert.equal(p.contactPatronAvailable, true); assert.equal(p.luckRemaining, 3);
+  } finally { db.close(); }
+});
+
+
+test('Thought Shield reflection chains terminate and Eldritch Hex requires two dice on actual spell saves', () => {
+  const { db, call, start, gm } = patronSetup();
+  try {
+    db.prepare('UPDATE characters SET class = ?, subclass = ?, level = 10 WHERE id = 2').run(hero(10).class, 'Great Old One Patron');
+    const b = start().battle, actorId = b.fighters[0].id, enemyId = b.fighters[1].id, allyId = b.fighters[2].id;
+    const reflected = call('act', { kind: 'resolve', note: 'psychic', targetId: actorId, sourceId: allyId, effect: 'damage', damageType: 'psychiczne', amount: 11 }, gm);
+    assert.equal(reflected.status, 200); assert.equal(reflected.battle.fighters[0].hp, 34); assert.equal(reflected.battle.fighters[2].hp, 38);
+    assert.equal(call('act', { kind: 'cast', slot: 'bonus', spellId: 'hex', source: 'pact', level: 5, targetIds: [enemyId], hexAbility: 'wis' }).status, 200);
+    assert.equal(call('act', { kind: 'cast', slot: 'action', spellId: 'toll-the-dead', source: 'cantrip', level: 0, targetIds: [enemyId] }).status, 200);
+    assert.equal(call('act', { kind: 'spell-save', targetId: enemyId, roll: 19 }, gm).status, 409);
+    const failed = call('act', { kind: 'spell-save', targetId: enemyId, roll: 19, roll2: 1 }, gm);
+    assert.equal(failed.status, 200); assert.equal(failed.battle.pending.targets[0].saved, false);
+  } finally { db.close(); }
 });

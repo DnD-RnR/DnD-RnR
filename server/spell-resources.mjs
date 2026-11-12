@@ -1,7 +1,8 @@
+import { restWarlock, useWarlockFeature } from './warlock-features.mjs';
 import { psiResources, restPsi } from './psi-warrior.mjs';
 import { paladinResources, restPaladin } from './paladin.mjs';
 import { druidProfile } from '../shared/druid.mjs';
-import { fiendProfile } from '../shared/warlock.mjs';
+import { warlockProfile } from '../shared/warlock.mjs';
 import { rageProfile } from '../shared/barbarian.mjs';
 import { selectedOriginFeats, originSpellGrants } from '../shared/origin-feats.mjs';
 import { spellcastingProfile, spellById, validateSpellSelection } from '../shared/spellcasting.mjs';
@@ -85,7 +86,7 @@ export function casterData(db, id) {
 }
 export function publicCaster(db, id) {
   const c = casterData(db, id);
-  return { warlock: { fiend: fiendProfile(c.character, c.stats.values.cha) }, psiWarrior: psiResources(c.character, c.state), paladin: { ...paladinResources(c.character, c.state), channelDivinityDc: c.dc }, druid: { ...druidProfile(c.character), uses: Math.min(druidProfile(c.character).max, c.state.wildShapeUses ?? druidProfile(c.character).max), forms: c.stats.traits?.druidForms ?? [], wildShape: c.state.wildShape?.expiresAt > Date.now() ? c.state.wildShape : null, companion: c.state.wildCompanion ?? null }, slots: c.slots, spells: c.spells, ability: c.ability, attack: c.attack, dc: c.dc, error: c.error, species: c.species, barbarian: { ...rageProfile(c.character), uses: Math.min(rageProfile(c.character).max, c.state.rageUses ?? rageProfile(c.character).max), relentlessDC: c.state.relentlessRageDC ?? 10, recoveryAvailable: c.state.persistentRageAvailable !== false }, resourceVersion: c.state.version };
+  return { warlock: warlockProfile(c.character, c.stats.values.cha, c.state), psiWarrior: psiResources(c.character, c.state), paladin: { ...paladinResources(c.character, c.state), channelDivinityDc: c.dc }, druid: { ...druidProfile(c.character), uses: Math.min(druidProfile(c.character).max, c.state.wildShapeUses ?? druidProfile(c.character).max), forms: c.stats.traits?.druidForms ?? [], wildShape: c.state.wildShape?.expiresAt > Date.now() ? c.state.wildShape : null, companion: c.state.wildCompanion ?? null }, slots: c.slots, spells: c.spells, ability: c.ability, attack: c.attack, dc: c.dc, error: c.error, species: c.species, barbarian: { ...rageProfile(c.character), uses: Math.min(rageProfile(c.character).max, c.state.rageUses ?? rageProfile(c.character).max), relentlessDC: c.state.relentlessRageDC ?? 10, recoveryAvailable: c.state.persistentRageAvailable !== false }, resourceVersion: c.state.version };
 }
 export function spendSpell(db, id, spellId, level, source) {
   const c = casterData(db, id), spell = c.spells.find(s => s.id === spellId);
@@ -129,6 +130,14 @@ export function handleSpellResources(db, user, path, method, body, send) {
   if (own) {
     const id = Number(own[1]);
     if (!db.prepare('SELECT 1 FROM characters WHERE id = ? AND user_id = ?').get(id, user.id)) return reply(404, { error: 'Nie znaleziono postaci.' });
+    if (method === 'POST' && ['dark-ones-own-luck', 'magical-cunning', 'contact-patron', 'fiendish-resilience', 'clairvoyant-recover', 'awakened-mind'].includes(body.kind)) {
+      const state = resourceState(db, id);
+      if (body.version !== state.version) return reply(409, { error: 'Zasoby zmieniły się. Odśwież kartę postaci.' });
+      const battles = db.prepare('SELECT data FROM session_battles').all();
+      if (battles.some(row => { const b = JSON.parse(row.data); return b.active && b.fighters.some(f => f.characterId === id); })) return reply(409, { error: 'W trakcie walki użyj kontrolek walki; obrzędy wykonuj poza walką.' });
+      try { const result = useWarlockFeature(db, id, body); return reply(200, { spellcasting: publicCaster(db, id), ...result }); }
+      catch (error) { return reply(409, { error: error.message }); }
+    }
     if (method === 'POST' && body.kind === 'ritual') {
       const c = casterData(db, id), spell = c.spells.find(s => s.id === body.spellId && s.ritualOnly);
       if (c.error || !spell) return reply(409, { error: c.error || 'Ritual unavailable.' });
@@ -155,6 +164,7 @@ export function handleSpellResources(db, user, path, method, body, send) {
   for (const { character_id: id } of characters) {
     const character = db.prepare('SELECT class, subclass, level, species FROM characters WHERE id = ?').get(id);
     const state = resourceState(db, id);
+    restWarlock(state, body.rest);
     restPaladin(character, state, body.rest);
     restPsi(character, state, body.rest);
     const maxSecondWind = secondWindMaximum(character);

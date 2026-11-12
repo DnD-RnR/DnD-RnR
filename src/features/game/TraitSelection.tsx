@@ -61,7 +61,7 @@ export function TraitSelection({ character, statistics, onChange }: Props) {
       </div>;
     })}</div>}
     {profile.resources.length > 0 && <details className="trait-details"><summary>Zasoby i parametry klasy na poziomie {character.level}</summary><dl className="trait-summary">{profile.resources.map(resource => <div key={resource.name}><dt>{resource.name}</dt><dd>{formatDice(resource.value)}</dd></div>)}</dl><p className="statistics-help">Wartości z tabeli klasy. Zużycie i odzyskiwanie zasobów zapisuj osobno.</p></details>}
-    <details className="trait-details"><summary>Zdolności klasy, podklasy i gatunku ({profile.features.length})</summary><ul className="trait-feature-list">{profile.features.map(feature => <li key={`${feature.source}-${feature.name}`}><a href={feature.url} target="_blank" rel="noreferrer">{feature.name} ↗</a><small>{feature.source} · od {feature.level}. poziomu</small></li>)}</ul></details>
+    <details className="trait-details"><summary>Zdolności klasy, podklasy i gatunku ({profile.features.length})</summary><ul className="trait-feature-list">{profile.features.map(feature => <li key={`${feature.source}-${feature.name}`}><a href={feature.url} target="_blank" rel="noreferrer">{feature.name} ↗</a>{feature.description && <p>{feature.description}</p>}<small>{feature.source} · od {feature.level}. poziomu</small></li>)}</ul></details>
     <p className="statistics-help">Wpisy z zasad przeliczają się po zmianie klasy, gatunku lub poziomu. Zachowane ręczne dopiski służą dodatkowym atutom i ustaleniom z MG. Pozostałe warianty gatunku, wybory atutów przy awansie i warunkowe efekty zdolności wymagają osobnego uzupełnienia.</p>
   </section>;
 }

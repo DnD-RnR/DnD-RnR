@@ -1,3 +1,5 @@
+import { luckBonus } from './warlock-features.mjs';
+import { hexDisadvantage } from '../shared/warlock.mjs';
 import { primalSkills, barbarianSaveAdvantage, wildHeartAnimals } from '../shared/barbarian.mjs';
 import { characterTraits } from '../shared/character-traits.mjs';
 import { resourceState, saveResources } from './spell-resources.mjs';
@@ -34,7 +36,7 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
   const state = f.characterId ? resourceState(db, f.characterId) : null;
   const p = f.rageProfile;
   const d20 = advantage => {
-    const adv = Boolean(advantage || body.advantage), dis = Boolean(body.disadvantage);
+    const adv = Boolean(advantage || body.advantage), dis = Boolean(body.disadvantage || body.hexDisadvantage);
     check(Number.isInteger(body.roll) && body.roll >= 1 && body.roll <= 20 && (adv === dis || Number.isInteger(body.roll2) && body.roll2 >= 1 && body.roll2 <= 20), 'Podaj k20 i drugą kość przy ułatwieniu lub utrudnieniu.');
     return adv === dis ? body.roll : adv ? Math.max(body.roll, body.roll2) : Math.min(body.roll, body.roll2);
   };
@@ -83,7 +85,8 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
     }
     check(bonus != null, 'Uzupełnij cechę postaci.');
     const automaticAdvantage = body.kind === 'saving-throw' ? barbarianSaveAdvantage(f, ability) : Boolean(f.rage && ability === 'str');
-    const total = d20(automaticAdvantage) + bonus;
+    body = { ...body, hexDisadvantage: hexDisadvantage(b, f, ability, body.kind === 'saving-throw') };
+    const total = d20(automaticAdvantage) + bonus + luckBonus(db, f.characterId, body.luckRoll);
     if (body.kind === 'ability-check') {
       check(body.dc == null || Number.isInteger(body.dc) && body.dc >= 1 && body.dc <= 100, 'Podaj poprawne ST testu.');
       f.lastAbilityCheck = body.dc == null ? null : { total, dc: body.dc, attempted: false };

@@ -70,6 +70,7 @@ export function spellcastingProfile(character, selection = emptySpellSelection()
   if (classId === 'druid') grant(['speak-with-animals'], 'Druidic');
   if (classId === 'ranger') grant(['hunter-s-mark'], 'Favored Enemy');
   if (classId === 'paladin' && level >= 2) grant(['divine-smite'], 'Paladin’s Smite');
+  if (classId === 'warlock' && character.subclass === 'Great Old One Patron' && level >= 10) grant(['hex'], 'Eldritch Hex');
   if (classId === 'warlock' && level >= 9) grant(['contact-other-plane'], 'Contact Patron');
   if (classId === 'bard' && level >= 20) grant(['power-word-heal', 'power-word-kill'], 'Words of Creation');
   const subclass = subclassSpells[character.subclass];

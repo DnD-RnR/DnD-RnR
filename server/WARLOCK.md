@@ -1,34 +1,42 @@
-# Warlock — backend poziomu 3: Fiend Patron
+# Warlock — poziomy 1–10: Great Old One i Fiend
 
-Źródła zasad:
+Źródła:
 - https://dnd2024.wikidot.com/warlock:main
+- https://dnd2024.wikidot.com/warlock:great-old-one-patron
 - https://dnd2024.wikidot.com/warlock:fiend-patron
 
-W danych postaci ustaw `class: "Czarnoksiężnik (Warlock)"`, `subclass: "Fiend Patron"`, `level: 3`.
-Istniejący zapis statystyk i historia awansu obsługują 3 inwokacje, 2 sztuczki i 4 wybrane czary. Pact Magic daje dwa miejsca 2. kręgu, odnawiane po krótkim lub długim odpoczynku. Magical Cunning pozostaje dostępne zgodnie z dotychczasową obsługą.
+Klasa w danych: `Czarnoksiężnik (Warlock)`. Podklasy: `Great Old One Patron` albo `Fiend Patron` od poziomu 3.
 
-Burning Hands, Command, Scorching Ray i Suggestion są zawsze przygotowane poza limitem czterech wyborów. Nie należy wpisywać ich do `spells.selections.prepared`. Przejście czaru do automatycznie przyznanych przez patrona nie zużywa wymiany przy awansie. Burning Hands korzysta z istniejącego silnika obrażeń obszarowych i skalowania do 2. kręgu; pozostałe trzy czary korzystają z istniejącego przepływu `cast` → rozstrzygnięcie GM.
+## Wspólna klasa
 
-Dark One's Blessing przyznaje `max(1, poziom warlocka + modyfikator CHA)` tymczasowych PW. Zachowywana jest większa wartość dotychczasowych i nowych tymczasowych PW. Nie zużywa akcji, reakcji ani zasobu odpoczynku. Brak wpisanej CHA uniemożliwia przyznanie premii.
+Dotychczasowa progresja limitów czarów, inwokacji i miejsc Pact Magic obejmuje wszystkie poziomy. Testy sprawdzają każdy poziom 1–10. Historia wyborów nadal ogranicza wymiany przy awansie. Czary patronów, Contact Other Plane (9) i Hex z Eldritch Hex (10) są zawsze przygotowane poza zwykłym limitem. Czar, który zostaje automatyczny, można usunąć z listy bez zużycia wymiany.
 
-Własne sprowadzenie potwora do 0 PW atakiem, czarem lub rozstrzygnięciem oczekującej akcji przez GM przyznaje premię automatycznie. Backend zapisuje faktyczne przejście z dodatnich PW do 0 przed usunięciem potwora z inicjatywy. Ponowne zadanie obrażeń celowi na 0 PW nie tworzy nowego zdarzenia. Relentless Endurance i oczekujący rzut Relentless Rage są uwzględniane przed ostatecznym rozstrzygnięciem.
+Magical Cunning (2) odnawia połowę maksymalnych miejsc Pact Magic w górę, raz na długi odpoczynek. Obrzęd trwa minutę i jest obsługiwany poza walką. Contact Patron (9) zużywa osobne użycie na długi odpoczynek, daje darmowe Contact Other Plane do kontaktu z patronem i automatyczny sukces rzutu obronnego. GM rozstrzyga kontakt i potwierdza czas rzucania oraz komponenty.
 
-Walka nie przechowuje pozycji ani indywidualnych relacji wrogości między postaciami. Dla cudzych pokonań GM potwierdza wroga oraz odległość do 10 stóp. `battle.fiendDefeats` zawiera identyfikator zdarzenia, cel, źródło, kandydatów i już rozliczone postacie (ostatnie 100 zdarzeń). W istniejącym POST `/api/games/:id/battle/act`:
+Wybory inwokacji, wymagania, opisy i statyczne korzyści korzystają z istniejącego systemu. Ich opisy nie oznaczają pełnej automatyzacji każdej aktywnej inwokacji. ASI/atuty na poziomach 4 i 8 pozostają w istniejącej karcie wyborów. Efekty czarów nieobjęte silnikiem nadal tworzą żądanie rozstrzygnięcia GM.
 
-```json
-{
-  "sessionId": 1,
-  "version": 12,
-  "kind": "dark-ones-blessing",
-  "actorId": "identyfikator-warlocka-w-walce",
-  "eventId": "identyfikator-z-battle.fiendDefeats",
-  "enemy": true,
-  "within10Feet": true
-}
-```
+## Great Old One
 
-Tylko GM prowadzący grę może zatwierdzić zdarzenie; każdy kwalifikujący się warlock może skorzystać z niego raz. Dla własnego pokonania odległość nie jest wymagana. Zdarzenie zachowuje się po usunięciu pokonanego potwora i zapisuje wraz z walką. Premia działa także poza własną turą. Zapis tymczasowych PW i rozliczenie zdarzenia należą do tej samej transakcji walki.
+- Awakened Mind (3): akcja dodatkowa, widoczny cel do 30 stóp potwierdzony z GM; czas równy poziomowi w minutach, zasięg równy modyfikatorowi CHA w milach (minimum 1). Nowa więź zastępuje starą. Poza walką cel jest nazwą narracyjną; w walce ma identyfikator uczestnika. Wspólny język i komunikację rozstrzyga GM.
+- Psychic Spells (3): opcja zamiany obrażeń czaru Warlocka na psychiczne. Zmienia typ w automatycznych efektach oraz w opisie żądania GM. Enchantment/Illusion można rzucać bez V/S; M pozostaje wymagane. Sprawdzenie szkoły i komponentów odbywa się z GM, zgodnie z istniejącym formularzem rzucania.
+- Clairvoyant Combatant (6): przy tworzeniu więzi w walce można wymusić WIS przeciw aktualnemu ST czarów. Rzut wykonuje właściciel celu lub GM potwora. Porażka włącza automatyczne ułatwienie ataków warlocka przeciw celowi oraz utrudnienie ataków celu przeciw warlockowi, także ataków czarami. Nowa więź i wygaśnięcie czasu kończą korzyść. Użycie odnawia krótki/długi odpoczynek albo wydanie miejsca Pact Magic bez akcji.
+- Eldritch Hex (10): automatyczny Hex i utrudnienie rzutów obronnych wskazanej cechy. Podstawowy Hex obsługuje także utrudnienie testów, dodatkowe k6 przy trafieniu (dwie przy krytyku), koncentrację, czas i przeniesienie po spadku celu do 0 PW na późniejszej turze. Psychic Spells może zmienić typ dodatkowych obrażeń Hex.
+- Thought Shield (10): opis ochrony myśli, automatyczna odporność psychiczna oraz odbicie faktycznej wartości otrzymanych obrażeń do sprawcy. GM wskazuje sprawcę przy ręcznym rozliczeniu. Odbicie respektuje jego odporność. Dwa Thought Shields mogą odbijać malejące obrażenia aż do zera.
 
-GET `/api/characters/:id/spell-resources` i dane czarowania w walce udostępniają `spellcasting.warlock.fiend`: `enabled`, `temporaryHitPoints`, `nearbyFeet`.
+## Fiend
 
-Zakres tej zmiany obejmuje poziom 3 i Fiend Patron. Dynamiczne cechy patrona z poziomów 6, 10 i 14 oraz nowe kontrolki frontendu pozostają poza zakresem.
+Dark One’s Blessing (3): `max(1, poziom + modyfikator CHA)` tymczasowych PW; zachowuje większą wartość. Własne pokonania potwora są obsługiwane automatycznie, a GM potwierdza wrogość i 10 stóp przy cudzym pokonaniu. Zdarzenia `battle.fiendDefeats` są jednorazowe i pozostają po usunięciu potwora; GM ma kontrolki potwierdzania. Relentless Endurance i oczekujące Relentless Rage są uwzględniane przed końcowym pokonaniem.
+
+Dark One’s Own Luck (6): opcjonalny k10 po zobaczeniu k20, przed skutkami. Wspólny licznik `max(1, modyfikator CHA)` odnawiany po długim odpoczynku. Obsługują go testy, ogólne rzuty obronne, rzuty przeciw czarom, Clairvoyant Combatant, koncentracja i rzuty przeciw śmierci. Poza walką karta zużywa użycie dla nazwanego rzutu i odrzuca jego ponowne użycie; wynik rozlicza GM.
+
+Fiendish Resilience (10): jeden typ poza Force, wybierany po krótkim/długim odpoczynku (również pierwszy wybór po uzyskaniu zdolności). Wybór obowiązuje do następnego; próba kolejnej zmiany bez odpoczynku jest odrzucana. Odporności nie sumują się.
+
+## API i zapis
+
+GET `/api/characters/:id/spell-resources` i dane czarowania uczestnika walki zawierają `spellcasting.warlock`: stan patrona, liczniki użyć, aktywną więź, odporność oraz progi zdolności.
+
+POST tego samego endpointu wymaga właściciela postaci oraz `version` równego `resourceVersion`. Dostępne `kind`: `magical-cunning`, `contact-patron` (`confirmed`), `fiendish-resilience` (`damageType`), `clairvoyant-recover`, `awakened-mind` (`targetName`, `confirmed`), `dark-ones-own-luck` (`rollId`, `luckRoll`). Endpoint odrzuca zmiany podczas aktywnej walki.
+
+POST `/api/games/:id/battle/act` używa istniejących `sessionId` i `version`. Nowe rodzaje: `awakened-mind` (`actorId`, `targetId`, `confirmed`, opcjonalne `combatant`), `clairvoyant-save` (`roll`, opcjonalne `roll2`, `advantage`, `disadvantage`, `luckRoll`), `clairvoyant-recover`, `hex-transfer`. Rzucenie Hex wymaga `targetIds` i `hexAbility`; Psychic Spells używa `psychic`. Rozliczenie trafienia z Hex wymaga `hexRolls`. Przy ręcznych obrażeniach psychicznych w Thought Shield potrzebny jest `sourceId`. Rzuty z Dark One’s Own Luck przyjmują pojedynczy `luckRoll` (1–10).
+
+Zapis zasobów i walki jest atomowy w istniejącym savepoincie i transakcji Firestore. Nie ma migracji danych produkcyjnych; nowe pola zasobów mają bezpieczne wartości domyślne. Testy: `node --test server/warlock.test.mjs`, pełne `npm test`, kompilacja `npm run build`.

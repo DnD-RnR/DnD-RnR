@@ -1,3 +1,5 @@
+import { LuckInput } from './LuckInput';
+import { hexDisadvantage } from '../../../shared/warlock.mjs';
 import { useState } from 'react';
 import type { useBattle } from './LiveBattle';
 import type { Combatant } from './battle-types';
@@ -19,7 +21,8 @@ function RelentlessForm({ f, controller }: { f: Combatant; controller: Controlle
   </form>;
 }
 
-function CheckForm({ f, controller }: { f: Combatant; controller: Controller }) {
+export function CheckForm({ f, controller }: { f: Combatant; controller: Controller }) {
+  const [luck, setLuck] = useState('');
   const [kind, setKind] = useState('ability-check');
   const [ability, setAbility] = useState('str'), [skill, setSkill] = useState('');
   const [primal, setPrimal] = useState(false), [advantage, setAdvantage] = useState(false), [disadvantage, setDisadvantage] = useState(false);
@@ -27,7 +30,8 @@ function CheckForm({ f, controller }: { f: Combatant; controller: Controller }) 
   const primalActive = primal && kind === 'ability-check' && Boolean(f.rage && f.rageProfile?.primalKnowledge && primalSkills.includes(skill));
   const effectiveAbility = primalActive ? 'str' : kind === 'ability-check' && skill ? definitions.skills.find(s => s.id === skill)!.ability : ability;
   const autoAdvantage = kind === 'saving-throw' ? barbarianSaveAdvantage(f, effectiveAbility) : Boolean(f.rage && effectiveAbility === 'str');
-  return <details><summary>Test cechy / rzut obronny</summary><form className="stack-form" onSubmit={e => { e.preventDefault(); void controller.mutate('act', { kind, actorId: f.id, ability, skill: kind === 'ability-check' ? skill : '', primal: primalActive, advantage, disadvantage, roll: Number(roll), roll2: Number(roll2) }); }}>
+  const autoDisadvantage = hexDisadvantage(controller.response!.battle!, f, effectiveAbility, kind === 'saving-throw');
+  return <details><summary>Test cechy / rzut obronny</summary><form className="stack-form" onSubmit={e => { e.preventDefault(); void controller.mutate('act', { kind, ...(luck ? { luckRoll: Number(luck) } : {}), actorId: f.id, ability, skill: kind === 'ability-check' ? skill : '', primal: primalActive, advantage, disadvantage, roll: Number(roll), roll2: Number(roll2) }); }}>
     <label>Rodzaj<select value={kind} onChange={e => setKind(e.target.value)}><option value="ability-check">Test cechy</option><option value="saving-throw">Rzut obronny</option></select></label>
     <label>Cecha<select value={ability} onChange={e => { setAbility(e.target.value); setSkill(''); }}>{definitions.abilities.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}</select></label>
     {kind === 'ability-check' && <label>Umiejętność<select value={skill} onChange={e => setSkill(e.target.value)}><option value="">Bez umiejętności</option>{definitions.skills.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}</select></label>}
@@ -35,7 +39,8 @@ function CheckForm({ f, controller }: { f: Combatant; controller: Controller }) 
     {autoAdvantage && <p>{effectiveAbility === 'dex' ? 'Danger Sense daje ułatwienie rzutu obronnego na Zręczność.' : 'Szał daje ułatwienie do Siły.'}</p>}
     <label>k20<input required type="number" min={1} max={20} value={roll} onChange={e => setRoll(e.target.value)} /></label>
     <label><input type="checkbox" checked={advantage} onChange={e => setAdvantage(e.target.checked)} />Ułatwienie</label><label><input type="checkbox" checked={disadvantage} onChange={e => setDisadvantage(e.target.checked)} />Utrudnienie</label>
-    {(advantage || autoAdvantage) !== disadvantage && <label>Drugi k20<input required type="number" min={1} max={20} value={roll2} onChange={e => setRoll2(e.target.value)} /></label>}
+    {(advantage || autoAdvantage) !== (disadvantage || autoDisadvantage) && <label>Drugi k20<input required type="number" min={1} max={20} value={roll2} onChange={e => setRoll2(e.target.value)} /></label>}
+    {autoDisadvantage && <p>Hex daje utrudnienie tego rzutu.</p>}<LuckInput actor={f} value={luck} onChange={setLuck} />
     <button disabled={controller.pending}>Zapisz wynik w dzienniku</button>
   </form></details>;
 }

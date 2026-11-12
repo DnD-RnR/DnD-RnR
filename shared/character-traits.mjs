@@ -1,3 +1,4 @@
+import { warlockDescriptions } from './warlock.mjs';
 import { eligibleDruidForms } from './druid.mjs';
 import data from './trait-data.json' with { type: 'json' };
 import options from './trait-options.json' with { type: 'json' };
@@ -238,6 +239,10 @@ export function characterTraits(character, stats) {
     );
   }
   const features = [...new Map([...classFeatures, ...subclassFeatures, ...lineageFeatures].map(feature => [`${feature.source}:${feature.name}`, feature])).values()];
+  if (classId === 'warlock') for (let i = 0; i < features.length; i++) {
+    const description = warlockDescriptions[features[i].name];
+    if (description) features[i] = { ...features[i], description };
+  }
   const originFeatDescriptions = {};
   for (const f of originFeats.filter(f => feats.has(f.name))) originFeatDescriptions[f.name] = f.description;
   if (feats.has('Crafter')) Object.assign(originFeatDescriptions, {

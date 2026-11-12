@@ -1,3 +1,5 @@
+import { handleWarlock, syncHex, reflectThoughtShield, luckBonus } from './warlock-features.mjs';
+import { warlockProfile, warlockResistance, bondAdvantage, hexActive, damageTypeName } from '../shared/warlock.mjs';
 import { psiResources, handlePsi, psionicStrike } from './psi-warrior.mjs';
 import { handlePaladin, syncDivineSense, activateVow, syncVows, vowAttackAdvantage } from './paladin.mjs';
 import { handleDruid, syncWildShapes, applyWildShape } from './druid.mjs';
@@ -87,6 +89,7 @@ function characterFighter(db, sessionId, memberId) {
     breathWeaponDC: speciesResources.maxBreathWeapon && s.abilities.con.modifier !== null ? 8 + s.abilities.con.modifier + s.proficiency : null,
     goliathAncestry: speciesResources.goliathAncestry, giantAncestryUses: speciesResources.giantAncestryUses, giantAncestryMax: speciesResources.maxGiantAncestry,
     largeFormAvailable: speciesResources.largeFormAvailable,
+    warlockResistance: warlockProfile(c, stats.values.cha, resources).resistance, thoughtShield: warlockProfile(c, stats.values.cha, resources).thoughtShield, warlockBond: warlockProfile(c, stats.values.cha, resources).awakenedMind, hex: resources.hex?.expiresAt > Date.now() && resources.concentration === resources.hex.name ? { ...resources.hex, defeatedRound: resources.hex.targetDefeated ? 0 : resources.hex.defeatedRound } : null,
     damageResistance: traits.ancestry?.damageType ?? traits.fiendishLegacy?.damageType ?? null,
     draconicFlightAvailable: speciesResources.draconicFlightAvailable,
     protectionAvailable: stats.choices?.fightingStyle === 'protection' && equipment.some(item => item.equipped && item.armorCategory === 'shield'),
@@ -104,7 +107,7 @@ function persistVitals(db, f) {
 }
 function damage(db, f, amount, critical = false, damageType = null) {
   amount = Math.max(0, amount - (f.psiReduction ?? 0)); f.psiReduction = 0;
-  if (damageType && (f.damageResistance === damageType || barbarianResistance(f, damageType))) amount = Math.floor(amount / 2);
+  if (damageType && (f.damageResistance === damageType || warlockResistance(f, damageType) || barbarianResistance(f, damageType))) amount = Math.floor(amount / 2);
   f.damageTaken = (f.damageTaken ?? Math.max(0, f.maxHp - f.hp)) + amount;
   const before = f.hp;
   const absorbed = Math.min(f.tempHp, amount);
@@ -257,7 +260,9 @@ export function handleBattles(db, user, path, method, body, send) {
         syncVows(b);
         if (kind !== 'tactical-mind') b.fighters.forEach(f => { f.lastAbilityCheck = null; });
         const surgeState = prepareSurgeAction(b, body, canControl);
-        if (handleFiend({ db, b, body, gm, activeMember, persistVitals, log })) {
+        if (handleWarlock({ db, b, body, gm, canControl, activeMember, log })) {
+          // Warlock features persist in this battle transaction.
+        } else if (handleFiend({ db, b, body, gm, activeMember, persistVitals, log })) {
           // Nearby defeats require GM confirmation because the battle has no positions.
         } else if (handlePsi({ db, b, body, canControl, activeMember, log })) {
           // Psionic resources share the battle transaction.
@@ -272,12 +277,19 @@ export function handleBattles(db, user, path, method, body, send) {
         } else if (handleCombatSpell({ db, user, gm, b, body, canControl, activeMember, damage, persistVitals, log })) {
           // The spell handler shares this action's SQL savepoint and cloud commit.
         } else if (kind === 'resolve') {
-          requireValue(gm && (!b.pending || b.pending.kind === 'request'), 'Najpierw rozlicz trafienie.');
+          requireValue(gm && (!b.pending || b.pending.kind === 'request' && !b.pending.warlockBond), 'Najpierw rozlicz trafienie.');
           requireValue(typeof body.note === 'string' && body.note.trim() && body.note.length <= 1000, 'Opisz rozstrzygnięcie.');
           if (body.targetId) {
             const target = b.fighters.find(f => f.id === body.targetId);
             requireValue(target && int(body.amount, 0, 9999) && ['damage', 'heal'].includes(body.effect), 'Wybierz cel, efekt i wartość.');
-            if (body.effect === 'damage') damage(db, target, body.amount, false, body.damageType ?? null);
+            if (body.effect === 'damage') {
+              damage(db, target, body.amount, false, body.damageType ?? null);
+              if (target.thoughtShield && damageTypeName(body.damageType) === 'psychiczne' && target.lastDamage.amount > 0) {
+                const source = b.fighters.find(f => f.id === body.sourceId);
+                requireValue(source && source.id !== target.id, 'Thought Shield: wskaż sprawcę obrażeń psychicznych.');
+                reflectThoughtShield(db, b, target, source, body.damageType, target.lastDamage.amount, damage, log);
+              }
+            }
             else { requireValue(target.deathFailures < 3, 'Zwykłe leczenie nie przywraca życia.'); target.hp = Math.min(target.maxHp, target.hp + body.amount); if (target.hp > 0) { target.deathFailures = 0; target.deathSuccesses = 0; } persistVitals(db, target); }
           }
           log(b, `GM: ${body.note}${body.targetId ? ` (${body.effect === 'damage' ? 'obrażenia' : 'leczenie'}: ${body.amount})` : ''}`); b.pending = null;
@@ -288,8 +300,9 @@ export function handleBattles(db, user, path, method, body, send) {
           if (kind === 'death') {
             requireValue(!b.pending && actor.characterId && actor.hp === 0 && actor.deathFailures < 3 && actor.deathSuccesses < 3 && !actor.action, 'Rzut przeciw śmierci jest teraz niedostępny.');
             requireValue(int(body.roll, 1, 20), 'Podaj wynik k20 (1–20).');
+            const luck = luckBonus(db, actor.characterId, body.luckRoll);
             if (body.roll === 20) { actor.hp = 1; actor.deathSuccesses = 0; actor.deathFailures = 0; }
-            else if (body.roll >= 10) actor.deathSuccesses = Math.min(3, actor.deathSuccesses + 1);
+            else if (body.roll !== 1 && body.roll + luck >= 10) actor.deathSuccesses = Math.min(3, actor.deathSuccesses + 1);
             else actor.deathFailures = Math.min(3, actor.deathFailures + (body.roll === 1 ? 2 : 1));
             actor.action = body.roll === 20 ? '' : 'Rzut przeciw śmierci'; persistVitals(db, actor); log(b, `${actor.name}: rzut przeciw śmierci ${body.roll}.`);
           } else {
@@ -313,6 +326,13 @@ export function handleBattles(db, user, path, method, body, send) {
               const amount = Math.max(0, frenzyDamage + body.rolls.reduce((sum, n) => sum + n, 0) + p.attack.damageBonus);
               const target = b.fighters.find(f => f.id === p.targetId);
               damage(db, target, amount, p.critical, p.attack.type);
+              reflectThoughtShield(db, b, target, actor, p.attack.type, target.lastDamage.amount, damage, log);
+              if (hexActive(actor, target)) {
+                const hexCount = p.critical ? 2 : 1;
+                requireValue(Array.isArray(body.hexRolls) && body.hexRolls.length === hexCount && body.hexRolls.every(n => int(n, 1, 6)), 'Hex: podaj dodatkowe k6 (dwie przy trafieniu krytycznym).');
+                damage(db, target, body.hexRolls.reduce((sum, n) => sum + n, 0), false, actor.hex.damageType ?? 'nekrotyczne');
+                reflectThoughtShield(db, b, target, actor, actor.hex.damageType ?? 'nekrotyczne', target.lastDamage.amount, damage, log);
+              }
               psionicStrike(db, b, actor, body, amount, damage, target, log); log(b, `${actor.name} → ${target.name}: ${amount} obrażeń (${p.attack.type}).`); b.pending = null;
             } else {
               requireValue(!b.pending, 'Najpierw rozstrzygnij rozpoczęte działanie.');
@@ -359,9 +379,9 @@ export function handleBattles(db, user, path, method, body, send) {
                 }
                 if (actor.rage && attack.ability === 'str') attack = { ...attack, damageBonus: attack.damageBonus + actor.rageProfile.damage };
                 if (Boolean(actor.characterId) !== Boolean(target.characterId)) extendRage(b, actor);
-                const disadvantage = Boolean(attack.disadvantage || target.dodge || target.attackDisadvantage || body.disadvantage || actor.mockery);
+                const disadvantage = Boolean(attack.disadvantage || bondAdvantage(target, actor) || target.dodge || target.attackDisadvantage || body.disadvantage || actor.mockery);
                 recordAttackRoll(b, actor, body, log);
-                const advantage = Boolean(body.advantage || vowAttackAdvantage(actor, target) || barbarianAttackAdvantage(actor, target, attack.ability) || wolfAttackAdvantage(b, actor, target));
+                const advantage = Boolean(body.advantage || bondAdvantage(actor, target) || vowAttackAdvantage(actor, target) || barbarianAttackAdvantage(actor, target, attack.ability) || wolfAttackAdvantage(b, actor, target));
                 requireValue(int(body.roll, 1, 20) && (disadvantage === advantage || int(body.roll2, 1, 20)), 'Podaj wynik k20; przy ułatwieniu lub utrudnieniu podaj dwie kości.');
                 const roll = disadvantage === advantage ? body.roll : disadvantage ? Math.min(body.roll, body.roll2) : Math.max(body.roll, body.roll2);
                 actor.mockery = null;
@@ -460,6 +480,7 @@ export function handleBattles(db, user, path, method, body, send) {
     syncDivineSense(db, battle);
     syncVows(battle);
     if (action === 'act') recordFiendDefeats({ db, b: battle, before: hpBefore, sourceId: damageSourceId, activeMember, persistVitals, log });
+    syncHex(db, battle);
     removeDeadMonsters(battle);
     if (!battle.active && !battle.summary) battle.summary = {
       endedAt: Date.now(), rounds: battle.round,

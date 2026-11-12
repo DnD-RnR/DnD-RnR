@@ -1,3 +1,6 @@
+import { LuckInput } from './LuckInput';
+import { WarlockControls } from './WarlockControls';
+import { bondAdvantage, hexActive } from '../../../shared/warlock.mjs';
 import { PsiWarriorControls } from './PsiWarriorControls';
 import { BarbarianControls } from './BarbarianControls';
 import { barbarianAttackAdvantage } from '../../../shared/barbarian.mjs';
@@ -74,9 +77,9 @@ export function LiveBattle({ controller, onReturnToExploration }: { controller: 
     {battle.pending?.kind === 'spell' && <Card title="Rozliczenie czaru"><SpellResolution key={`${battle.pending.actorId}-${battle.pending.spellName}-${battle.pending.stage}-${battle.pending.targets.filter(t => t.saved !== undefined).length}`} controller={controller} /></Card>}
     {battle.pending?.kind === 'spell' && response.gm && <SpellDefenses controller={controller} />}
     <PsiWarriorControls controller={controller} />
-    <BarbarianControls controller={controller} />
+    <BarbarianControls controller={controller} /><WarlockControls controller={controller} />
     <SpellReactions controller={controller} />
-    {battle.pending?.kind === 'request' && <Card title="Rozstrzygnięcie GM"><p>{battle.fighters.find(f => f.id === battle.pending?.actorId)?.name}: {battle.pending.description}</p>{battle.pending.roll && <p>Wynik k20: {battle.pending.roll}</p>}{response.gm ? <ResolveForm controller={controller} /> : <p>GM rozstrzyga działanie.</p>}</Card>}
+    {battle.pending?.kind === 'request' && !battle.pending.warlockBond && <Card title="Rozstrzygnięcie GM"><p>{battle.fighters.find(f => f.id === battle.pending?.actorId)?.name}: {battle.pending.description}</p>{battle.pending.roll && <p>Wynik k20: {battle.pending.roll}</p>}{response.gm ? <ResolveForm controller={controller} /> : <p>GM rozstrzyga działanie.</p>}</Card>}
     {controls && !battle.pending && !battle.fighters.some(f => f.relentlessRagePending) && !actor.incapacitated && !actor.unconscious && (actor.hp > 0 ? <TurnForm key={`${actor.id}-${battle.round}`} controller={controller} /> : actor.characterId && actor.deathFailures < 3 && actor.deathSuccesses < 3 && !actor.action ? <DeathForm controller={controller} /> : <p>Uczestnik jest {actor.deathFailures >= 3 ? 'martwy' : actor.deathSuccesses >= 3 ? 'ustabilizowany' : 'niezdolny do działania'}. Możesz zakończyć turę.</p>)}
     {!battle.pending && <ProtectionReactionForm controller={controller} excludeActorId={actor.id} />}
     {!battle.pending && response.controlledIds.some(id => id !== actor.id && battle.fighters.some(f => f.id === id && f.hp > 0 && !f.reaction)) && <ReactionForm controller={controller} />}
@@ -144,8 +147,8 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
   const selectedReckless = canReckless && reckless;
   const effectiveAbility = useStrength && attack?.finesse ? 'str' : attack?.ability;
   const automaticAdvantage = barbarianAttackAdvantage({ ...actor, recklessActive: actor.recklessActive || selectedReckless }, target, effectiveAbility);
-  const effectiveAdvantage = advantage || automaticAdvantage;
-  const disadvantage = Boolean(attack?.disadvantage || target?.dodge || target?.attackDisadvantage || manualDisadvantage || actor.mockery);
+  const effectiveAdvantage = advantage || automaticAdvantage || bondAdvantage(actor, target);
+  const disadvantage = Boolean(attack?.disadvantage || bondAdvantage(target, actor) || target?.dodge || target?.attackDisadvantage || manualDisadvantage || actor.mockery);
   const steps = [{ id: 'action', label: 'Akcja' }, { id: 'bonus', label: 'Akcja dodatkowa' }, { id: 'reaction', label: 'Reakcja' }] as const;
   const choices = [
     ...(canAttack ? [{ id: 'attack', label: 'Atak' }] : []),
@@ -179,7 +182,7 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
       <label>Wynik k20 (bez premii)<input required type="number" min={1} max={20} value={roll} onChange={e => setRoll(e.target.value)} /></label>
       <label className="battle-check"><input type="checkbox" checked={advantage} onChange={e => setAdvantage(e.target.checked)} />Ułatwienie (ustalone z GM)</label>
       <label className="battle-check"><input type="checkbox" checked={manualDisadvantage} onChange={e => setManualDisadvantage(e.target.checked)} />Utrudnienie sytuacyjne (ustalone z GM)</label>
-      {Boolean(attack?.disadvantage || target?.dodge || target?.attackDisadvantage) && <p>Atak wymaga utrudnienia z powodu broni, pancerza lub sytuacji celu.</p>}
+      {Boolean(attack?.disadvantage || bondAdvantage(target, actor) || target?.dodge || target?.attackDisadvantage) && <p>Atak wymaga utrudnienia z powodu broni, pancerza lub sytuacji celu.</p>}
       {disadvantage && effectiveAdvantage && <p>Ułatwienie i utrudnienie znoszą się. Użyj jednego k20.</p>}
       {disadvantage !== effectiveAdvantage && <label>Drugi k20 · {disadvantage ? 'utrudnienie' : 'ułatwienie'}<input required type="number" min={1} max={20} value={roll2} onChange={e => setRoll2(e.target.value)} /></label>}
     </>}
@@ -194,6 +197,7 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
   </form>}</Card>;
 }
 function DamageForm({ controller }: { controller: Controller }) {
+  const [hexRolls, setHexRolls] = useState<string[]>([]);
   const p = controller.response!.battle!.pending!;
   const [rolls, setRolls] = useState<string[]>([]);
   const [psiRoll, setPsiRoll] = useState('');
@@ -201,9 +205,10 @@ function DamageForm({ controller }: { controller: Controller }) {
   const b = controller.response!.battle!, actor = b.fighters[b.turn];
   if (p.kind !== 'damage') return null;
   const count = p.attack.dice * (p.critical ? 2 : 1);
-  return <form className="stack-form" onSubmit={e => { e.preventDefault(); void controller.mutate('act', { kind: 'damage', ...(psiRoll ? { psiRoll: Number(psiRoll), psiConfirmed } : {}), rolls: Array.from({ length: count }, (_, i) => Number(rolls[i])) }); }}>
+  return <form className="stack-form" onSubmit={e => { e.preventDefault(); void controller.mutate('act', { kind: 'damage', hexRolls: hexRolls.map(Number), ...(psiRoll ? { psiRoll: Number(psiRoll), psiConfirmed } : {}), rolls: Array.from({ length: count }, (_, i) => Number(rolls[i])) }); }}>
     <p>{p.attack.name}: {count ? `${count}k${p.attack.sides}` : 'Stałe obrażenia'} {signed(p.attack.damageBonus)}. Podaj same wyniki kości; premia zostanie dodana automatycznie.</p>
     {!!actor.psiMax && !actor.psiStrikeUsed && !!actor.psiUses && p.attack.id !== 'unarmed' && <fieldset><legend>Psionic Strike (opcjonalnie)</legend><p>Raz na twoją turę: dodatkowe k{actor.psiSides} + INT obrażeń mocy.</p><label>Wynik kości<input type="number" min={1} max={actor.psiSides} value={psiRoll} onChange={e => setPsiRoll(e.target.value)} /></label>{psiRoll && <label><input required type="checkbox" checked={psiConfirmed} onChange={e => setPsiConfirmed(e.target.checked)} />Cel jest w 30 stopach, a broń zadaje mu obrażenia.</label>}</fieldset>}
+    {hexActive(actor, controller.response!.battle!.fighters.find(f => f.id === p.targetId)!) && <div>{Array.from({ length: p.critical ? 2 : 1 }, (_, i) => <label key={i}>Hex k6<input required type="number" min={1} max={6} value={hexRolls[i] ?? ''} onChange={e => setHexRolls(prev => { const next = [...prev]; next[i] = e.target.value; return next; })} /></label>)}</div>}
     <div className="battle-fields">{Array.from({ length: count }, (_, i) => <label key={i}>Kość {i + 1} (k{p.attack.sides})<input required type="number" min={1} max={p.attack.sides} value={rolls[i] ?? ''} onChange={e => setRolls(previous => { const next = [...previous]; next[i] = e.target.value; return next; })} /></label>)}</div>
     <button className="primary-button" disabled={controller.pending}>Zastosuj obrażenia</button>
   </form>;
@@ -214,16 +219,19 @@ function ResolveForm({ controller }: { controller: Controller }) {
   const [effect, setEffect] = useState('damage');
   const [amount, setAmount] = useState('');
   const [damageType, setDamageType] = useState('');
-  return <form className="stack-form" onSubmit={async e => { e.preventDefault(); if (await controller.mutate('act', { kind: 'resolve', note, targetId, effect, amount: Number(amount), damageType: effect === 'damage' ? damageType : '' })) { setNote(''); setAmount(''); setDamageType(''); } }}>
+  const [sourceId, setSourceId] = useState('');
+  return <form className="stack-form" onSubmit={async e => { e.preventDefault(); if (await controller.mutate('act', { kind: 'resolve', sourceId, note, targetId, effect, amount: Number(amount), damageType: effect === 'damage' ? damageType : '' })) { setNote(''); setAmount(''); setDamageType(''); } }}>
     <label>Rozstrzygnięcie (uwzględnij rzuty obronne, odporności i zdolności)<textarea required maxLength={1000} value={note} onChange={e => setNote(e.target.value)} /></label>
     <label>Cel zmiany PW<select value={targetId} onChange={e => setTargetId(e.target.value)}><option value="">Bez zmiany PW</option>{controller.response!.battle!.fighters.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></label>
     {targetId && <><label>Efekt<select value={effect} onChange={e => setEffect(e.target.value)}><option value="damage">Obrażenia</option><option value="heal">Leczenie</option></select></label>{effect === 'damage' && <label>Typ obrażeń<select value={damageType} onChange={e => setDamageType(e.target.value)}><option value="">Nie określono</option>{['obuchowe', 'kłute', 'cięte', 'kwas', 'zimno', 'ogień', 'błyskawice', 'trucizna', 'nekrotyczne', 'promieniste', 'psychiczne', 'moc', 'grom'].map(type => <option key={type} value={type}>{type}</option>)}</select></label>}<label>Obrażenia przed odpornością (typ obrażeń pozwala zastosować ją automatycznie) / wartość leczenia<input required type="number" min={0} max={9999} value={amount} onChange={e => setAmount(e.target.value)} /></label></>}
+    {effect === 'damage' && damageType === 'psychiczne' && controller.response!.battle!.fighters.find(f => f.id === targetId)?.thoughtShield && <label>Sprawca obrażeń (Thought Shield)<select required value={sourceId} onChange={e => setSourceId(e.target.value)}><option value="">Wybierz sprawcę</option>{controller.response!.battle!.fighters.filter(f => f.id !== targetId).map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></label>}
     <button className="primary-button" disabled={controller.pending}>Zastosuj rozstrzygnięcie</button>
   </form>;
 }
 function DeathForm({ controller }: { controller: Controller }) {
+  const [luck, setLuck] = useState('');
   const [roll, setRoll] = useState('');
-  return <form className="stack-form" onSubmit={e => { e.preventDefault(); void controller.mutate('act', { kind: 'death', roll: Number(roll) }); }}><label>Rzut przeciw śmierci (k20)<input required type="number" min={1} max={20} value={roll} onChange={e => setRoll(e.target.value)} /></label><button className="primary-button" disabled={controller.pending}>Rozstrzygnij rzut</button></form>;
+  return <form className="stack-form" onSubmit={e => { e.preventDefault(); void controller.mutate('act', { kind: 'death', ...(luck ? { luckRoll: Number(luck) } : {}), roll: Number(roll) }); }}><label>Rzut przeciw śmierci (k20)<input required type="number" min={1} max={20} value={roll} onChange={e => setRoll(e.target.value)} /></label><LuckInput actor={controller.response!.battle!.fighters[controller.response!.battle!.turn]} value={luck} onChange={setLuck} /><button className="primary-button" disabled={controller.pending}>Rozstrzygnij rzut</button></form>;
 }
 function ReactionForm({ controller }: { controller: Controller }) {
   const b = controller.response!.battle!;

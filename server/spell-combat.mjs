@@ -1,3 +1,5 @@
+import { luckBonus, reflectThoughtShield } from './warlock-features.mjs';
+import { warlockProfile, warlockResistance, bondAdvantage, hexDisadvantage, hexActive, damageTypeName } from '../shared/warlock.mjs';
 import { moonSpells } from '../shared/druid.mjs';
 import { spendSpell, resourceState, saveResources } from './spell-resources.mjs';
 import { barbarianResistance, barbarianSaveAdvantage, barbarianAttackAdvantage, wolfAttackAdvantage } from '../shared/barbarian.mjs';
@@ -41,11 +43,22 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
       const state = resourceState(db, caster.characterId); state.concentration = c.spell.name; saveResources(db, caster.characterId, state);
     }
     log(b, `${caster.name}: ${c.spell.name}${c.spell.level ? ` (${body.level}. krąg, ${body.source === 'paladin-smite' ? 'Paladin Smite' : body.source === 'arcanum' ? 'Mystic Arcanum' : body.source === 'origin' ? 'atut Origin' : 'zużyto miejsce'})` : ' (sztuczka)'}.`);
+    const wp = warlockProfile(c.character, c.stats.values.cha, c.state);
+    check(!body.psychic || wp.greatOldOne && (c.spell.classes.includes('warlock') || c.profile.automatic.some(s => s.id === c.spell.id && ['Great Old One Patron', 'Eldritch Hex', 'Contact Patron'].includes(s.reason))), 'Psychic Spells wymaga czaru Warlocka i Great Old One.');
+    if (c.spell.id === 'hex') {
+      const target = b.fighters.find(f => f.id === body.targetIds?.[0]);
+      check(target && body.targetIds.length === 1 && ['str', 'dex', 'con', 'int', 'wis', 'cha'].includes(body.hexAbility), 'Hex: wybierz jeden cel i cechę.');
+      caster.hex = { damageType: body.psychic ? 'psychiczne' : 'nekrotyczne', targetId: target.id, targetDefeated: target.hp === 0, defeatedRound: target.hp === 0 ? b.round : null, ability: body.hexAbility, eldritch: wp.eldritchHex, name: c.spell.name, expiresAt: Date.now() + (body.level >= 5 ? 24 : body.level >= 3 ? 8 : 1) * 3600000 };
+      const state = resourceState(db, caster.characterId); state.hex = caster.hex; saveResources(db, caster.characterId, state);
+      log(b, `${caster.name}: Hex → ${target.name}, ${body.hexAbility.toUpperCase()}${wp.eldritchHex ? ' — również rzuty obronne' : ''}.`);
+      return true;
+    }
     if (!c.spell.effect) {
-      b.pending = { kind: 'request', actorId: caster.id, slot: body.slot, description: `${c.spell.name} — ${c.spell.description ?? ''}\n${c.spell.upgrade ?? ''}\nZasięg i komponenty oraz efekty specjalne rozstrzyga GM. Zasób został już zużyty.` };
+      b.pending = { kind: 'request', actorId: caster.id, slot: body.slot, description: `${c.spell.name}${body.psychic ? ' (Psychic Spells: obrażenia psychiczne)' : ''} — ${c.spell.description ?? ''}\n${c.spell.upgrade ?? ''}\nZasięg i komponenty oraz efekty specjalne rozstrzyga GM. Zasób został już zużyty.` };
       return true;
     }
     const spec = { ...c.spell.effect };
+    if (body.psychic && spec.type) spec.type = 'Psychic';
     if (spec.mode === 'shield') {
       if (!caster.shieldAC) { caster.ac += 5; caster.shieldAC = 5; }
       log(b, `${caster.name}: Shield — osłona do początku następnej własnej tury.`);
@@ -65,9 +78,9 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
   }
   if (body.kind === 'concentration') {
     check(controlled(caster) && caster.hp > 0 && caster.concentrationDC, 'Brak testu koncentracji do wykonania.');
-    const roll = d20(body), bonus = caster.saves.con;
+    const roll = d20({ ...body, disadvantage: body.disadvantage || hexDisadvantage(b, caster, 'con') }), bonus = caster.saves.con;
     check(bonus != null, 'Uzupełnij rzut obronny na Kondycję.');
-    const success = roll + bonus >= caster.concentrationDC;
+    const success = roll + bonus + luckBonus(db, caster.characterId, body.luckRoll) >= caster.concentrationDC;
     log(b, `${caster.name}: koncentracja — ${success ? 'utrzymana' : 'przerwana'}.`);
     if (!success) { caster.concentration = null; caster.concentrationChecks = []; }
     else caster.concentrationChecks = (caster.concentrationChecks ?? [caster.concentrationDC]).slice(1);
@@ -83,7 +96,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     const target = p.targets.find(t => t.id === body.targetId);
     check(target && [0, 0.5, 1, 2].includes(body.multiplier), 'Wybierz cel i modyfikator obrażeń.');
     const fighter = b.fighters.find(f => f.id === target.id);
-    const rageResistance = barbarianResistance(fighter, p.spec.type);
+    const rageResistance = barbarianResistance(fighter, p.spec.type) || warlockResistance(fighter, p.spec.type) || fighter.damageResistance === damageTypeName(p.spec.type);
     target.multiplier = rageResistance && body.multiplier !== 0.5 ? body.multiplier * 0.5 : body.multiplier;
     target.defenseReady = true;
     return true;
@@ -92,8 +105,8 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     check(p.stage === 'save', 'Czar nie oczekuje teraz na rzut obronny.');
     const t = p.targets.find(t => t.id === body.targetId), target = b.fighters.find(f => f.id === t?.id);
     check(t && t.saved === undefined && controlled(target), 'Rzut obronny wykonuje właściciel celu lub GM dla potwora.');
-    const roll = d20({ ...body, advantage: body.advantage || barbarianSaveAdvantage(target, p.spec.save) });
-    t.saved = roll + target.saves[p.spec.save] >= p.dc;
+    const roll = d20({ ...body, disadvantage: body.disadvantage || hexDisadvantage(b, target, p.spec.save), advantage: body.advantage || barbarianSaveAdvantage(target, p.spec.save) });
+    t.saved = roll + target.saves[p.spec.save] + (target.characterId ? luckBonus(db, target.characterId, body.luckRoll) : 0) >= p.dc;
     log(b, `${target.name}: rzut obronny przeciw ${p.spellName} — ${t.saved ? 'sukces' : 'porażka'}.`);
     if (p.targets.every(t => t.saved !== undefined)) {
       if (!p.spec.half && p.targets.every(t => t.saved)) b.pending = null;
@@ -106,18 +119,19 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     check(p.stage === 'attack', 'Czar nie oczekuje teraz na atak.');
     const target = b.fighters.find(f => f.id === p.targets[0].id);
     recordAttackRoll(b, actor, body, log);
-    const roll = d20({ ...body, advantage: body.advantage || vowAttackAdvantage(actor, target) || barbarianAttackAdvantage(actor, target) || wolfAttackAdvantage(b, actor, target) }, target.dodge || target.attackDisadvantage || Boolean(actor.mockery));
+    const roll = d20({ ...body, advantage: body.advantage || bondAdvantage(actor, target) || vowAttackAdvantage(actor, target) || barbarianAttackAdvantage(actor, target) || wolfAttackAdvantage(b, actor, target) }, bondAdvantage(target, actor) || target.dodge || target.attackDisadvantage || Boolean(actor.mockery));
     actor.mockery = null;
     const hit = roll !== 1 && (roll === 20 || roll + p.attackBonus >= target.ac);
     log(b, `${actor.name} → ${target.name}: ${p.spellName} — ${hit ? roll === 20 ? 'trafienie krytyczne' : 'trafienie' : 'pudło'}.`);
     if (!hit) b.pending = null;
-    else { p.stage = 'effect'; p.critical = roll === 20; p.attackTotal = roll + p.attackBonus; }
+    else { p.stage = 'effect'; p.critical = roll === 20; p.attackTotal = roll + p.attackBonus; p.hexDice = hexActive(actor, target) ? (p.critical ? 2 : 1) : 0; }
     return true;
   }
   check(p.stage === 'effect', 'Najpierw wykonaj atak lub rzuty obronne.');
   check(p.spec.mode === 'heal' || p.targets.every(t => t.saved && !p.spec.half || t.defenseReady), 'GM musi zatwierdzić odporności, niewrażliwości i podatności celów.');
   const count = p.spec.dice * (p.critical ? 2 : 1);
   check(Array.isArray(body.rolls) && body.rolls.length === count && body.rolls.every(n => die(n, p.spec.sides)), 'Podaj wynik każdej kości czaru.');
+  check(!p.hexDice || Array.isArray(body.hexRolls) && body.hexRolls.length === p.hexDice && body.hexRolls.every(n => die(n, 6)), 'Hex: podaj dodatkowe k6 (dwie przy trafieniu krytycznym).');
   const total = Math.max(0, body.rolls.reduce((a, n) => a + n, 0) + p.spec.bonus);
   for (const t of p.targets) {
     const target = b.fighters.find(f => f.id === t.id);
@@ -134,6 +148,12 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
       target.psiReduction = 0;
       const amount = Math.floor(reduced * (t.multiplier ?? 1));
       damage(db, target, amount, p.critical);
+      reflectThoughtShield(db, b, target, actor, p.spec.type, amount, damage, log);
+      if (p.hexDice) {
+        const hexType = actor.hex?.damageType ?? 'nekrotyczne';
+        damage(db, target, body.hexRolls.reduce((sum, n) => sum + n, 0), false, hexType);
+        reflectThoughtShield(db, b, target, actor, hexType, target.lastDamage.amount, damage, log);
+      }
       if (!t.saved && p.spec.rider === 'mockery') target.mockery = { expiresRound: b.round + (b.fighters.indexOf(target) < b.turn ? 1 : 0) };
       if (!t.saved && p.spec.rider === 'push') log(b, `${target.name}: odepchnięcie 10 stóp — położenie ustala GM.`);
       if (!t.saved && p.spec.rider === 'flee' && !target.reaction && target.hp > 0) {

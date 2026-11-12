@@ -7,7 +7,7 @@ export type TraitProfile = {
   classId: string; source: string; groups: TraitGroup[]; skills: Record<string, number>; effectiveSkills: Record<string, number>;
   savingThrows: string[]; effectiveSavingThrows: string[]; skillSources: Record<string, string>; skillBonuses: Record<string, number | null>;
   languages: { id: string; label: string; standard: boolean }[]; tools: string[]; armor: string[]; weapons: string[]; feats: string[]; originFeatDescriptions: Record<string, string>;
-  features: { level: number; name: string; url: string; source: string }[];
+  features: { description?: string; level: number; name: string; url: string; source: string }[];
   hitDie: number | null; hitDiceTotal: number; size: string | null; baseSpeed: number | null; senses: string[]; defenses: string[];
   ancestry: { id: string; label: string; damageType: string } | null;
   fiendishLegacy: { id: string; label: string; damageType: string; spells: string[] } | null;
