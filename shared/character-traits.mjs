@@ -56,6 +56,7 @@ export function characterTraits(character, stats) {
   const languages = new Set(['common']);
   const tools = new Set();
   const feats = new Set(bg ? [bg.Feat] : []);
+  for (const feat of stats.levelFeats ?? []) if (feat.level <= level) feats.add(feat.name);
   const invocationEntries = invocationSheet(character, stats);
   const invocationIds = new Set(invocationEntries.map(i => i.id));
   const invocationFeats = invocationEntries.filter(i => i.id.startsWith('lessons-of-the-first-ones:')).map(i => i.id.split(':')[1]);

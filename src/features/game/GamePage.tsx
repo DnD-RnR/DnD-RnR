@@ -1,7 +1,8 @@
 import { formatDice } from '../../lib/dice';
 import { StatisticsTab } from './StatisticsTab';
 import { CharacterGameInfo } from '../characters/CharacterGameInfo';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AdvancementTab } from './AdvancementTab';
 import { api, type Character, type InventoryItem } from '../../api';
 import slots from '../../../shared/equipment-slots.json';
 import { TransferItemDialog } from './TransferItemDialog';
@@ -9,8 +10,10 @@ import { CombatTab } from './CombatTab';
 import { weaponDamage } from '../../lib/weapons';
 import { ChoicesTab } from './ChoicesTab';
 
-export function GamePage({ character, onBack }: { character: Character; onBack: () => void }) {
-  const [activeTab, setActiveTab] = useState<'equipment' | 'statistics' | 'combat' | 'choices'>('equipment');
+export function GamePage({ character: initialCharacter, onBack }: { character: Character; onBack: () => void }) {
+  const [character, setCharacter] = useState(initialCharacter);
+  const updateCharacter = useCallback((next: Character) => setCharacter(previous => ({ ...previous, ...next })), []);
+  const [activeTab, setActiveTab] = useState<'equipment' | 'statistics' | 'combat' | 'choices' | 'advancement'>('equipment');
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
@@ -22,6 +25,14 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [transferItem, setTransferItem] = useState<InventoryItem | null>(null);
   const inventoryPath = `/characters/${character.id}/inventory`;
+  useEffect(() => {
+    let alive = true;
+    const refresh = () => { void api<{ characters: Character[] }>('/characters').then(data => { const next = data.characters.find(c => c.id === initialCharacter.id); if (alive && next) updateCharacter(next); }).catch(() => {}); };
+    refresh();
+    const timer = window.setInterval(refresh, 20000);
+    window.addEventListener('focus', refresh);
+    return () => { alive = false; window.clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, [initialCharacter.id, updateCharacter]);
   async function load() {
     const data = await api<{ items: InventoryItem[] }>(inventoryPath);
     setItems(data.items);
@@ -68,8 +79,10 @@ export function GamePage({ character, onBack }: { character: Character; onBack: 
   return <>
     <button className="text-button" onClick={onBack}>← Moje postacie</button>
     <header className="page-heading game-heading"><div><p className="eyebrow">TWOJA PRZYGODA</p><h1 ref={heading} tabIndex={-1}>{character.name}</h1><p>{[character.species, character.class, character.subclass].filter(Boolean).join(' · ')}</p><CharacterGameInfo character={character} /></div><span className="level-badge">Poziom <strong>{character.level}</strong></span></header>
-    <nav className="game-tabs" aria-label="Zakładki postaci">{([{ id: 'equipment', label: 'Ekwipunek', symbol: '⛨' }, { id: 'statistics', label: 'Statystyki', symbol: '◈' }, { id: 'combat', label: 'Walka', symbol: '⚔' }, { id: 'choices', label: 'Wybory', symbol: '◇' }] as const).map(tab => <button key={tab.id} className={`game-tab ${activeTab === tab.id ? 'is-active' : ''}`} aria-current={activeTab === tab.id ? 'page' : undefined} aria-controls={`character-${tab.id}`} onClick={() => setActiveTab(tab.id)}><span aria-hidden="true">{tab.symbol}</span> {tab.label}</button>)}</nav>
-    <div id="character-statistics" hidden={activeTab !== 'statistics'}><StatisticsTab character={character} /></div>
+    {!!character.pendingAdvancement && <p role="status" className="inventory-message">Możesz awansować na poziom {character.level + 1}! <button className="text-button" onClick={() => setActiveTab('advancement')}>Rozwiń postać</button></p>}
+    <nav className="game-tabs" aria-label="Zakładki postaci">{([{ id: 'equipment', label: 'Ekwipunek', symbol: '⛨' }, { id: 'statistics', label: 'Statystyki', symbol: '◈' }, { id: 'combat', label: 'Walka', symbol: '⚔' }, { id: 'choices', label: 'Wybory', symbol: '◇' }, { id: 'advancement', label: 'Rozwój', symbol: '↑' }] as const).map(tab => <button key={tab.id} className={`game-tab ${activeTab === tab.id ? 'is-active' : ''}`} aria-current={activeTab === tab.id ? 'page' : undefined} aria-controls={`character-${tab.id}`} onClick={() => setActiveTab(tab.id)}><span aria-hidden="true">{tab.symbol}</span> {tab.label}</button>)}</nav>
+    <div id="character-advancement" hidden={activeTab !== 'advancement'}>{activeTab === 'advancement' && <AdvancementTab characterId={character.id} onChanged={updateCharacter} />}</div>
+    <div id="character-statistics" hidden={activeTab !== 'statistics'}><StatisticsTab key={character.level} character={character} /></div>
     <div id="character-combat" hidden={activeTab !== 'combat'}><CombatTab character={character} active={activeTab === 'combat'} equippedItems={equipped} /></div>
     <div id="character-choices" hidden={activeTab !== 'choices'}><ChoicesTab character={character} active={activeTab === 'choices'} /></div>
     <div id="character-equipment" hidden={activeTab !== 'equipment'}>

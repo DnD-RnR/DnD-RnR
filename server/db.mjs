@@ -79,6 +79,12 @@ export function initializeDatabase(db) {
     character_id INTEGER PRIMARY KEY REFERENCES characters(id) ON DELETE CASCADE,
     data TEXT NOT NULL CHECK(json_valid(data))
   );`);
+  db.exec(`CREATE TABLE IF NOT EXISTS character_advancements (
+    id TEXT PRIMARY KEY,
+    character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+    game_id INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+    data TEXT NOT NULL CHECK(json_valid(data))
+  );`);
   // Keep the earliest membership if an older database allowed multiple games.
   db.exec(`CREATE TABLE IF NOT EXISTS game_sessions (
     id INTEGER PRIMARY KEY, game_id INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE,

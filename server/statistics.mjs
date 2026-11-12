@@ -153,6 +153,8 @@ export function handleStatistics(db, user, path, method, body, send) {
     const spells = Object.hasOwn(body, 'spells') ? body.spells : (stored ? JSON.parse(stored.data).spells : null) ?? emptySpellSelection();
     const spellError = validateSpellSelection(character, spells);
     if (spellError) { send(400, { error: spellError }); return true; }
+    const levelFeats = stored ? JSON.parse(stored.data).levelFeats ?? [] : [];
+    body.levelFeats = levelFeats;
     const submittedTraits = Object.hasOwn(body, 'traits') ? body.traits : (stored ? JSON.parse(stored.data).traits : null) ?? emptyTraitSelection();
     const submittedTraitEntries = submittedTraits && typeof submittedTraits === 'object' && !Array.isArray(submittedTraits) ? Object.entries(submittedTraits) : [];
     const supportedTraitGroups = new Set(characterTraits(character, { ...body, spells, traits: submittedTraits }).groups.map(group => group.id));
@@ -176,6 +178,7 @@ export function handleStatistics(db, user, path, method, body, send) {
     if (fighterUpdate.error) { send(400, { error: fighterUpdate.error }); return true; }
     // Store only supported fields, never arbitrary properties from the request.
     const stats = emptyStatistics();
+    if (levelFeats.length) stats.levelFeats = levelFeats;
     if (fighterUpdate.history) stats.fighterChoices = fighterUpdate.history;
     stats.armorClassBase = body.armorClassBase ?? 'class';
     for (const key of Object.keys(stats.values)) stats.values[key] = key === 'ac' ? null : body.values[key];

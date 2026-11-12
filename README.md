@@ -1,5 +1,33 @@
 # DnD-RnR
 
+## Rozwój postaci — kamienie milowe
+
+W panelu gry GM sekcja **Przyznaj poziom** pozwala wybrać całą dostępną drużynę
+lub pojedyncze postacie i podać powód nagrody. Każda postać otrzymuje jeden
+oczekujący awans. Nie można przyznać kolejnego przed rozpatrzeniem poprzedniego
+ani przekroczyć poziomu 20.
+
+Właściciel otwiera kartę postaci → **Rozwój**. Kreator obejmuje PW (stała wartość
+lub własny rzut), podklasę od poziomu 3, wymagane wybory, czary i podsumowanie.
+Na poziomach przyznających atut można wybrać zwiększenie cech (+2 lub +1/+1,
+maksymalnie 20) albo obsługiwany atut pochodzenia bez wyboru magii. Atuty ogólne,
+epickie i wieloklasowość nie są jeszcze obsługiwane. Niedokończone wybory można
+zapisać przyciskiem **Zapisz i dokończ później**; sam zapis nie zmienia karty.
+
+Zatwierdzenie poza aktywną walką atomowo zapisuje poziom, statystyki, wybory i
+historię. Przyrost maksymalnych PW uwzględnia Kondycję (także zmianę za wcześniejsze
+poziomy), gatunek i Tough. Awans nie leczy i nie odnawia zużytych zasobów ani
+pozostałych kości wytrzymałości. Premia z biegłości, zdolności i maksymalne limity
+wynikają z nowego poziomu. Przed awansem trzeba uzupełnić Kondycję i maksymalne PW.
+
+GM może anulować oczekujący awans lub cofnąć ostatni ukończony, jeżeli karta i
+zasoby nie zmieniły się od zatwierdzenia i nie trwa walka. Chroni to późniejsze
+zmiany przed nadpisaniem. Historia, wersja robocza oraz migawki do cofnięcia są
+przechowywane w kolekcji Firestore `dnd_rnr/main/character_advancements/{id}`.
+Kolekcja powstaje przy pierwszym przyznaniu awansu; nie wymaga ponownej migracji.
+
+Zasady obliczeń: [D&D 2024 — rozwój postaci](https://www.dndbeyond.com/sources/dnd/br-2024/creating-a-character#LevelAdvancement).
+
 Krótka instrukcja uruchomienia: [README-URUCHOMIENIE.md](README-URUCHOMIENIE.md).
 
 ## Baza danych: Firestore

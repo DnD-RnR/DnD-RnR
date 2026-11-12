@@ -1,4 +1,5 @@
 import { SpellRestControls } from './SpellRestControls';
+import { MilestoneControls } from './MilestoneControls';
 import { BattlePage } from './BattlePage';
 import { MonstersPage } from './MonstersPage';
 import { GameMemberCard, type GameMember as Member } from './GameMemberCard';
@@ -88,6 +89,12 @@ export function GameSessionPage({ gameId, userId }: { gameId: number; userId: nu
   const participants = members.filter(m => m.participating);
   const absent = members.filter(m => !m.participating);
   if (new URLSearchParams(window.location.search).get('monsters') === '1' && session) return <MonstersPage key={gameId} gameId={gameId} userId={userId} gameName={session.game.name} />;
+  if (new URLSearchParams(window.location.search).get('levelUp') === '1' && session) return <>
+    <header className="page-heading"><a className="text-button" href={`?gmGame=${gameId}`}>← Wróć do gry</a><p className="eyebrow">{session.game.name} / ROZWÓJ POSTACI</p><h1>Lvl up</h1></header>
+    {error && <p role="alert" className="form-error">{error}</p>}
+    {connectionLost && <p role="status">Ponowne łączenie z aktualizacjami gry…</p>}
+    <MilestoneControls gameId={gameId} members={session.members} onChanged={load} />
+  </>;
   if (new URLSearchParams(window.location.search).get('battle') === '1' && session?.activeSession) return <BattlePage key={session.activeSession.id} gameId={gameId} userId={userId} sessionId={session.activeSession.id} members={session.members} />;
   if (editing) return <GameEditPanel gameId={gameId} onBack={() => { setEditing(false); void refresh(); }} />;
   return <>
@@ -96,7 +103,7 @@ export function GameSessionPage({ gameId, userId }: { gameId: number; userId: nu
     {connectionLost && <p role="status">Ponowne łączenie z aktualizacjami gry… Możesz użyć „Odśwież drużynę”.</p>}
     {message && <p role="status">{message}</p>}
     {loading ? <p role="status">Wczytywanie gry…</p> : session && <>
-      <div className="battle-toolbar"><a className="primary-button battle-start" href={`?gmGame=${gameId}&monsters=1`}>Potwory</a>{session.activeSession && <a className="primary-button battle-start" href={`?gmGame=${gameId}&battle=1`}>{session.activeBattle ? 'Wr\u00f3\u0107 do walki' : 'Rozpocznij walk\u0119'}</a>}</div>
+      <div className="battle-toolbar"><a className="primary-button battle-start" href={`?gmGame=${gameId}&monsters=1`}>Potwory</a><a className="primary-button battle-start" href={`?gmGame=${gameId}&levelUp=1`}>Lvl up</a>{session.activeSession && <a className="primary-button battle-start" href={`?gmGame=${gameId}&battle=1`}>{session.activeBattle ? 'Wr\u00f3\u0107 do walki' : 'Rozpocznij walk\u0119'}</a>}</div>
       {session.activeSession && !session.activeBattle && <SpellRestControls gameId={gameId} />}<section aria-labelledby="participants-heading"><h2 id="participants-heading">Postacie w bieżącej sesji ({participants.length})</h2>
         <p>Do gry należy {members.length} postaci. Poniżej widać tylko te, które weszły do trwającej sesji. Lista aktualizuje się po zmianach.</p>
         {participants.length ? <div className="session-characters gm-character-row">{participants.map(m => <GameMemberCard key={m.id} member={m} gameId={gameId} catalog={catalog} pending={pending} onAssigned={load} onKick={() => void kick(m)} />)}</div> : <Card title="Drużyna czeka na bohaterów"><p>{session.activeSession ? 'Żadna postać nie weszła jeszcze do bieżącej sesji.' : 'Rozpocznij sesję, aby gracze mogli dołączyć.'}</p></Card>}

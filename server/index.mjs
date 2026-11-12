@@ -1,4 +1,5 @@
 import { handleGames } from './games.mjs';
+import { handleAdvancement } from './advancement.mjs';
 import { handleSpellResources } from './spell-resources.mjs';
 import { handleBattles } from './battles.mjs';
 import { handleMonsters } from './monsters.mjs';
@@ -94,6 +95,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         return send(200, { user: publicUser(found) });
       }
       if (!user) return send(401, { error: 'Zaloguj się, aby kontynuować.' });
+      if (handleAdvancement(db, user, path, req.method, body, send)) return;
       if (handleWeapons(db, user, path, req.method, body, send)) return;
       if (handleOriginFeats(db, user, path, req.method, body, send)) return;
       if (handleArmors(db, user, path, req.method, body, send)) return;
@@ -135,13 +137,14 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
       }
       if (path === '/api/characters' && req.method === 'GET') return send(200, { characters: db.prepare(`
         SELECT c.id, c.name, c.class, c.level, c.species, c.background, c.subclass, g.name AS gameName,
+          EXISTS(SELECT 1 FROM character_advancements a WHERE a.character_id=c.id AND json_extract(a.data, '$.status')='pending') AS pendingAdvancement,
           s.id AS activeSessionId, CASE WHEN p.member_id IS NOT NULL THEN 1 ELSE 0 END AS participating
         FROM characters c
         LEFT JOIN game_members m ON m.character_id = c.id AND m.status = 'accepted'
         LEFT JOIN games g ON g.id = m.game_id
         LEFT JOIN game_sessions s ON s.game_id = g.id AND s.ended_at IS NULL
         LEFT JOIN session_participants p ON p.session_id = s.id AND p.member_id = m.id
-        WHERE c.user_id = ?`).all(user.id) });
+        WHERE c.user_id = ?`).all(user.id).map(({ pendingAdvancement, ...character }) => pendingAdvancement ? { ...character, pendingAdvancement } : character) });
       const recipientsRoute = path.match(/^\/api\/characters\/([1-9]\d*)\/recipients$/);
       if (recipientsRoute && req.method === 'GET') {
         const characterId = Number(recipientsRoute[1]);

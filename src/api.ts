@@ -1,5 +1,5 @@
 export type User = { id: number; username: string; name: string; role: 'admin' | 'player' | 'gm' };
-export type Character = { id: number; name: string; class: string; level: number; species: string; background: string; subclass: string; gameName?: string | null; activeSessionId?: number | null; participating?: number; weaponMastery?: string[] };
+export type Character = { id: number; name: string; class: string; level: number; species: string; background: string; subclass: string; gameName?: string | null; activeSessionId?: number | null; participating?: number; weaponMastery?: string[]; pendingAdvancement?: number };
 export type CharacterSession = { game: { id: number; name: string } | null; activeSession: { id: number; startedAt: number; participating: boolean } | null };
 export type InventoryItem = { id: number; name: string; description: string; quantity: number; slot: string; equipped: number; weight?: number | null; cost?: string; grip: 'one' | 'two' | 'none'; weapon?: Weapon | null; armor?: { id: string; category: 'light' | 'medium' | 'heavy' | 'shield' } | null };
 export type CatalogItem = { id: number; name: string; description: string; slot: string; weight?: number | null; cost?: string; armorId?: string | null; armorCategory?: 'light' | 'medium' | 'heavy' | 'shield' | null };
@@ -19,6 +19,7 @@ export type StatisticsSummary = {
   savingThrows: Record<string, number | null>; skills: Record<string, number | null>;
 };
 export type CharacterStatistics = {
+  levelFeats?: { name: string; level: number }[];
   armorClassBase?: 'standard' | 'class';
   proficiency: number;
   traits: import('../shared/character-traits.mjs').TraitSelection;

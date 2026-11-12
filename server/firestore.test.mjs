@@ -4,6 +4,8 @@ import { openDatabase } from './db.mjs';
 import { openFirestoreDatabase, exportRows, tables, rowId, hydrate } from './firestore.mjs';
 import { createApp } from './index.mjs';
 import { handleMonsters } from './monsters.mjs';
+import { handleAdvancement } from './advancement.mjs';
+import { characterTraits } from '../shared/character-traits.mjs';
 import { handleBattles } from './battles.mjs';
 import { emptyStatistics } from './statistics.mjs';
 import samples from '../shared/sample-monsters.json' with { type: 'json' };
@@ -223,4 +225,53 @@ test('invalid relationships are rejected before persisting a snapshot', () => {
   rows.characters.push({ id: 1, user_id: 999, name: 'Invalid', class: 'Bard', level: 1, species: '', background: '', subclass: '' });
   assert.throws(() => hydrate(rows), /Invalid foreign keys/);
   assert.equal(tables.includes('users'), true);
+});
+
+test('milestone completion and history commit together, roll back on cloud failure and survive reopening', async () => {
+  const firestore = cloud();
+  const db = await openFirestoreDatabase(firestore);
+  const gm = { id: 1, role: 'gm', name: 'GM' }, owner = { id: 2, role: 'player', name: 'Owner' };
+  const request = (user, path, method = 'GET', body = {}) => {
+    let response;
+    handleAdvancement(db, user, `/api${path}`, method, body, (status, data) => { response = { status, ...data }; });
+    return response;
+  };
+  try {
+    await db.run(() => {
+      db.exec(`UPDATE users SET role='gm' WHERE id=1;
+        INSERT INTO users VALUES (2,'hero','Hero','unused','player');
+        INSERT INTO games (id,gm_id,name) VALUES (1,1,'Milestone game');
+        INSERT INTO characters (id,user_id,name,class,level,species,background,subclass) VALUES (1,2,'Hero','Wojownik (Fighter)',1,'Ork (Orc)','Żołnierz (Soldier)','');
+        INSERT INTO game_members VALUES (1,1,1,'accepted');`);
+      const character = db.prepare('SELECT * FROM characters WHERE id=1').get();
+      const stats = emptyStatistics();
+      Object.assign(stats.values, { con: 14, maxHp: 12, hp: 4 });
+      stats.choices = { weaponMastery: ['longsword','shortsword','longbow'], fightingStyle: 'defense', fastCrafting: '' };
+      for (const group of characterTraits(character, stats).groups) stats.traits[group.id] = group.options.slice(0, group.limit).map(o => o.id);
+      db.prepare('INSERT INTO character_statistics VALUES (1,?)').run(JSON.stringify(stats));
+    });
+    await db.run(() => assert.equal(request(gm, '/games/1/advancements', 'POST', { characterIds: [1], reason: 'Victory' }).status, 201));
+    let data;
+    await db.run(() => { data = request(owner, '/characters/1/advancement'); });
+    const body = { id: data.pending.id, version: data.pending.version, base: data.base, draft: {} };
+    firestore.failNextCommit();
+    await assert.rejects(db.run(() => assert.equal(request(owner, '/characters/1/advancement/complete', 'POST', body).status, 200)), /Cloud unavailable/);
+    await db.run(() => {
+      const unchanged = request(owner, '/characters/1/advancement');
+      assert.equal(unchanged.character.level, 1);
+      assert.equal(unchanged.pending.status, 'pending');
+      assert.equal(unchanged.statistics.values.maxHp, 12);
+    });
+    await db.run(() => assert.equal(request(owner, '/characters/1/advancement/complete', 'POST', body).status, 200));
+    const reopened = await openFirestoreDatabase(firestore);
+    try {
+      await reopened.run(() => {
+        assert.equal(reopened.prepare('SELECT level FROM characters WHERE id=1').get().level, 2);
+        const stats = JSON.parse(reopened.prepare('SELECT data FROM character_statistics WHERE character_id=1').get().data);
+        assert.equal(stats.values.maxHp, 20); assert.equal(stats.values.hp, 4);
+        const advancement = JSON.parse(reopened.prepare('SELECT data FROM character_advancements WHERE id=?').get(body.id).data);
+        assert.equal(advancement.status, 'completed'); assert.equal(advancement.before.level, 1);
+      });
+    } finally { reopened.close(); }
+  } finally { db.close(); }
 });
