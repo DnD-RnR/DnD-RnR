@@ -58,16 +58,25 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
       if (req.method === 'POST' && requestBody !== undefined) body = structuredClone(requestBody);
       else if (req.method === 'POST') {
         if (!req.headers['content-type']?.startsWith('application/json')) return send(415, { error: 'Wymagany format JSON.' });
-        const chunks = [];
-        let bodySize = 0;
-        for await (const chunk of req) {
-          const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-          bodySize += buffer.length;
-          if (bodySize > 65536) return send(413, { error: 'Za duże żądanie.' });
-          chunks.push(buffer);
+        // Vercel Functions pre-parse JSON requests and consume the request stream.
+        // Support that form as well as the raw Node HTTP stream used locally.
+        if (req.body !== undefined) {
+          const raw = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+          if (Buffer.byteLength(raw, 'utf8') > 65536) return send(413, { error: 'Za duże żądanie.' });
+          try { body = typeof req.body === 'string' ? JSON.parse(raw) : req.body; }
+          catch { return send(400, { error: 'Niepoprawne dane.' }); }
+        } else {
+          const chunks = [];
+          let bodySize = 0;
+          for await (const chunk of req) {
+            const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+            bodySize += buffer.length;
+            if (bodySize > 65536) return send(413, { error: 'Za duże żądanie.' });
+            chunks.push(buffer);
+          }
+          try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
+          catch { return send(400, { error: 'Niepoprawne dane.' }); }
         }
-        const raw = Buffer.concat(chunks).toString('utf8');
-        try { body = JSON.parse(raw); } catch { return send(400, { error: 'Niepoprawne dane.' }); }
         if (!body || typeof body !== 'object' || Array.isArray(body)) return send(400, { error: 'Niepoprawne dane.' });
         // The incoming stream can be consumed only once; transaction retries
         // must validate the same request against the latest committed state.
