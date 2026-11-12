@@ -108,9 +108,8 @@ export async function openFirestoreDatabase(firestore = connectFirestore()) {
       return pending;
     },
   };
-  // hydrate() opens and initializes the in-memory SQLite database, including
-  // catalog seeds. A second transaction here would re-run that work and read
-  // Firestore metadata again without providing additional initialization.
-  await db.run(() => {});
+  // One transaction loads Firestore and applies catalog/schema initialization.
+  // A separate no-op startup transaction would repeat the metadata read.
+  await db.run(() => { initializeDatabase(db); });
   return db;
 }
