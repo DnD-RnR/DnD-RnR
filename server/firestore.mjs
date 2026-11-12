@@ -1,4 +1,4 @@
-import { applicationDefault, initializeApp } from 'firebase-admin/app';
+import { applicationDefault, cert, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { openDatabase, initializeDatabase } from './db.mjs';
 
@@ -32,7 +32,11 @@ export function hydrate(rows) {
 export function connectFirestore() {
   const projectId = process.env.FIREBASE_PROJECT_ID;
   if (!projectId) throw new Error('Set FIREBASE_PROJECT_ID and Google server credentials. Local database fallback is disabled.');
-  const app = initializeApp({ projectId, credential: applicationDefault() });
+  // In serverless environments store the service account JSON as an encrypted
+  // environment variable, not a path to a local secrets file.
+  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  const credential = serviceAccount ? cert(JSON.parse(serviceAccount)) : applicationDefault();
+  const app = initializeApp({ projectId, credential });
   const firestore = getFirestore(app, process.env.FIRESTORE_DATABASE_ID || '(default)');
   firestore.settings({ preferRest: true });
   return firestore;
