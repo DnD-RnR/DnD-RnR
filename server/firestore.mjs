@@ -6,7 +6,7 @@ import { openDatabase, initializeDatabase } from './db.mjs';
 // constraints in RAM; it never opens the former local database in this runtime.
 export const tables = ['users', 'sessions', 'characters', 'games', 'game_members',
   'game_sessions', 'session_participants', 'weapon_catalog', 'armor_catalog',
-  'item_catalog', 'character_items', 'character_statistics', 'game_monsters', 'game_monster_entries', 'session_battles', 'character_spell_resources'];
+  'item_catalog', 'character_items', 'character_statistics', 'game_monsters', 'game_monster_entries', 'session_battles', 'character_spell_resources', 'origin_feat_catalog'];
 const keys = { character_spell_resources: ['character_id'], session_battles: ['session_id'], game_monster_entries: ['game_id', 'id'], game_monsters: ['game_id'], sessions: ['token'], session_participants: ['session_id', 'member_id'], character_statistics: ['character_id'] };
 export const rowId = (table, row) => (keys[table] || ['id']).map(key => encodeURIComponent(String(row[key]))).join('~');
 const normalized = value => JSON.stringify(value, Object.keys(value).sort());

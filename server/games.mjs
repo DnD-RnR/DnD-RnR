@@ -87,12 +87,13 @@ export function handleGames(db, user, path, method, body, send) {
       return result.changes ? reply(201, { ok: true }) : reply(404, { error: 'Przedmiot lub uczestnik gry jest już niedostępny.' });
     }
     if (route[2] === 'candidates' && method === 'GET') return reply(200, { characters: db.prepare(`SELECT c.id, c.name, u.name AS playerName FROM characters c JOIN users u ON u.id = c.user_id
-      WHERE u.role IN ('player', 'gm') AND NOT EXISTS (SELECT 1 FROM game_members m WHERE m.game_id = ? AND m.character_id = c.id)
+      WHERE u.role IN ('player', 'gm') AND NOT EXISTS (SELECT 1 FROM game_members m WHERE m.game_id = ? AND m.character_id = c.id AND m.status != 'declined')
       AND NOT EXISTS (SELECT 1 FROM game_members m WHERE m.character_id = c.id AND m.status = 'accepted') ORDER BY c.name, c.id`).all(game.id) });
     if (route[2] === 'invitations' && method === 'POST') {
       if (!Number.isSafeInteger(body.characterId) || !db.prepare("SELECT c.id FROM characters c JOIN users u ON u.id = c.user_id WHERE c.id = ? AND u.role IN ('player', 'gm')").get(body.characterId)) return reply(400, { error: 'Wybierz istniejącego bohatera gracza.' });
       if (db.prepare("SELECT id FROM game_members WHERE character_id = ? AND status = 'accepted'").get(body.characterId)) return reply(409, { error: 'Ta postać już uczestniczy w grze. Może być tylko w jednej grze na raz.' });
-      const result = db.prepare('INSERT OR IGNORE INTO game_members (game_id, character_id) VALUES (?, ?)').run(game.id, body.characterId);
+      const result = db.prepare(`INSERT INTO game_members (game_id, character_id) VALUES (?, ?)
+        ON CONFLICT(game_id, character_id) DO UPDATE SET status = 'pending' WHERE game_members.status = 'declined'`).run(game.id, body.characterId);
       return result.changes ? reply(201, { ok: true }) : reply(409, { error: 'Ten bohater został już zaproszony.' });
     }
     if (!route[2] && method === 'GET') {

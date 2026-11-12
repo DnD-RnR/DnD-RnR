@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { barbarianSaveAdvantage, barbarianAttackAdvantage } from '../../../shared/barbarian.mjs';
 import type { Combatant } from './battle-types';
 import type { useBattle } from './LiveBattle';
 type Controller = ReturnType<typeof useBattle>;
@@ -15,10 +16,11 @@ export function SpellCastForm({ controller, actor, slot }: { controller: Control
   const resources = spell?.level === 0 ? [{ key: 'cantrip:0', label: 'Sztuczka — bez miejsca na czar' }] : [
     ...c.slots.filter(s => s.remaining > 0 && s.level >= (spell?.level ?? 10)).map(s => ({ key: `${s.source}:${s.level}`, label: `${s.level}. krąg · ${s.remaining}/${s.total}${s.source === 'pact' ? ' · Pact Magic' : ''}` })),
     ...(spell?.arcanumRemaining ? [{ key: `arcanum:${spell.level}`, label: 'Mystic Arcanum — 1 użycie / długi odpoczynek' }] : []),
+    ...(spell?.originFreeCast ? [{ key: `origin:${spell.level}`, label: 'Atut Origin — bez miejsca / długi odpoczynek' }] : []),
   ];
   const selectedResource = resources.find(r => r.key === resource)?.key ?? resources[0]?.key ?? '';
   const [source, level] = selectedResource.split(':');
-  const slotUsed = (b.slotCasters ?? []).includes(actor.id) && spell?.level !== 0 && source !== 'arcanum';
+  const slotUsed = (b.slotCasters ?? []).includes(actor.id) && spell?.level !== 0 && !['arcanum', 'origin'].includes(source);
   return <form className="stack-form" onSubmit={e => {
     e.preventDefault();
     void controller.mutate('act', { kind: 'cast', actorId: actor.id, slot, spellId, source, level: Number(level), targetIds });
@@ -43,6 +45,7 @@ export function SpellResolution({ controller }: { controller: Controller }) {
   const [roll, setRoll] = useState('');
   const [roll2, setRoll2] = useState('');
   const [advantage, setAdvantage] = useState(false);
+  const [reckless, setReckless] = useState(false);
   const [disadvantage, setDisadvantage] = useState(false);
   const [rolls, setRolls] = useState<string[]>([]);
   if (p?.kind !== 'spell') return null;
@@ -50,7 +53,11 @@ export function SpellResolution({ controller }: { controller: Controller }) {
   const canCast = controller.response!.controlledIds.includes(caster.id);
   const target = p.stage === 'save' ? p.targets.find(t => t.saved === undefined && controller.response!.controlledIds.includes(t.id)) : null;
   const automaticDisadvantage = p.stage === 'attack' && (Boolean(caster.mockery) || b.fighters.some(f => p.targets.some(t => t.id === f.id) && (f.dodge || f.attackDisadvantage)));
-  const needsTwo = advantage !== (disadvantage || automaticDisadvantage);
+  const savingTarget = b.fighters.find(f => f.id === target?.id);
+  const attackTarget = b.fighters.find(f => f.id === p.targets[0]?.id);
+  const canReckless = p.stage === 'attack' && b.fighters[b.turn].id === caster.id && caster.rageProfile?.recklessAttack && !caster.attackRollMade;
+  const automaticAdvantage = p.stage === 'save' ? Boolean(savingTarget && barbarianSaveAdvantage(savingTarget, p.spec.save)) : p.stage === 'attack' && barbarianAttackAdvantage(caster, attackTarget);
+  const needsTwo = (advantage || automaticAdvantage) !== (disadvantage || automaticDisadvantage);
   if (p.stage === 'save' && !target) return <p role="status">{p.spellName}: oczekiwanie na rzuty obronne celów.</p>;
   if (p.stage !== 'save' && !canCast) return <p role="status">{p.spellName}: oczekiwanie na rzuty osoby rzucającej czar.</p>;
   const count = p.spec.dice * (p.critical ? 2 : 1);
@@ -58,9 +65,10 @@ export function SpellResolution({ controller }: { controller: Controller }) {
   return <form className="stack-form" onSubmit={e => {
     e.preventDefault();
     void controller.mutate('act', p.stage === 'effect' ? { kind: 'spell-effect', rolls: Array.from({ length: count }, (_, i) => Number(rolls[i])) }
-      : { kind: p.stage === 'attack' ? 'spell-attack' : 'spell-save', targetId: target?.id, roll: Number(roll), roll2: Number(roll2), advantage, disadvantage });
+      : { kind: p.stage === 'attack' ? 'spell-attack' : 'spell-save', reckless: Boolean(canReckless && reckless), targetId: target?.id, roll: Number(roll), roll2: Number(roll2), advantage, disadvantage });
   }}>
-    <h2>{p.spellName}</h2>
+    <h2>{p.spellName}</h2>{automaticAdvantage && <p>{p.stage === 'attack' ? 'Reckless Attack: ułatwienie ataku przeciwko celowi.' : p.spec.save === 'dex' ? 'Danger Sense: ułatwienie rzutu obronnego na Zręczność.' : 'Szał: ułatwienie rzutu obronnego na Siłę.'}</p>}
+    {canReckless && <label><input type="checkbox" checked={reckless} onChange={e => setReckless(e.target.checked)} />Reckless Attack — wybór przy pierwszym rzucie na atak. Ten czar nie używa Siły, ale ataki przeciwko tobie zyskają ułatwienie.</label>}
     {p.stage !== 'effect' ? <>
       <p>{p.stage === 'attack' ? 'Rzut na atak czarem' : `Rzut obronny (${p.spec.save?.toUpperCase()}): ${b.fighters.find(f => f.id === target?.id)?.name}`}</p>
       <label>k20 bez premii<input required type="number" min={1} max={20} value={roll} onChange={e => setRoll(e.target.value)} /></label>
@@ -76,7 +84,7 @@ export function SpellResolution({ controller }: { controller: Controller }) {
 export function SpellDefenses({ controller }: { controller: Controller }) {
   const b = controller.response!.battle!, p = b.pending;
   if (p?.kind !== 'spell' || p.spec.mode === 'heal') return null;
-  return <details open><summary>GM: odporności i podatności — {p.spec.type}</summary><p>Wybierz wynik zgodny ze statystykami i aktualnymi efektami celu. Aplikacja połączy go z rzutem obronnym i obliczy końcowe obrażenia.</p>{p.targets.filter(t => !t.defenseReady).map(t => <div className="stack-form" key={t.id}><label>{b.fighters.find(f => f.id === t.id)?.name}<select disabled={controller.pending} defaultValue="" onChange={e => { if (e.target.value !== '') void controller.mutate('act', { kind: 'spell-defense', targetId: t.id, multiplier: Number(e.target.value) }); }}><option value="">Zatwierdź efekt obrażeń</option><option value="1">Zwykłe obrażenia</option><option value="0.5">Odporność — połowa</option><option value="0">Niewrażliwość — zero</option><option value="2">Podatność — podwójne</option></select></label></div>)}</details>;
+  return <details open><summary>GM: odporności i podatności — {p.spec.type}</summary><p>Wybierz wynik zgodny ze statystykami i aktualnymi efektami celu. Odporność Szału na obrażenia obuchowe, kłute i cięte zostanie zastosowana automatycznie (bez podwójnego dzielenia). Aplikacja połączy wybór z rzutem obronnym i obliczy końcowe obrażenia.</p>{p.targets.filter(t => !t.defenseReady).map(t => <div className="stack-form" key={t.id}><label>{b.fighters.find(f => f.id === t.id)?.name}<select disabled={controller.pending} defaultValue="" onChange={e => { if (e.target.value !== '') void controller.mutate('act', { kind: 'spell-defense', targetId: t.id, multiplier: Number(e.target.value) }); }}><option value="">Zatwierdź efekt obrażeń</option><option value="1">Zwykłe obrażenia</option><option value="0.5">Odporność — połowa</option><option value="0">Niewrażliwość — zero</option><option value="2">Podatność — podwójne</option></select></label></div>)}</details>;
 }
 
 export function ConcentrationForm({ controller, actor }: { controller: Controller; actor: Combatant }) {

@@ -3,6 +3,53 @@ import assert from 'node:assert/strict';
 import { characterTraits, validateTraitSelection } from '../shared/character-traits.mjs';
 import { emptyStatistics } from './statistics.mjs';
 import options from '../shared/character-options.json' with { type: 'json' };
+import { originFeats } from '../shared/origin-feats.mjs';
+import { spellcastingProfile } from '../shared/spellcasting.mjs';
+
+test('all 22 Common Origin feats have descriptions and every spell grant resolves for a noncaster', () => {
+  assert.equal(originFeats.length, 24); // Magic Initiate has three list variants.
+  assert.equal(new Set(originFeats.map(f => f.name)).size, 24);
+  const human = hero('Wojownik (Fighter)', 1, '', 'Człowiek (Human)');
+  for (const feat of originFeats) {
+    const stats = emptyStatistics();
+    stats.traits = { humanFeat: [feat.name] };
+    const profile = characterTraits(human, stats);
+    assert.ok(profile.feats.includes(feat.name), feat.name);
+    assert.ok(profile.originFeatDescriptions[feat.name], feat.name);
+    assert.equal(validateTraitSelection(human, stats), null, feat.name);
+    const magic = spellcastingProfile(human, stats.spells, stats.traits);
+    for (const id of feat.spells ?? []) assert.ok(magic.automatic.some(s => s.id === id), `${feat.name}: ${id}`);
+  }
+});
+
+test('Common Origin choices apply defenses and movement and reject stale or non-Common selections', () => {
+  const human = hero('Wojownik (Fighter)', 1, '', 'Człowiek (Human)');
+  const stats = emptyStatistics();
+  stats.traits = { humanFeat: ['Portal Jumper'], portalResistance: ['Psychic'] };
+  assert.ok(characterTraits(human, stats).defenses.some(d => d.includes('Psychic')));
+  stats.traits.portalResistance = ['Fire'];
+  assert.ok(validateTraitSelection(human, stats));
+  stats.traits = { humanFeat: ['Transmuted Anatomy'] };
+  assert.equal(characterTraits(human, stats).baseSpeed, 35);
+  stats.traits = { humanFeat: ['Tough'], portalResistance: ['Psychic'] };
+  assert.ok(validateTraitSelection(human, stats));
+  for (const name of ['Harper Agent', 'Child of the Sea', 'Child of the Sun', "Vampire's Plaything"]) {
+    stats.traits = { humanFeat: [name] };
+    assert.ok(validateTraitSelection(human, stats), name);
+  }
+});
+
+test('Magic Initiate grants only legal selected spells without class slots or class preparation cost', () => {
+  const human = hero('Wojownik (Fighter)', 1, '', 'Człowiek (Human)');
+  const stats = emptyStatistics();
+  stats.traits = { humanFeat: ['Magic Initiate (Wizard)'], 'origin:Magic Initiate (Wizard):ability': ['cha'], 'origin:Magic Initiate (Wizard):cantrips': ['fire-bolt', 'mage-hand'], 'origin:Magic Initiate (Wizard):spell': ['shield'] };
+  assert.equal(validateTraitSelection(human, stats), null);
+  const magic = spellcastingProfile(human, stats.spells, stats.traits);
+  assert.deepEqual(magic.automatic.map(s => s.id), ['fire-bolt', 'mage-hand', 'shield']);
+  assert.deepEqual(magic.slots, []);
+  stats.traits['origin:Magic Initiate (Wizard):spell'] = ['fireball'];
+  assert.ok(validateTraitSelection(human, stats));
+});
 
 const hero = (className, level = 1, background = '', species = '', subclass = '') => ({ class: className, level, background, species, subclass });
 const group = (profile, id) => profile.groups.find(group => group.id === id);

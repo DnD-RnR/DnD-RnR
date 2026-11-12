@@ -16,11 +16,11 @@ const styles = [
 ];
 
 export function fightingStyleCount(character) {
-  return character.class === 'Wojownik (Fighter)' ? 1 : 0;
+  return Boolean(character.class?.includes('Fighter') || character.class === 'Paladyn (Paladin)' && character.level >= 2) ? 1 : 0;
 }
 
 export function fightingStyleChoicesValid(character, value) {
-  return typeof value === 'string' && (value === '' || styles.some(style => style.id === value));
+  return typeof value === 'string' && (value === '' || fightingStyleCount(character) > 0 && styles.some(style => style.id === value));
 }
 
 export const wizardCantrips = catalog.spells.filter(spell => spell.level === 0 && spell.classes.includes('wizard'));
@@ -37,7 +37,7 @@ export function fightingStyleDamageBonus(fightingStyle, weapon, equippedWeapons 
   const type = typeof weapon.type === 'string' ? weapon.type.toLowerCase() : '';
   const properties = Array.isArray(weapon.properties) ? weapon.properties : [];
   if (fightingStyle === 'two-weapon-fighting') {
-    return weapon.slot === 'off-hand' && properties.some(property => /^(lekka|light)/i.test(property)) ? abilityModifier : 0;
+    return weapon.slot === 'off-hand' && properties.some(property => /^(lekka|light)/i.test(property)) ? Math.max(0, abilityModifier) : 0;
   }
   if (fightingStyle === 'thrown-weapon-fighting') {
     return properties.some(property => /^(miotana|thrown)/i.test(property)) ? 2 : 0;

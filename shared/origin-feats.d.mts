@@ -1,0 +1,11 @@
+import type { Spell } from './spellcasting.mjs';
+export type OriginFeat = { id: string; name: string; category: string; source: string; group: string; description: string; url: string; humanOnly: boolean; repeatable: boolean; spells: string[]; spellAbility: boolean; list?: string; cantrips?: string[] };
+export type OriginFeatEntry = Omit<OriginFeat, 'spells'> & { spells: Spell[]; ability: string; spellAttack: number | null; spellDc: number | null; details: string[] };
+export const originFeats: OriginFeat[];
+export const originFeatNames: string[];
+export function originFeatForName(name: string): OriginFeat | undefined;
+export function eligibleOriginFeats(character: { species?: string }): OriginFeat[];
+export function eligibleOriginFeatNames(character: { species?: string }): string[];
+export function selectedOriginFeats(character: { class?: string; level: number; species?: string; background?: string }, traits?: Record<string, string[]>): OriginFeat[];
+export function originSpellGrants(feats: OriginFeat[], traits?: Record<string, string[]>): { id: string; reason: string; ability: string; freeCast: boolean }[];
+export function originFeatSheet(names: string[], character: { level: number }, stats: { traits?: Record<string, string[]>; values?: Record<string, number | null> }): OriginFeatEntry[];

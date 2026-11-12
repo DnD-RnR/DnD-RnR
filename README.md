@@ -81,6 +81,40 @@ Ułatwienie i utrudnienie znoszą się; Unik, ciężka broń oraz brak wyszkolen
 w pancerzu mogą wymusić utrudnienie. Rzuty przeciw śmierci obsługują naturalne
 1 i 20, stabilizację oraz porażki po otrzymaniu obrażeń przy zerowych PW.
 
+### Szał barbarzyńcy
+
+Panel Szału pozwala użyć akcji dodatkowej przed atakiem albo po nim. Serwer
+pilnuje poziomowych limitów użyć i premii obrażeń, ciężkiej zbroi, koncentracji
+i zakazu rzucania czarów. Premia obejmuje ataki oparte na Sile, również ciosy
+bez broni i drugą rękę; przy broni finezyjnej można wybrać Siłę. Odporność na
+obrażenia obuchowe, kłute i cięte działa dla ataków z określonym typem obrażeń,
+rozstrzygnięć GM oraz czarów. Nie sumuje się z drugą odpornością na ten sam typ.
+GM podaje obrażenia przed odpornością i wybiera ich typ.
+
+Czas Szału jest liczony w rundach gry (10 minut = 100 rund), nie według zegara
+użytkownika. Atak na przeciwnika przedłuża Szał również przy pudle. Wymuszenie
+rzutu obronnego przez zdolność rozstrzyganą opisowo potwierdza GM w panelu Szału.
+GM nakłada i usuwa Obezwładnienie oraz Nieprzytomność. Instinctive Pounce zapisuje
+dodatkowy ruch przy aktywacji niezależnie od zwykłego ruchu tury.
+
+Testy cech i rzuty obronne w panelu uwzględniają ułatwienie Szału i opcjonalne
+Primal Knowledge. Relentless Rage wymaga osobnego rzutu na Kondycję po spadku
+do 0 PW, blokuje dalszą turę do rozstrzygnięcia i nie chroni przed natychmiastową
+śmiercią. Persistent Rage usuwa potrzebę przedłużania oraz pozwala odzyskać
+użycia przy inicjatywie raz na długi odpoczynek. Użycia i ST Relentless Rage
+są trwałymi zasobami postaci; odpoczynek odnawia je zgodnie z zasadami.
+Karta postaci pokazuje aktualne zasoby, zasady i warunkowe premie ataków.
+
+Od 2. poziomu Danger Sense automatycznie daje ułatwienie rzutów obronnych na
+Zręczność (także przeciw czarom), o ile postać nie jest Obezwładniona ani
+Nieprzytomna. Reckless Attack wybiera się przy pierwszym rzucie na atak we
+własnej turze. Serwer rejestruje także chybione rzuty i ataki czarami, blokuje
+spóźniony wybór i zachowuje efekt do początku następnej tury barbarzyńcy:
+ułatwienie jego ataków z Siły i wszystkich ataków przeciwko niemu. Obie zdolności
+działają bez Szału. Karta opisuje te zasady w zakładkach Walka i Statystyki.
+Primal Knowledge zachowuje biegłość lub ekspertyzę również wtedy, gdy pierwotna
+cecha umiejętności nie ma wpisanej wartości; do takiego testu potrzebna jest Siła.
+
 ### Czary w walce i zasoby magiczne
 
 **Rzuć czar** pokazuje czary przygotowane i automatycznie przyznane przez klasę

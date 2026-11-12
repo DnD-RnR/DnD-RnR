@@ -7,6 +7,7 @@ import slots from '../shared/equipment-slots.json' with { type: 'json' };
 import weapons from '../shared/weapon-catalog.json' with { type: 'json' };
 import armors from '../shared/armor-catalog.json' with { type: 'json' };
 import items from '../shared/item-catalog.json' with { type: 'json' };
+import originFeats from '../shared/origin-feats.json' with { type: 'json' };
 
 const derive = promisify(scrypt);
 export async function hashPassword(password, salt = randomBytes(16).toString('hex')) {
@@ -258,5 +259,13 @@ export function initializeDatabase(db) {
     character_id INTEGER PRIMARY KEY REFERENCES characters(id) ON DELETE CASCADE,
     data TEXT NOT NULL
   );`);
+  db.exec(`CREATE TABLE IF NOT EXISTS origin_feat_catalog (
+    id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, category TEXT NOT NULL CHECK(category = 'Origin'),
+    data TEXT NOT NULL CHECK(json_valid(data))
+  );`);
+  db.prepare("DELETE FROM origin_feat_catalog WHERE json_extract(data, '$.group') IS NOT 'Common'").run();
+  const seedOriginFeat = db.prepare(`INSERT INTO origin_feat_catalog (id, name, category, data) VALUES (?, ?, 'Origin', ?)
+    ON CONFLICT(id) DO UPDATE SET name=excluded.name, category=excluded.category, data=excluded.data`);
+  for (const feat of originFeats) seedOriginFeat.run(feat.id, feat.name, JSON.stringify(feat));
   return db;
 }

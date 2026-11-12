@@ -24,7 +24,7 @@ export function statisticsSummary(character, stored, equipment = []) {
   const dex = modifier('dex');
   return {
     hp: stats.values.hp, maxHp: stats.values.maxHp ?? traits.firstLevelMaxHp, tempHp: stats.values.tempHp,
-    ac: armorClassFromEquipment(stats, trainingEquipment), speed: speedFromEquipment(stats, equipment, stats.values.speed ?? traits.baseSpeed), stealthDisadvantage: hasStealthDisadvantage(equipment), ...trainingEffects, proficiency,
+    ac: armorClassFromEquipment(stats, trainingEquipment, character), speed: speedFromEquipment(stats, equipment, stats.values.speed ?? traits.baseSpeed), stealthDisadvantage: hasStealthDisadvantage(equipment), ...trainingEffects, proficiency,
     initiative: dex === null ? null : dex + traits.initiativeBonus + (stats.values.initiativeBonus ?? 0),
     passivePerception: skills.perception === null ? null : 10 + skills.perception,
     deathSuccesses: stats.values.deathSuccesses, deathFailures: stats.values.deathFailures,

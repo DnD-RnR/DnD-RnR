@@ -1,10 +1,21 @@
-export function armorClassFromEquipment(stats, equipment = []) {
+export function armorClassFromEquipment(stats, equipment = [], character = {}) {
   const armor = equipment.find(item => item.armorCategory && item.armorCategory !== 'shield' && item.equipped);
   const shield = equipment.find(item => item.armorCategory === 'shield' && item.equipped);
-  if (!armor && !shield) return stats.values.ac;
   const dex = stats.values.dex == null ? null : Math.floor((stats.values.dex - 10) / 2);
+  if ((!armor || armor.armorCategory !== 'heavy') && dex === null) return null;
   let ac = armor ? Number.parseInt(armor.armorClass, 10) : 10;
-  if (armor && armor.armorCategory !== 'heavy' && dex !== null) {
+  if (!armor) {
+    ac += dex;
+    // Alternative base calculations replace the standard base; they never stack.
+    if (stats.armorClassBase !== 'standard') {
+      const ability = character.class?.includes('Barbarian') ? 'con'
+        : character.class?.includes('Monk') && !shield ? 'wis' : null;
+      if (ability) {
+        if (stats.values[ability] == null) return null;
+        ac += Math.floor((stats.values[ability] - 10) / 2);
+      }
+    }
+  } else if (armor.armorCategory !== 'heavy') {
     ac += armor.armorCategory === 'medium' ? Math.min(dex, 2) : dex;
   }
   if (shield && shield.trained !== false) ac += Number.parseInt(shield.armorClass, 10) || 0;

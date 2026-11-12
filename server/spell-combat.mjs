@@ -1,4 +1,6 @@
 import { spendSpell, resourceState, saveResources } from './spell-resources.mjs';
+import { rageDamageTypes, barbarianSaveAdvantage, barbarianAttackAdvantage } from '../shared/barbarian.mjs';
+import { recordAttackRoll } from './barbarian.mjs';
 
 const check = (condition, message) => { if (!condition) throw new Error(message); };
 const die = (n, sides = 20) => Number.isInteger(n) && n >= 1 && n <= sides;
@@ -12,6 +14,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
   const controlled = f => f && activeMember(db, b.sessionId, f) && canControl(f);
   const caster = b.fighters.find(f => f.id === (body.actorId ?? b.fighters[b.turn]?.id));
   if (body.kind === 'cast') {
+    check(!caster?.wildShape && !caster?.rage && !caster?.incapacitated && !caster?.unconscious, 'Wild Shape, Szał lub stan postaci uniemożliwia rzucanie czarów.');
     check(controlled(caster) && caster.characterId && caster.hp > 0 && caster.deathFailures < 3, 'Nie możesz rzucić czaru tą postacią.');
     if (b.pending) {
       check(body.slot === 'reaction' && !b.suspendedAction, 'Najpierw rozstrzygnij rozpoczęte działanie.');
@@ -23,7 +26,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     const c = spendSpell(db, caster.characterId, body.spellId, body.level, body.source);
     check(c.spell.action === body.slot, 'Czas rzucania czaru nie pasuje do tego kroku tury.');
     check(!c.blocked, 'Brak wyszkolenia w założonym pancerzu blokuje rzucanie czarów.');
-    const spentSlot = c.spell.level > 0 && body.source !== 'arcanum';
+    const spentSlot = c.spell.level > 0 && !['arcanum', 'origin', 'paladin-smite'].includes(body.source);
     check(!spentSlot || !(b.slotCasters ?? []).includes(caster.id), 'W tej turze wykorzystano już miejsce na czar.');
     if (spentSlot) b.slotCasters = [...(b.slotCasters ?? []), caster.id];
     caster[body.slot] = `Czar: ${c.spell.name}`;
@@ -31,7 +34,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
       caster.concentration = c.spell.name; caster.concentrationDC = null; caster.concentrationChecks = [];
       const state = resourceState(db, caster.characterId); state.concentration = c.spell.name; saveResources(db, caster.characterId, state);
     }
-    log(b, `${caster.name}: ${c.spell.name}${c.spell.level ? ` (${body.level}. krąg, ${body.source === 'arcanum' ? 'Mystic Arcanum' : 'zużyto miejsce'})` : ' (sztuczka)'}.`);
+    log(b, `${caster.name}: ${c.spell.name}${c.spell.level ? ` (${body.level}. krąg, ${body.source === 'paladin-smite' ? 'Paladin Smite' : body.source === 'arcanum' ? 'Mystic Arcanum' : body.source === 'origin' ? 'atut Origin' : 'zużyto miejsce'})` : ' (sztuczka)'}.`);
     if (!c.spell.effect) {
       b.pending = { kind: 'request', actorId: caster.id, slot: body.slot, description: `${c.spell.name} — ${c.spell.description ?? ''}\n${c.spell.upgrade ?? ''}\nZasięg i komponenty oraz efekty specjalne rozstrzyga GM. Zasób został już zużyty.` };
       return true;
@@ -73,14 +76,17 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     check(gm && p.spec.mode !== 'heal', 'Odporności i podatności zatwierdza GM.');
     const target = p.targets.find(t => t.id === body.targetId);
     check(target && [0, 0.5, 1, 2].includes(body.multiplier), 'Wybierz cel i modyfikator obrażeń.');
-    target.multiplier = body.multiplier; target.defenseReady = true;
+    const fighter = b.fighters.find(f => f.id === target.id);
+    const rageResistance = fighter?.rage && rageDamageTypes.includes(p.spec.type?.toLowerCase());
+    target.multiplier = rageResistance && body.multiplier !== 0.5 ? body.multiplier * 0.5 : body.multiplier;
+    target.defenseReady = true;
     return true;
   }
   if (body.kind === 'spell-save') {
     check(p.stage === 'save', 'Czar nie oczekuje teraz na rzut obronny.');
     const t = p.targets.find(t => t.id === body.targetId), target = b.fighters.find(f => f.id === t?.id);
     check(t && t.saved === undefined && controlled(target), 'Rzut obronny wykonuje właściciel celu lub GM dla potwora.');
-    const roll = d20(body);
+    const roll = d20({ ...body, advantage: body.advantage || barbarianSaveAdvantage(target, p.spec.save) });
     t.saved = roll + target.saves[p.spec.save] >= p.dc;
     log(b, `${target.name}: rzut obronny przeciw ${p.spellName} — ${t.saved ? 'sukces' : 'porażka'}.`);
     if (p.targets.every(t => t.saved !== undefined)) {
@@ -93,7 +99,8 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
   if (body.kind === 'spell-attack') {
     check(p.stage === 'attack', 'Czar nie oczekuje teraz na atak.');
     const target = b.fighters.find(f => f.id === p.targets[0].id);
-    const roll = d20(body, target.dodge || Boolean(actor.mockery));
+    recordAttackRoll(b, actor, body, log);
+    const roll = d20({ ...body, advantage: body.advantage || barbarianAttackAdvantage(actor, target) }, target.dodge || target.attackDisadvantage || Boolean(actor.mockery));
     actor.mockery = null;
     const hit = roll !== 1 && (roll === 20 || roll + p.attackBonus >= target.ac);
     log(b, `${actor.name} → ${target.name}: ${p.spellName} — ${hit ? roll === 20 ? 'trafienie krytyczne' : 'trafienie' : 'pudło'}.`);

@@ -1,3 +1,5 @@
+import definitions from '../../../shared/statistics.json' with { type: 'json' };
+import { rageProfile, rageDescription, primalSkills, dangerSenseDescription, recklessAttackDescription } from '../../../shared/barbarian.mjs';
 import { SpellResources } from './SpellResources';
 import { Card } from '../../components/ui/Card';
 import { useEffect, useMemo, useState } from 'react';
@@ -65,6 +67,7 @@ function UnarmedStrike({ character, statistics, equippedItems }: { character: Ch
         <li><details><summary>Obrażenia</summary>
           <p>Wykonujesz rzut na atak przeciwko celowi. Twoja premia do rzutu wynosi modyfikator Siły plus premia z biegłości: <strong>{value(attackBonus)}</strong>.</p>
           <p>Przy trafieniu cel otrzymuje obrażenia obuchowe: <strong>{unarmed ? `${unarmed.dice}k${unarmed.sides} ${signed(unarmed.damageBonus)}` : 'brak danych'}</strong>.</p>
+          {rageProfile(character).max > 0 && <p>W Szale: dodatkowe <strong>+{rageProfile(character).damage}</strong> obrażeń tego ciosu (premia nie jest podwajana przy trafieniu krytycznym).</p>}
           {hasTavernBrawler && <><p><strong>Enhanced Unarmed Strike:</strong> zamiast normalnych obrażeń ciosu bez broni zadajesz 1k4 + modyfikator Siły obrażeń obuchowych.</p><p><strong>Damage Rerolls:</strong> gdy na kości obrażeń ciosu bez broni wypadnie 1, możesz przerzucić tę kość, ale musisz użyć nowego wyniku.</p><p><strong>Push:</strong> gdy trafisz istotę ciosem bez broni w ramach akcji Atak, możesz zadać jej obrażenia i dodatkowo odepchnąć ją o 5 stóp. Możesz użyć tego efektu tylko raz na turę.</p></>}
         </details></li>
         {hasFreeHand && <li><details><summary>Pochwycenie</summary>
@@ -114,6 +117,7 @@ function WeaponList({ weapons, character, statistics, showMastery = false, group
       const weaponDetails = <>
         <strong className={item.slot === 'main-hand' ? 'combat-weapon-main-hand' : 'combat-weapon-off-hand'}>{item.name} <small>{item.slot === 'main-hand' ? 'Główna ręka' : item.slot === 'off-hand' ? 'Druga ręka' : ''}</small></strong>
         <span>{weaponDamage(item)} {damageBonus === null ? '' : `${signed(damageBonus)} obrażeń`} {item.weapon?.damageType ? `· ${item.weapon.damageType}` : ''}</span>
+        {rageProfile(character).max > 0 && <small>{ability === 'str' ? `W Szale: dodatkowe +${rageProfile(character).damage} obrażeń (również druga ręka i rzut bronią oparty na Sile).` : 'Premia Szału wymaga ataku opartego na Sile.'}</small>}
         <span>Atak: {attackBonus === null ? 'brak danych' : signed(attackBonus)} · {proficient ? 'biegłość' : 'brak biegłości'}</span>
         <small>{item.grip === 'two' ? 'dwie ręce' : item.grip === 'none' ? 'broń dystansowa' : 'jedna ręka'}</small>
         {finesse && <label className="combat-weapon-choice">Modyfikator finezyjny:
@@ -221,7 +225,15 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
         </div>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}
-      <SpellResources characterId={character.id} /><div className="combat-sections">
+      <SpellResources characterId={character.id} />
+      {rageProfile(character).dangerSense && <Card title="Zdolności barbarzyńcy"><p>{dangerSenseDescription}</p><p>{recklessAttackDescription}</p></Card>}
+      {rageProfile(character).primalKnowledge && statistics && <details><summary>Primal Knowledge — testy Siły w Szale</summary><p>Możesz zastąpić zwykłą cechę Siłą, zachowując biegłość lub ekspertyzę. Te testy mają ułatwienie dzięki Szałowi.</p><dl className="gm-vitals">{definitions.skills.filter(skill => primalSkills.includes(skill.id)).map(skill => {
+        const traits = characterTraits(character, statistics);
+        const str = statistics.values.str;
+        const extra = traits.skillBonuses[skill.id];
+        const bonus = str == null || extra == null ? null : Math.floor((str - 10) / 2) + statistics.proficiency * traits.effectiveSkills[skill.id] + extra;
+        return <div key={skill.id}><dt>{skill.label} (Siła)</dt><dd>{bonus == null ? '—' : signed(bonus)} · ułatwienie</dd></div>;
+      })}</dl></details>}<div className="combat-sections">
         <Card title="Akcja" eyebrow="TURA">
           <ActionList entries={[
             ...(character.species === 'Smokowiec (Dragonborn)' ? [['Broń Oddechowa', `Wydalasz niszczycielską energię w stożku o długości 15 stóp albo linii o długości 30 stóp i szerokości 5 stóp. Cel wykonuje rzut obronny na Zręczność lub Kondycję (ST ${statistics?.values.con == null ? '8 + premia z biegłości + modyfikator Kondycji' : 8 + statistics.proficiency + Math.floor((statistics.values.con - 10) / 2)}). Obrażenia zależą od poziomu i typu wybranego przodka; obszar i rzuty rozstrzyga GM.`] as const] : []),
@@ -230,12 +242,13 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
         </Card>
         <Card title="Akcja bonusowa" eyebrow="TURA">
           <ActionList entries={[
+            ...(rageProfile(character).max ? [['Szał', rageDescription(character)] as const] : []),
             ...(character.class.includes('Fighter') ? [['Drugi oddech', 'Masz ograniczony zapas fizycznej i mentalnej wytrzymałości, z którego możesz czerpać. W ramach akcji bonusowej możesz go wykorzystać, aby odzyskać punkty życia (PW) w liczbie 1k10 + poziom wojownika.'] as const] : []),
             ...(character.species === 'Ork (Orc)' ? [['Adrenaline Rush', `W ramach akcji bonusowej wykonujesz Zryw i zyskujesz tymczasowe PW równe premii z biegłości (${statistics?.proficiency ?? '—'}). Możesz użyć tej cechy ${statistics ? statistics.proficiency : 'premii z biegłości'} razy na długi odpoczynek.`] as const] : []),
             ...(character.species === 'Smokowiec (Dragonborn)' && character.level >= 5 ? [['Draconic Flight', 'W ramach akcji bonusowej zyskujesz szybkość lotu równą szybkości chodzenia na 10 minut. Możesz użyć tej cechy raz na długi odpoczynek.'] as const] : []),
           ]} spells={combatSpells.bonus} />
           {!!bonusWeapons.length && <WeaponList weapons={bonusWeapons} character={character} statistics={statistics} showMastery />}
-          {!combatSpells.bonus.length && !bonusWeapons.length && <p className="statistics-help">Brak czarów lub ataków z czasem wykonania „Akcja bonusowa”.</p>}
+          {!rageProfile(character).max && !combatSpells.bonus.length && !bonusWeapons.length && <p className="statistics-help">Brak czarów lub ataków z czasem wykonania „Akcja bonusowa”.</p>}
         </Card>
         <Card title="Reakcja" eyebrow="POZA TURĄ">
           <ActionList entries={[

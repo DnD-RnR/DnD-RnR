@@ -1,6 +1,7 @@
 import { formatDice } from '../../lib/dice';
 import { TraitSelection } from './TraitSelection';
 import { characterTraits } from '../../../shared/character-traits.mjs';
+import { rageProfile, dangerSenseDescription } from '../../../shared/barbarian.mjs';
 import { SpellSelection } from './SpellSelection';
 import { spellcastingProfile } from '../../../shared/spellcasting.mjs';
 import { useEffect, useState, type FormEvent } from 'react';
@@ -52,10 +53,14 @@ export function StatisticsTab({ character }: { character: Character }) {
   return <div className="statistics-tab">
     <div className="inventory-section-heading"><div><p className="eyebrow">KARTA BOHATERA</p><h2>Statystyki</h2></div>{!draft && <button className="primary-button" onClick={() => { setDraft(structuredClone(stats)); setMessage(''); setError(''); }}>Uzupełnij / edytuj</button>}</div>
     {error && <p className="form-error" role="alert">{error}</p>}{message && <p role="status">{message}</p>}
+    {rageProfile(character).dangerSense && <p>{dangerSenseDescription}</p>}
+    {rageProfile(character).primalKnowledge && <p>Primal Knowledge: wybierz dodatkową biegłość z listy umiejętności barbarzyńcy w sekcji cech postaci. W Szale możesz używać Siły do Akrobatyki, Zastraszania, Percepcji, Skradania się i Sztuki przetrwania, zachowując biegłość lub ekspertyzę oraz ułatwienie Szału.</p>}
     {draft ? <form className="stack-form statistics-editor" onSubmit={save}><fieldset disabled={pending}>
-      <legend>Wartości z karty postaci</legend><p>Wpisuj końcowe wartości cech i KP. Pusta szybkość korzysta z wartości gatunku, a maksymalne PW na 1. poziomie są liczone z klasy, Kondycji i stałych premii. Wpisana ręcznie wartość PW ma pierwszeństwo i powinna już uwzględniać premie.</p>
+      <legend>Wartości z karty postaci</legend><p>Wpisuj wartości cech. KP jest wyliczana automatycznie. Pusta szybkość korzysta z wartości gatunku, a maksymalne PW na 1. poziomie są liczone z klasy, Kondycji i stałych premii. Wpisana ręcznie wartość PW ma pierwszeństwo i powinna już uwzględniać premie.</p>
       <h3>Cechy</h3><div className="statistics-fields">{definitions.abilities.map(field => numberField(field.id, field.label, 1, 30))}</div>
-      <h3>Walka i zasoby</h3><div className="statistics-fields">{definitions.numbers.map(field => numberField(field.id, field.label, field.min, field.max))}</div>
+      <label>Podstawa klasy pancerza<select value={draft.armorClassBase ?? 'class'} onChange={event => setDraft({ ...draft, armorClassBase: event.target.value as 'standard' | 'class' })}><option value="standard">Standardowa: 10 + modyfikator Zręczności</option><option value="class">Z klasy: Obrona bez pancerza (jeśli dostępna)</option></select></label>
+      <p>Założona zbroja określa podstawę KP. Obrona bez pancerza barbarzyńcy dodaje Kondycję, a mnicha — Mądrość i wymaga braku tarczy. Różne podstawy KP nie sumują się. Brak wymaganej cechy oznacza brak wyniku KP.</p>
+      <h3>Walka i zasoby</h3><div className="statistics-fields">{definitions.numbers.filter(field => field.id !== 'ac').map(field => numberField(field.id, field.label, field.min, field.max))}</div>
       <p>Cecha bazowa magii klasy: <strong>{definitions.abilities.find(ability => ability.id === spellAbility)?.label ?? 'Nie dotyczy'}</strong></p>
       <SpellSelection character={character} value={draft.spells} traits={draft.traits} onChange={spells => setDraft({ ...draft, spells })} legacyNotes={draft.notes.spells} />
       <TraitSelection character={character} statistics={draft} onChange={traits => setDraft({ ...draft, traits })} />

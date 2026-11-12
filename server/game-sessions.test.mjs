@@ -17,7 +17,7 @@ test('GM numeric summaries match character modifiers, proficiencies and manual o
   const summary = statisticsSummary(character, statistics);
   assert.equal(summary.hp, 0);
   assert.equal(summary.maxHp, 9);
-  assert.equal(summary.ac, 14);
+  assert.equal(summary.ac, 13);
   assert.equal(summary.speed, 30);
   assert.equal(summary.initiative, 5);
   assert.equal(summary.proficiency, 2);
@@ -170,7 +170,7 @@ test('game membership and session participation have separate, authorized lifecy
     db.prepare('INSERT INTO character_statistics (character_id, data) VALUES (?, ?)').run(1, JSON.stringify(storedStats));
     const gmMembers = (await json('/games/1', 1)).members;
     assert.equal(gmMembers.find(m => m.characterId === 1).statistics.hp, 17);
-    assert.equal(gmMembers.find(m => m.characterId === 1).statistics.ac, 15);
+    assert.equal(gmMembers.find(m => m.characterId === 1).statistics.ac, null);
     assert.equal(gmMembers.find(m => m.characterId === 1).statistics.notes, undefined);
     assert.equal(gmMembers.find(m => m.characterId === 2).statistics, undefined);
     assert.equal((await request('/games/1', undefined, 2)).status, 404);

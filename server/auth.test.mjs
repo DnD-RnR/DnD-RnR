@@ -44,7 +44,7 @@ test('statistics persist, validate values and remain private to the character ow
     stats.traits = { languages: ['elvish', 'dwarvish'], classSkills: ['performance', 'persuasion', 'perception'], classTools: ['Lute', 'Lyre', 'Flute'] };
     assert.equal((await request(endpoint, stats, stranger)).status, 404);
     assert.equal((await request(endpoint, stats, owner)).status, 200);
-    assert.deepEqual((await (await request(endpoint, undefined, owner)).json()).statistics, stats);
+    assert.deepEqual((await (await request(endpoint, undefined, owner)).json()).statistics, { ...stats, values: { ...stats.values, ac: 13 } });
     for (const selections of [{ cantrips: ['light', 'vicious-mockery', 'mage-hand'] }, { prepared: ['fireball'] }, { prepared: ['shield'] }, { prepared: ['sleep', 'sleep'] }, { prepared: ['cure-wounds', 'healing-word', 'sleep', 'detect-magic', 'charm-person'] }]) {
       const invalid = { ...stats, spells: { choices: {}, selections } };
       assert.equal((await request(endpoint, invalid, owner)).status, 400);
@@ -73,7 +73,7 @@ test('statistics persist, validate values and remain private to the character ow
     assert.equal((await request(endpoint, stats, owner)).status, 200);
     await new Promise(resolve => app.close(resolve)); appClosed = true;
     db.close(); db = openDatabase(databasePath);
-    assert.deepEqual(JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(characterId).data), stats);
+    assert.deepEqual(JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(characterId).data), { ...stats, values: { ...stats.values, ac: null } });
     db.prepare('DELETE FROM characters WHERE id = ?').run(characterId);
     assert.equal(db.prepare('SELECT COUNT(*) AS count FROM character_statistics').get().count, 0);
   } finally {
@@ -306,6 +306,20 @@ test('GM games require owner consent and isolate character access', async () => 
     members = (await (await request(base, undefined, gm)).json()).members;
     assert.equal(members[0].status, 'declined');
     assert.equal(members[0].character, undefined);
+    // Declining allows a new invitation, but never grants access without fresh consent.
+    assert.ok((await (await request(`${base}/candidates`, undefined, gm)).json()).characters.some(c => c.id === characterId));
+    assert.equal((await request(`${base}/invitations`, { characterId }, othergm)).status, 404);
+    assert.equal((await request(`${base}/invitations`, { characterId }, gm)).status, 201);
+    const renewedInvitations = (await (await request('/invitations', undefined, bob)).json()).invitations;
+    assert.equal(renewedInvitations.filter(i => i.characterName === hero.name).length, 1);
+    const renewedInvitation = renewedInvitations.find(i => i.id === bobInvitation);
+    assert.ok(renewedInvitation);
+    assert.equal((await request(`${base}/equipment`, award, gm)).status, 404);
+    assert.equal((await request(`${base}/invitations`, { characterId }, gm)).status, 409);
+    assert.ok(!(await (await request(`${base}/candidates`, undefined, gm)).json()).characters.some(c => c.id === characterId));
+    assert.equal((await request(`/invitations/${renewedInvitation.id}/accept`, {}, alice)).status, 404);
+    assert.equal((await request(`/invitations/${renewedInvitation.id}/accept`, {}, bob)).status, 200);
+    assert.equal((await request(`${base}/invitations`, { characterId }, gm)).status, 409);
     assert.equal((await request(`/admin/players/${gmId}/update`, { username: 'master', name: 'Updated', password: '' }, admin)).status, 200);
     assert.equal((await request(`/admin/players/${gmId}/delete`, {}, admin)).status, 200);
     assert.equal(db.prepare('SELECT COUNT(*) AS n FROM games').get().n, 0);

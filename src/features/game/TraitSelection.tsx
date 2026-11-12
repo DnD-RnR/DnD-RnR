@@ -10,9 +10,12 @@ export function TraitSelection({ character, statistics, onChange }: Props) {
     .filter(group => Array.isArray(statistics.traits[group.id]))
     .map(group => [group.id, statistics.traits[group.id]]));
   const error = validateTraitSelection(character, { ...statistics, traits: selected });
-  const updateSelection = (value: Selection) => onChange?.(Object.fromEntries(profile.groups
-    .filter(group => Array.isArray(value[group.id]))
-    .map(group => [group.id, value[group.id]])));
+  const updateSelection = (value: Selection) => {
+    const nextProfile = characterTraits(character, { ...statistics, traits: value });
+    onChange?.(Object.fromEntries(nextProfile.groups
+      .filter(group => Array.isArray(value[group.id]))
+      .map(group => [group.id, value[group.id]])));
+  };
   const incomplete = profile.groups.filter(group => (selected[group.id]?.length ?? 0) < group.limit);
   return <section className="trait-selection" aria-labelledby="automatic-traits-heading">
     <div className="inventory-section-heading"><div><p className="eyebrow">Z KLASY, GATUNKU I POCHODZENIA</p><h3 id="automatic-traits-heading">Automatyczne wpisy na karcie</h3></div><a href={profile.source} target="_blank" rel="noreferrer" className="text-button">Zasady klasy ↗</a></div>
@@ -24,13 +27,29 @@ export function TraitSelection({ character, statistics, onChange }: Props) {
       <div><dt>Narzędzia i instrumenty</dt><dd>{profile.tools.join(', ') || 'Brak / wybierz poniżej'}</dd></div>
       <div><dt>Języki</dt><dd>{profile.languages.map(language => language.label).join(', ')}</dd></div>
       <div><dt>Atuty pochodzenia</dt><dd>{profile.feats.join(', ') || 'Nie wybrano'}</dd></div>
-      {Object.entries(profile.originFeatDescriptions).map(([name, description]) => <div key={name}><dt>{name}</dt><dd>{description}</dd></div>)}
+      {Object.entries(profile.originFeatDescriptions).filter(([name]) => !profile.originFeatEntries.some(entry => entry.name === name)).map(([name, description]) => <div key={name}><dt>{name}</dt><dd>{description}</dd></div>)}
       <div><dt>Rozmiar</dt><dd>{profile.size ?? '—'}</dd></div>
       <div><dt>Podstawowa szybkość gatunku</dt><dd>{profile.baseSpeed ?? '—'} stóp</dd></div>
       <div><dt>Zmysły</dt><dd>{profile.senses.join('; ') || 'Brak dodatkowych zmysłów'}</dd></div>
       <div><dt>Odporności i ułatwienia</dt><dd>{profile.defenses.join(' ') || 'Brak stałych wpisów'}</dd></div>
       {profile.hpBonus > 0 && <div><dt>Premia do maksymalnych PW</dt><dd>+{profile.hpBonus} z gatunku / atutu Tough</dd></div>}
     </dl>
+    {profile.swimSpeed !== null && <p>Szybkość pływania: {profile.swimSpeed} stóp, równa Szybkości. Warunki oddychania opisuje przyznająca ją zdolność.</p>}
+    {profile.originFeatEntries.length > 0 && <section aria-label="Efekty atutów pochodzenia"><h4>Origin Feats — efekty na karcie</h4>
+      {profile.originFeatEntries.map(entry => <article className="trait-details" key={entry.name}>
+        <h4><a href={entry.url} target="_blank" rel="noreferrer">{entry.name} ↗</a></h4><small>{entry.source} · {entry.group}</small>
+        <p>{formatDice(entry.description)}</p>{entry.details.map(detail => <p key={detail}>{formatDice(detail)}</p>)}
+        {entry.spellAbility && <p>Cecha czarowania: {definitions.abilities.find(a => a.id === entry.ability)?.label ?? 'Do wyboru'}{entry.spellAttack !== null && ` · Atak ${entry.spellAttack >= 0 ? '+' : ''}${entry.spellAttack} · ST ${entry.spellDc}`}</p>}
+        {entry.spells.length > 0 && <ul>{entry.spells.map(spell => <li key={spell.id}><a href={spell.url} target="_blank" rel="noreferrer">{spell.name}</a> · {spell.level === 0 ? 'sztuczka' : `${spell.level}. krąg`}</li>)}</ul>}
+      </article>)}
+    </section>}
+    {profile.invocationEntries.length > 0 && <section aria-label="Efekty wybranych inwokacji"><h4>Wybrane inwokacje — efekty na karcie</h4>
+      {profile.invocationEntries.map(entry => <article className="trait-details" key={entry.id}>
+        <h4><a href={entry.url} target="_blank" rel="noreferrer">{entry.name} ↗</a></h4><small>{entry.source}</small>
+        <p>{formatDice(entry.description)}</p>{entry.details.map(detail => <p key={detail}>{formatDice(detail)}</p>)}
+        {entry.spells.length > 0 && <ul>{entry.spells.map(spell => <li key={spell.id}><a href={spell.url} target="_blank" rel="noreferrer">{spell.name}</a> · {spell.level === 0 ? 'sztuczka' : `${spell.level}. krąg`}</li>)}</ul>}
+      </article>)}
+    </section>}
     {error && <div className="form-error" role="alert"><p>{error}</p>{onChange && <button className="text-button" type="button" onClick={() => onChange(emptyTraitSelection())}>Wyczyść wybory i dostosuj je do obecnej postaci</button>}</div>}
     {incomplete.length > 0 && <p className="statistics-help">Do uzupełnienia: {incomplete.map(group => `${group.label} (${selected[group.id]?.length ?? 0}/${group.limit})`).join(' · ')}{!onChange && '. Otwórz edycję, aby dokonać wyborów.'}</p>}
     {onChange && <div className="trait-choice-grid">{profile.groups.map(group => {

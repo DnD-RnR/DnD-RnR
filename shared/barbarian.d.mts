@@ -1,0 +1,10 @@
+export type RageProfile = { max: number; damage: number; dangerSense: boolean; recklessAttack: boolean; primalKnowledge: boolean; instinctivePounce: boolean; relentless: boolean; persistent: boolean };
+type BarbarianFighter = { rage?: unknown; rageProfile?: Partial<RageProfile>; incapacitated?: boolean; unconscious?: boolean; hp: number; recklessActive?: boolean };
+export function barbarianSaveAdvantage(fighter: BarbarianFighter, ability: string | undefined): boolean;
+export function barbarianAttackAdvantage(actor: Pick<BarbarianFighter, 'recklessActive'>, target: Pick<BarbarianFighter, 'recklessActive'> | undefined, ability?: string): boolean;
+export const dangerSenseDescription: string;
+export const recklessAttackDescription: string;
+export function rageProfile(character: { class: string; level: number }): RageProfile;
+export function rageDescription(character: { class: string; level: number }): string;
+export const primalSkills: string[];
+export const rageDamageTypes: string[];

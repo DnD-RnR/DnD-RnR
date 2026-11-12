@@ -1,3 +1,9 @@
+import { handlePaladin, syncDivineSense } from './paladin.mjs';
+import { handleDruid, syncWildShapes, applyWildShape } from './druid.mjs';
+import { druidProfile, druidForms } from '../shared/druid.mjs';
+import { handleFighter, prepareSurgeAction, finishSurgeAction } from './fighter.mjs';
+import { rageProfile, rageDamageTypes, barbarianAttackAdvantage } from '../shared/barbarian.mjs';
+import { handleBarbarian, syncRage, extendRage, endRage, recordAttackRoll } from './barbarian.mjs';
 import { randomUUID } from 'node:crypto';
 import { statisticsSummary } from './statistics-summary.mjs';
 import { emptyStatistics } from './statistics.mjs';
@@ -10,7 +16,7 @@ const int = (n, min, max) => Number.isInteger(n) && n >= min && n <= max;
 const requireValue = (ok, message) => { if (!ok) throw new Error(message); };
 const fresh = f => {
   if (f.shieldAC) { f.ac -= f.shieldAC; f.shieldAC = 0; }
-  return Object.assign(f, { action: '', bonus: '', reaction: '', reactionDeferred: false, moved: 0, extraMove: 0, attacksLeft: 0, usedWeapons: [], dodge: false });
+  return Object.assign(f, { action: '', bonus: '', reaction: '', reactionDeferred: false, moved: 0, pounceMoved: 0, extraMove: 0, attacksLeft: 0, usedWeapons: [], lightExtraUsed: false, dodge: false, attackRollMade: false, recklessActive: false, actionSurgeUsedThisTurn: false, surgeAction: null, surgeAttacksLeft: 0, lastAbilityCheck: null });
 };
 const clearProtection = (b, protectorId) => b.fighters.forEach(f => {
   if (Array.isArray(f.protectedBy)) {
@@ -49,14 +55,14 @@ function characterFighter(db, sessionId, memberId) {
     const dice = versatile ?? item.damage.match(/(\d+)d(\d+)/);
     const offHand = item.slot === 'off-hand';
     const weapon = { ...item, properties };
-    const weaponDamageBonus = offHand ? (dice ? 0 : Number(item.damage) || 0) : mod + (dice ? 0 : Number(item.damage) || 0);
-    attacks.push({ id: String(item.itemId), name: item.name, bonus: mod + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(stats.choices?.fightingStyle, weapon), dice: dice ? Number(dice[1]) : 0,
+    const weaponDamageBonus = offHand ? Math.min(0, mod) + (dice ? 0 : Number(item.damage) || 0) : mod + (dice ? 0 : Number(item.damage) || 0);
+    attacks.push({ ability: finesse ? (strength >= dex ? 'str' : 'dex') : item.type === 'dystansowa' ? 'dex' : 'str', finesse, strengthBonus: strength == null ? null : strength + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(stats.choices?.fightingStyle, weapon), strengthDamageBonus: (offHand ? Math.min(0, strength) : strength) + (dice ? 0 : Number(item.damage) || 0) + fightingStyleDamageBonus(stats.choices?.fightingStyle, weapon, equippedWeapons, strength ?? 0), id: String(item.itemId), name: item.name, bonus: mod + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(stats.choices?.fightingStyle, weapon), dice: dice ? Number(dice[1]) : 0,
       sides: dice ? Number(dice[2]) : 0, damageBonus: weaponDamageBonus + fightingStyleDamageBonus(stats.choices?.fightingStyle, weapon, equippedWeapons, mod), type: item.damage_type,
-      light: properties.includes('lekka'), offHand, nick: item.mastery === 'Nick', disadvantage: Boolean(s.d20StrengthDexDisadvantage || (properties.includes('ciężka') && (stats.values[item.type === 'dystansowa' ? 'dex' : 'str'] ?? 0) < 13)) });
+      light: properties.includes('lekka'), offHand, nick: item.mastery === 'Nick' && (stats.choices?.weaponMastery ?? []).includes(item.id), disadvantage: Boolean(s.d20StrengthDexDisadvantage || (properties.includes('ciężka') && (stats.values[item.type === 'dystansowa' ? 'dex' : 'str'] ?? 0) < 13)) });
   }
   if (s.abilities.str.modifier !== null) {
     const unarmed = unarmedStrikeProfile(stats.choices?.fightingStyle, equippedWeapons, equipment.some(item => item.equipped && item.armorCategory === 'shield'), s.abilities.str.modifier, traits.feats.includes('Tavern Brawler'));
-    attacks.push({ id: 'unarmed', name: 'Cios bez broni', bonus: s.abilities.str.modifier + s.proficiency, ...unarmed, type: 'obuchowe', light: false });
+    attacks.push({ id: 'unarmed', ability: 'str', name: 'Cios bez broni', bonus: s.abilities.str.modifier + s.proficiency, ...unarmed, type: 'obuchowe', light: false });
   }
   const baseClass = c.class.split(' ')[0];
   const maxAttacks = baseClass === 'Fighter' || c.class.includes('Fighter') ? c.level >= 20 ? 4 : c.level >= 11 ? 3 : c.level >= 5 ? 2 : 1
@@ -64,9 +70,13 @@ function characterFighter(db, sessionId, memberId) {
   const secondWindMax = secondWindMaximum(c);
   const resources = resourceState(db, c.id);
   const speciesResources = speciesResourceState(db, c.id, c);
-  return fresh({ id: randomUUID(), name: c.name, memberId, characterId: c.id, ownerId: c.user_id, level: c.level, hp: s.hp, maxHp: s.maxHp, tempHp: s.tempHp ?? 0,
+  const fighter = fresh({ id: randomUUID(), name: c.name, memberId, characterId: c.id, ownerId: c.user_id, level: c.level, hp: s.hp, maxHp: s.maxHp, tempHp: s.tempHp ?? 0,
     ac: s.ac, speed: s.speed ?? 0, saves: s.savingThrows, notes: '', attacks, maxAttacks, concentration: resourceState(db, c.id).concentration ?? null,
-    secondWindUses: secondWindMax ? resources.secondWindUses ?? secondWindMax : 0, secondWindMax,
+    divineSense: resources.divineSense?.expiresAt > Date.now() ? resources.divineSense : null,
+    wildShapeUses: Math.min(druidProfile(c).max, resources.wildShapeUses ?? druidProfile(c).max), wildCompanion: resources.wildCompanion ?? null,
+    rageProfile: rageProfile(c), rageUses: Math.min(rageProfile(c).max, resources.rageUses ?? rageProfile(c).max), relentlessRageDC: resources.relentlessRageDC ?? 10, rageRecoveryOffered: rageProfile(c).persistent && resources.persistentRageAvailable !== false,
+    secondWindUses: secondWindMax ? Math.min(secondWindMax, resources.secondWindUses ?? secondWindMax) : 0, secondWindMax,
+    actionSurgeMax: secondWindMax && c.level >= 2 ? 1 : 0, actionSurgeUses: secondWindMax && c.level >= 2 ? Math.min(1, resources.actionSurgeUses ?? 1) : 0,
     adrenalineRushUses: speciesResources.adrenalineRushUses, adrenalineRushMax: speciesResources.maxAdrenalineRush,
     relentlessEnduranceAvailable: speciesResources.relentlessEnduranceAvailable,
     breathWeaponUses: speciesResources.breathWeaponUses, breathWeaponMax: speciesResources.maxBreathWeapon,
@@ -78,6 +88,9 @@ function characterFighter(db, sessionId, memberId) {
     draconicFlightAvailable: speciesResources.draconicFlightAvailable,
     protectionAvailable: stats.choices?.fightingStyle === 'protection' && equipment.some(item => item.equipped && item.armorCategory === 'shield'),
     deathSuccesses: s.deathSuccesses ?? 0, deathFailures: s.deathFailures ?? 0 });
+  const form = druidForms.find(form => form.id === resources.wildShape?.formId);
+  if (druidProfile(c).max && form && resources.wildShape.expiresAt > Date.now()) applyWildShape(fighter, form, c, stats, resources.wildShape);
+  return fighter;
 }
 function persistVitals(db, f) {
   if (!f.characterId) return;
@@ -87,7 +100,7 @@ function persistVitals(db, f) {
     ON CONFLICT(character_id) DO UPDATE SET data = excluded.data`).run(f.characterId, JSON.stringify(stats));
 }
 function damage(db, f, amount, critical = false, damageType = null) {
-  if (damageType && f.damageResistance === damageType) amount = Math.floor(amount / 2);
+  if (damageType && (f.damageResistance === damageType || f.rage && rageDamageTypes.includes(damageType.toLowerCase()))) amount = Math.floor(amount / 2);
   f.damageTaken = (f.damageTaken ?? Math.max(0, f.maxHp - f.hp)) + amount;
   const before = f.hp;
   const absorbed = Math.min(f.tempHp, amount);
@@ -97,7 +110,7 @@ function damage(db, f, amount, critical = false, damageType = null) {
   f.lastDamage = { amount, hpBefore: before, tempHpAbsorbed: absorbed, hpLost: Math.min(before, remaining), excess };
   f.overkillDamage = (f.overkillDamage ?? 0) + excess;
   f.hp = Math.max(0, f.hp - remaining);
-  if (f.characterId && before > 0 && f.hp === 0 && f.relentlessEnduranceAvailable) {
+  if (f.characterId && before > 0 && f.hp === 0 && f.relentlessEnduranceAvailable && excess < f.maxHp) {
     f.hp = 1;
     f.relentlessEnduranceAvailable = false;
     const state = resourceState(db, f.characterId);
@@ -111,7 +124,11 @@ function damage(db, f, amount, critical = false, damageType = null) {
     f.deathFailures = Math.min(3, f.deathFailures + (critical ? 2 : 1));
   }
   if (f.characterId && remaining - before >= f.maxHp) f.deathFailures = 3;
-  if (f.hp === 0) f.dodge = false;
+  if (f.hp === 0) {
+    f.dodge = false;
+    if (before > 0 && f.rage && f.rageProfile?.relentless && f.deathFailures < 3 && f.saves.con != null) f.relentlessRagePending = { dc: f.relentlessRageDC ?? 10 };
+    else endRage(f);
+  }
   if (f.concentration && amount > 0) {
     if (f.hp === 0) {
       f.concentration = null; f.concentrationDC = null; f.concentrationChecks = [];
@@ -168,7 +185,7 @@ export function handleBattles(db, user, path, method, body, send) {
       fighters: battle.fighters.map(f => !gm && !f.characterId ? {
         id: f.id, name: f.name, hidden: true, attackDisadvantage: Boolean(f.dodge),
         damageTaken: f.damageTaken ?? Math.max(0, f.maxHp - f.hp),
-      } : { ...f, ...(f.characterId && (gm || f.ownerId === user.id) ? { spellcasting: publicCaster(db, f.characterId) } : {}) }),
+      } : { ...f, divineSense: f.divineSense?.expiresAt > Date.now() && f.hp > 0 && !f.incapacitated && !f.unconscious && !(f.deathFailures >= 3) ? f.divineSense : null, ...(f.characterId && (gm || f.ownerId === user.id) ? { spellcasting: publicCaster(db, f.characterId) } : {}) }),
       pending: !gm && battle.pending && !battle.fighters.find(f => f.id === battle.pending.actorId)?.characterId
         ? { kind: 'waiting', actorId: battle.pending.actorId } : !gm && battle.pending?.kind === 'spell'
           ? { ...battle.pending, targets: battle.pending.targets.map(({ multiplier, ...target }) => target) } : battle.pending,
@@ -210,21 +227,38 @@ export function handleBattles(db, user, path, method, body, send) {
     } else {
       requireValue(battle?.active, 'Walka nie trwa.');
       const b = battle, current = b.fighters[b.turn];
+      syncRage(db, b);
+      syncWildShapes(db, b);
+      syncDivineSense(db, b);
+      requireValue(!b.fighters.some(f => f.relentlessRagePending) || action === 'act' && body.kind === 'relentless-rage', 'Najpierw rozstrzygnij Relentless Rage.');
       if (action === 'end') { requireValue(gm, 'Tylko GM może zakończyć walkę.'); requireValue(!b.fighters.some(f => f.concentrationDC), 'Najpierw rozstrzygnij rzuty koncentracji.'); b.active = false; b.pending = null; b.suspendedAction = null; log(b, 'GM zakończył walkę.'); }
       else if (action === 'next') {
+        b.fighters.forEach(f => { f.lastAbilityCheck = null; });
         requireValue(!b.fighters.some(f => f.concentrationDC), 'Najpierw rozstrzygnij rzuty koncentracji.');
         requireValue(gm || (current.ownerId === user.id && activeMember(db, session.id, current)), 'To nie jest twoja tura.');
         requireValue(!b.pending || gm, 'Najpierw rozstrzygnij rozpoczęte działanie.');
         b.pending = null;
         b.suspendedAction = null;
         if (current.mockery && current.mockery.expiresRound <= b.round) current.mockery = null;
+        if (current.rage && !current.rageProfile.persistent && b.round >= current.rage.expiresRound) { endRage(current); log(b, `${current.name}: Szał wygasł.`); }
+        current.rageRecoveryOffered = false;
         b.slotCasters = [];
         if (++b.turn === b.fighters.length) { b.turn = 0; b.round++; }
         clearProtection(b, b.fighters[b.turn].id);
         fresh(b.fighters[b.turn]); log(b, `Runda ${b.round}: tura ${b.fighters[b.turn].name}.`);
       } else {
         const kind = body.kind;
-        if (handleCombatSpell({ db, user, gm, b, body, canControl, activeMember, damage, persistVitals, log })) {
+        if (kind !== 'tactical-mind') b.fighters.forEach(f => { f.lastAbilityCheck = null; });
+        const surgeState = prepareSurgeAction(b, body, canControl);
+        if (handleFighter({ db, b, body, canControl, activeMember, log })) {
+          // Fighter resources use the same transaction as the battle.
+        } else if (handlePaladin({ db, b, body, canControl, activeMember, persistVitals, log })) {
+          // Paladin resources share the battle transaction.
+        } else if (handleDruid({ db, b, body, canControl, activeMember, persistVitals, log })) {
+          // Druid resources share the battle transaction.
+        } else if (handleBarbarian({ db, b, body, gm, canControl, activeMember, persistVitals, log })) {
+          // Barbarian actions share the battle transaction.
+        } else if (handleCombatSpell({ db, user, gm, b, body, canControl, activeMember, damage, persistVitals, log })) {
           // The spell handler shares this action's SQL savepoint and cloud commit.
         } else if (kind === 'resolve') {
           requireValue(gm && (!b.pending || b.pending.kind === 'request'), 'Najpierw rozlicz trafienie.');
@@ -248,7 +282,7 @@ export function handleBattles(db, user, path, method, body, send) {
             else actor.deathFailures = Math.min(3, actor.deathFailures + (body.roll === 1 ? 2 : 1));
             actor.action = body.roll === 20 ? '' : 'Rzut przeciw śmierci'; persistVitals(db, actor); log(b, `${actor.name}: rzut przeciw śmierci ${body.roll}.`);
           } else {
-            requireValue(actor.hp > 0 && actor.deathFailures < 3, 'Ten uczestnik nie może teraz działać.');
+            requireValue(actor.hp > 0 && actor.deathFailures < 3 && !actor.incapacitated && !actor.unconscious, 'Ten uczestnik nie może teraz działać.');
             if (kind === 'protection') {
               requireValue(!b.pending && actor.protectionAvailable && !actor.reaction && body.targetId, 'Protection wymaga dostępnej reakcji, tarczy i wybranego celu.');
               const target = b.fighters.find(f => f.id === body.targetId);
@@ -264,7 +298,7 @@ export function handleBattles(db, user, path, method, body, send) {
               requireValue(Array.isArray(body.rolls) && body.rolls.length === count && body.rolls.every(n => int(n, 1, p.attack.sides)), 'Podaj wynik każdej kości obrażeń.');
               const amount = Math.max(0, body.rolls.reduce((sum, n) => sum + n, 0) + p.attack.damageBonus);
               const target = b.fighters.find(f => f.id === p.targetId);
-              damage(db, target, amount, p.critical); log(b, `${actor.name} → ${target.name}: ${amount} obrażeń (${p.attack.type}).`); b.pending = null;
+              damage(db, target, amount, p.critical, p.attack.type); log(b, `${actor.name} → ${target.name}: ${amount} obrażeń (${p.attack.type}).`); b.pending = null;
             } else {
               requireValue(!b.pending, 'Najpierw rozstrzygnij rozpoczęte działanie.');
               if (kind === 'move') {
@@ -277,25 +311,37 @@ export function handleBattles(db, user, path, method, body, send) {
                 if (!actor.characterId) {
                   requireValue(gm && body.attack && typeof body.attack.name === 'string' && body.attack.name.trim() && body.attack.name.length <= 80 && int(body.attack.bonus, -30, 40)
                     && int(body.attack.dice, 0, 20) && int(body.attack.sides, 0, 100) && (body.attack.dice === 0 || body.attack.sides >= 2) && int(body.attack.damageBonus, -30, 100), 'Podaj parametry ataku potwora.');
-                  attack = { ...body.attack, type: 'wg opisu potwora', light: false };
+                  requireValue(body.attack.type == null || typeof body.attack.type === 'string' && body.attack.type.length <= 40, 'Podaj typ obrażeń.');
+                  attack = { ...body.attack, type: body.attack.type || 'wg opisu potwora', ability: null, light: false };
                 }
                 requireValue(attack, 'Wybierz dostępną broń.');
+                if (body.ability === 'str') {
+                  requireValue(attack.finesse && attack.strengthBonus != null, 'Ta broń nie pozwala wybrać Siły.');
+                  attack = { ...attack, ability: 'str', bonus: attack.strengthBonus, damageBonus: attack.strengthDamageBonus };
+                }
                 if (slot === 'bonus') {
                   requireValue(actor.characterId, 'Atak bonusowy potwora wymaga konkretnej zdolności. Rozstrzygnij ją jako zdolność specjalną GM.');
                   requireValue(!actor.bonus && attack.offHand && attack.light && actor.usedWeapons.some(id => id !== attack.id && actor.attacks.find(a => a.id === id)?.light), 'Brak dostępnego ataku bonusowego inną lekką bronią.');
-                  if (actor.characterId) attack = { ...attack, damageBonus: Math.min(0, attack.damageBonus) };
+                  requireValue(!actor.lightExtraUsed, 'Dodatkowy atak Light został już wykorzystany.');
+                  actor.lightExtraUsed = true;
                   actor.bonus = 'Atak';
                 } else {
-                  requireValue(!actor.action || actor.action === 'Atak' && actor.attacksLeft > 0, 'Akcja została wykorzystana.');
+                  const nickExtra = !actor.lightExtraUsed && attack.nick && attack.light && attack.offHand
+                    && actor.usedWeapons.some(id => id !== attack.id && actor.attacks.find(a => a.id === id)?.light);
+                  requireValue(!actor.action || actor.action === 'Atak' && (actor.attacksLeft > 0 || nickExtra), 'Akcja została wykorzystana.');
                   if (!actor.action) actor.attacksLeft = actor.maxAttacks;
-                  actor.action = 'Atak'; actor.attacksLeft--; actor.usedWeapons.push(attack.id);
-                  const nickExtraAvailable = attack.light && actor.attacks.some(a => a.id !== attack.id && a.offHand && a.light && (a.nick || attack.nick));
-                  if (actor.usedWeapons.length === 1 && nickExtraAvailable) actor.attacksLeft++;
+                  actor.action = 'Atak';
+                  if (nickExtra) actor.lightExtraUsed = true;
+                  else actor.attacksLeft--;
+                  actor.usedWeapons.push(attack.id);
                 }
                 const target = b.fighters.find(f => f.id === body.targetId);
                 requireValue(target && target.id !== actor.id && target.deathFailures < 3, 'Wybierz cel ataku.');
+                if (actor.rage && attack.ability === 'str') attack = { ...attack, damageBonus: attack.damageBonus + actor.rageProfile.damage };
+                if (Boolean(actor.characterId) !== Boolean(target.characterId)) extendRage(b, actor);
                 const disadvantage = Boolean(attack.disadvantage || target.dodge || target.attackDisadvantage || body.disadvantage || actor.mockery);
-                const advantage = Boolean(body.advantage);
+                recordAttackRoll(b, actor, body, log);
+                const advantage = Boolean(body.advantage || barbarianAttackAdvantage(actor, target, attack.ability));
                 requireValue(int(body.roll, 1, 20) && (disadvantage === advantage || int(body.roll2, 1, 20)), 'Podaj wynik k20; przy ułatwieniu lub utrudnieniu podaj dwie kości.');
                 const roll = disadvantage === advantage ? body.roll : disadvantage ? Math.min(body.roll, body.roll2) : Math.max(body.roll, body.roll2);
                 actor.mockery = null;
@@ -336,6 +382,7 @@ export function handleBattles(db, user, path, method, body, send) {
                 requireValue(body.slot === 'action' && !actor.action, 'Broń Oddechowa wymaga dostępnej akcji.');
                 requireValue(actor.breathWeaponUses > 0, 'Brak dostępnych użyć Broni Oddechowej.');
                 actor.action = 'Broń Oddechowa';
+                extendRage(b, actor);
                 actor.breathWeaponUses--;
                 const state = resourceState(db, actor.characterId);
                 state.breathWeaponUses = actor.breathWeaponUses;
@@ -374,6 +421,7 @@ export function handleBattles(db, user, path, method, body, send) {
             }
           }
         }
+        finishSurgeAction(current, surgeState);
       }
     }
     if (battle.active && !battle.pending && battle.suspendedAction) {
@@ -384,6 +432,9 @@ export function handleBattles(db, user, path, method, body, send) {
       else battle.pending = p;
       battle.suspendedAction = null;
     }
+    syncRage(db, battle);
+    syncWildShapes(db, battle);
+    syncDivineSense(db, battle);
     removeDeadMonsters(battle);
     if (!battle.active && !battle.summary) battle.summary = {
       endedAt: Date.now(), rounds: battle.round,

@@ -1,7 +1,12 @@
+import { druidForms } from './druid.mjs';
 import data from './trait-data.json' with { type: 'json' };
 import options from './trait-options.json' with { type: 'json' };
 import definitions from './statistics.json' with { type: 'json' };
 import { crafterDescription, crafterTools } from './crafter.mjs';
+import { invocationCount, invocationOptions, tomeOptions } from './warlock-invocations.mjs';
+import { invocationSheet } from './warlock-invocation-effects.mjs';
+import { eligibleOriginFeats, originFeats, originFeatSheet } from './origin-feats.mjs';
+import spellCatalog from './spell-catalog.json' with { type: 'json' };
 
 export const emptyTraitSelection = () => ({});
 export const dragonbornAncestries = [
@@ -50,6 +55,10 @@ export function characterTraits(character, stats) {
   const languages = new Set(['common']);
   const tools = new Set();
   const feats = new Set(bg ? [bg.Feat] : []);
+  const invocationEntries = invocationSheet(character, stats);
+  const invocationIds = new Set(invocationEntries.map(i => i.id));
+  const invocationFeats = invocationEntries.filter(i => i.id.startsWith('lessons-of-the-first-ones:')).map(i => i.id.split(':')[1]);
+  invocationFeats.forEach(feat => feats.add(feat));
   const groups = [];
   const sourceLabels = Object.fromEntries(backgroundSkills.map(id => [id, `Pochodzenie: ${bg.name}`]));
   if (classId === 'druid') languages.add('druidic');
@@ -74,11 +83,18 @@ export function characterTraits(character, stats) {
     }
   };
   const skillGroup = (id, label, limit, ids = definitions.skills.map(skill => skill.id)) => group(id, label, limit, skillOptions.filter(skill => ids.includes(skill.id) && !skills[skill.id]), 'skill');
+  if (classId === 'druid' && level >= 2) group('druidForms', 'Wild Shape — znane formy', 4, druidForms.map(f => ({ id: f.id, label: f.name })), 'form');
+  if (classId === 'warlock') group('invocations', 'Eldritch Invocations', invocationCount(character), invocationOptions(character, stats), 'invocation');
+  if (invocationIds.has('pact-of-the-tome')) {
+    const spells = tomeOptions(character, stats);
+    group('tomeCantrips', 'Pact of the Tome — sztuczki w księdze', 3, spells.filter(s => s.level === 0).map(s => ({ id: s.id, label: s.name })), 'spell');
+    group('tomeRituals', 'Pact of the Tome — rytuały 1. kręgu', 2, spells.filter(s => s.level === 1).map(s => ({ id: s.id, label: s.name })), 'spell');
+  }
   const toolGroup = (id, label, limit, names) => group(id, label, limit, namedOptions(names.filter(name => !tools.has(name))), 'tool');
   group('languages', 'Dwa języki początkowe', 2, options.languages.filter(language => language.standard && !languages.has(language.id)), 'language');
   if (species === 'Człowiek (Human)') {
     skillGroup('humanSkill', 'Human — Skillful', 1);
-    group('humanFeat', 'Human — Versatile: atut pochodzenia', 1, namedOptions(options.originFeats.filter(name => name !== bg?.Feat || name === 'Skilled')), 'feat');
+    group('humanFeat', 'Human — Versatile: atut pochodzenia', 1, namedOptions(eligibleOriginFeats(character).map(f => f.name).filter(name => name !== bg?.Feat || name === 'Skilled')), 'feat');
     group('humanSize', 'Human — rozmiar', 1, [{ id: 'medium', label: 'Średni (Medium)' }, { id: 'small', label: 'Mały (Small)' }], 'size');
   }
   if (species === 'Elf') skillGroup('elfSkill', 'Elf — Keen Senses', 1, ['insight', 'perception', 'survival']);
@@ -119,13 +135,30 @@ export function characterTraits(character, stats) {
   if (character.subclass === 'College of Lore' && level >= 3) skillGroup('loreSkills', 'College of Lore — Bonus Proficiencies', 3);
   if (character.subclass === 'Fey Wanderer' && level >= 3) skillGroup('feySkill', 'Fey Wanderer — Otherworldly Glamour', 1, ['deception', 'performance', 'persuasion']);
   if (character.subclass === 'Assassin' && level >= 3) { tools.add('Disguise Kit'); tools.add("Poisoner's Kit"); }
-  const skilledCount = (bg?.Feat === 'Skilled' ? 1 : 0) + ((chosen.humanFeat ?? []).includes('Skilled') && species === 'Człowiek (Human)' ? 1 : 0);
+  const skilledCount = (bg?.Feat === 'Skilled' ? 1 : 0) + ((chosen.humanFeat ?? []).includes('Skilled') && species === 'Człowiek (Human)' ? 1 : 0) + (invocationFeats.includes('Skilled') ? 1 : 0);
   if (skilledCount) group('skilled', 'Skilled — umiejętności lub narzędzia', 3 * skilledCount, [
     ...skillOptions.filter(skill => !skills[skill.id]).map(skill => ({ ...skill, id: `skill:${skill.id}` })),
     ...namedOptions([...options.artisanTools, ...options.instruments, ...options.gamingSets, ...options.otherTools].filter(name => !tools.has(name))).map(tool => ({ id: `tool:${tool.id}`, label: tool.label })),
   ], 'mixed');
   if (feats.has('Crafter')) toolGroup('crafter', 'Crafter — trzy narzędzia rzemieślnicze', 3, crafterTools);
   if (feats.has('Musician')) toolGroup('musician', 'Musician — trzy instrumenty', 3, options.instruments);
+  if (feats.has('Harper Agent')) {
+    languages.add('thieves-cant');
+    toolGroup('harperInstrument', 'Harper Agent — instrument', 1, options.instruments);
+  }
+  if (feats.has('Cult of the Dragon Initiate')) {
+    if (languages.has('draconic')) group('dragonCultLanguage', 'Cult of the Dragon — dodatkowy język', 1, options.languages.filter(l => !languages.has(l.id)), 'language');
+    else languages.add('draconic');
+  }
+  if (feats.has('Purple Dragon Rook')) skillGroup('purpleDragonSkill', 'Purple Dragon Rook — umiejętność', 1, ['insight', 'performance', 'persuasion']);
+  if (feats.has('Portal Jumper')) group('portalResistance', 'Portal Jumper — odporność', 1, namedOptions(['Necrotic', 'Psychic', 'Radiant']), 'resistance');
+  for (const f of originFeats.filter(f => feats.has(f.name))) {
+    const key = `origin:${f.name}`;
+    if (f.spellAbility) group(`${key}:ability`, `${f.name} — cecha czarowania`, 1, [{ id: 'int', label: 'Inteligencja' }, { id: 'wis', label: 'Mądrość' }, { id: 'cha', label: 'Charyzma' }], 'ability');
+    const spellOptions = spellCatalog.spells.filter(s => f.list ? s.classes.includes(f.list) : f.cantrips?.includes(s.id));
+    if (f.list || f.cantrips) group(`${key}:cantrips`, `${f.name} — sztuczki`, f.list ? 2 : 1, spellOptions.filter(s => s.level === 0).map(s => ({ id: s.id, label: s.name })), 'spell');
+    if (f.list) group(`${key}:spell`, `${f.name} — czar 1. kręgu`, 1, spellOptions.filter(s => s.level === 1).map(s => ({ id: s.id, label: s.name })), 'spell');
+  }
   let expertise = classId === 'rogue' ? level >= 6 ? 4 : 2 : classId === 'bard' && level >= 2 ? level >= 9 ? 4 : 2 : classId === 'ranger' && level >= 2 ? level >= 9 ? 3 : 1 : 0;
   if (classId === 'wizard' && level >= 2) expertise = 1;
   if (expertise) {
@@ -206,6 +239,7 @@ export function characterTraits(character, stats) {
   }
   const features = [...new Map([...classFeatures, ...subclassFeatures, ...lineageFeatures].map(feature => [`${feature.source}:${feature.name}`, feature])).values()];
   const originFeatDescriptions = {};
+  for (const f of originFeats.filter(f => feats.has(f.name))) originFeatDescriptions[f.name] = f.description;
   if (feats.has('Crafter')) Object.assign(originFeatDescriptions, {
     'Biegłość w narzędziach': crafterDescription.toolProficiency,
     Rabat: crafterDescription.discount,
@@ -219,12 +253,20 @@ export function characterTraits(character, stats) {
   });
   const darkvision = species === 'Krasnolud (Dwarf)' || species === 'Ork (Orc)' ? 120 : ['Aasimar', 'Smokowiec (Dragonborn)', 'Elf', 'Gnom (Gnome)', 'Diabelstwo (Tiefling)'].includes(species) ? 60 : 0;
   const senses = darkvision ? [`Widzenie w ciemności: ${darkvision} stóp (gatunek)`] : [];
+  if (invocationIds.has('devils-sight')) senses.push('Devil’s Sight: normalne widzenie w słabym świetle i ciemności (także magicznej), 120 stóp');
+  if (invocationIds.has('witch-sight')) senses.push('Witch Sight: Truesight, 30 stóp');
   if (classId === 'ranger' && level >= 18) senses.push('Ślepowidzenie: 30 stóp (Feral Senses)');
   const defenses = [];
+  if (feats.has('Portal Jumper') && ['Necrotic', 'Psychic', 'Radiant'].includes(chosen.portalResistance?.[0])) defenses.push(`Portal Jumper: odporność na ${chosen.portalResistance[0]}.`);
+  if (feats.has('Arathi Heritage')) defenses.push('Arathi Heritage: ułatwienie przeciw Charmed.');
+  if (feats.has('Transmuted Anatomy')) defenses.push('Transmuted Anatomy: ułatwienie przeciw wymuszonej przemianie.');
+  if (feats.has('Child of the Sun')) defenses.push('Child of the Sun: ułatwienie przeciw Blinded dla ciebie i sojuszników do 10 stóp.');
+  if (invocationIds.has('eldritch-mind')) defenses.push('Eldritch Mind: ułatwienie rzutów na Kondycję w celu utrzymania koncentracji.');
   if (species === 'Krasnolud (Dwarf)') defenses.push('Odporność na truciznę; ułatwienie rzutów przeciw zatruciu.');
   if (species === 'Aasimar') defenses.push('Odporność na obrażenia nekrotyczne i od światłości.');
   if (species === 'Elf') defenses.push('Ułatwienie rzutów przeciw zauroczeniu; magia nie usypia postaci.');
   if (species === 'Gnom (Gnome)') defenses.push('Ułatwienie rzutów obronnych z Inteligencji, Mądrości i Charyzmy.');
+  if (classId === 'barbarian' && level >= 2) defenses.push('Danger Sense: ułatwienie rzutów obronnych na Zręczność, chyba że jesteś Obezwładniony. Nie wymaga Szału.');
   if (species === 'Smokowiec (Dragonborn)' && ancestry) defenses.push(`Odporność na obrażenia: ${ancestry.damageType}.`);
   if (species === 'Diabelstwo (Tiefling)' && fiendishLegacy) defenses.push(`Odporność na obrażenia: ${fiendishLegacy.damageType}.`);
   const die = Number(cls?.core['Hit Point Die']?.match(/D(\d+)/i)?.[1]) || null;
@@ -234,6 +276,8 @@ export function characterTraits(character, stats) {
   if (classId === 'paladin') resources.push({ name: 'Lay On Hands — pula leczenia', value: String(5 * level) });
   if (classId === 'bard') resources.push({ name: 'Bardic Inspiration — użycia', value: abilityMod(stats, 'cha') === null ? '—' : String(Math.max(1, abilityMod(stats, 'cha'))) });
   return {
+    originFeatEntries: originFeatSheet([...feats], character, stats),
+    invocationEntries, swimSpeed: invocationIds.has('gift-of-the-depths') || feats.has('Child of the Sea') ? (stats.values?.speed ?? (species === 'Goliat (Goliath)' ? 35 : species ? 30 : null)) + (feats.has('Transmuted Anatomy') ? 5 : 0) : null,
     classId, source: cls?.url ?? data.source, groups, skills, effectiveSkills: allSkills,
     savingThrows: [...new Set(savingThrows)], effectiveSavingThrows: [...new Set([...savingThrows, ...(stats.savingThrows ?? [])])],
     skillSources: sourceLabels, skillBonuses, languages: options.languages.filter(language => languages.has(language.id)),
@@ -244,7 +288,7 @@ export function characterTraits(character, stats) {
       : ['Gnom (Gnome)', 'Niziołek (Halfling)'].includes(species) ? 'Small' : species ? 'Medium' : null,
     ancestry, fiendishLegacy,
     goliathAncestry, giantAncestry: goliathAncestry,
-    baseSpeed: species === 'Goliat (Goliath)' ? 35 : species ? 30 : null,
+    baseSpeed: species ? (species === 'Goliat (Goliath)' ? 35 : 30) + (feats.has('Transmuted Anatomy') ? 5 : 0) : null,
     senses, defenses, resources, hpBonus, firstLevelMaxHp: level === 1 && die && con !== null ? Math.max(1, die + con) + hpBonus : null,
     initiativeBonus: feats.has('Alert') ? proficiency : 0,
   };

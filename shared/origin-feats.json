@@ -1,0 +1,355 @@
+[
+  {
+    "id": "alert",
+    "name": "Alert",
+    "source": "PHB 2024",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:alert",
+    "description": "Dodajesz premię biegłości do inicjatywy. Po rzucie możesz zamienić inicjatywę z chętnym sojusznikiem w tej walce, jeśli żadne z was nie jest Obezwładnione.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [],
+    "spellAbility": false
+  },
+  {
+    "id": "arcane-artist",
+    "name": "Arcane Artist",
+    "source": "Arcana Unleashed",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:arcane-artist",
+    "description": "Poznajesz Minor Illusion. Po rzuceniu czaru Iluzji możesz dać Heroic Inspiration widzącemu cię sojusznikowi do 30 stóp; raz na długi odpoczynek.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [
+      "minor-illusion"
+    ],
+    "spellAbility": true,
+    "resource": {
+      "maximum": 1,
+      "rest": "long"
+    }
+  },
+  {
+    "id": "arcane-eloquence",
+    "name": "Arcane Eloquence",
+    "source": "Arcana Unleashed",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:arcane-eloquence",
+    "description": "Poznajesz Vicious Mockery. Do testów CHA (Deception, Intimidation, Persuasion) możesz dodać 1k4.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [
+      "vicious-mockery"
+    ],
+    "spellAbility": true
+  },
+  {
+    "id": "arcane-infiltrator",
+    "name": "Arcane Infiltrator",
+    "source": "Arcana Unleashed",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:arcane-infiltrator",
+    "description": "Poznajesz Friends. Dodge akcją dodatkową: premia biegłości użyć na długi odpoczynek.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [
+      "friends"
+    ],
+    "spellAbility": true,
+    "resource": {
+      "maximum": "proficiency",
+      "rest": "long"
+    }
+  },
+  {
+    "id": "arcane-omens",
+    "name": "Arcane Omens",
+    "source": "Arcana Unleashed",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:arcane-omens",
+    "description": "Poznajesz Guidance. Reakcją po nieudanym rzucie obronnym swoim lub widocznej istoty do 30 stóp dodajesz 1k4, co może zmienić porażkę w sukces. Premia biegłości użyć na długi odpoczynek.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [
+      "guidance"
+    ],
+    "spellAbility": true,
+    "resource": {
+      "maximum": "proficiency",
+      "rest": "long"
+    }
+  },
+  {
+    "id": "arcane-overload",
+    "name": "Arcane Overload",
+    "source": "Arcana Unleashed",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:arcane-overload",
+    "description": "Poznajesz Fire Bolt. Raz na długi odpoczynek dodajesz premię biegłości do jednego rzutu obrażeń rzuconego czaru Evocation.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [
+      "fire-bolt"
+    ],
+    "spellAbility": true,
+    "resource": {
+      "maximum": 1,
+      "rest": "long"
+    }
+  },
+  {
+    "id": "arcane-safeguard",
+    "name": "Arcane Safeguard",
+    "source": "Arcana Unleashed",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:arcane-safeguard",
+    "description": "Poznajesz Resistance. Rzucasz go akcją dodatkową tyle razy na długi odpoczynek, ile wynosi premia biegłości. Help przy teście sojusznika daje mu tymczasowe PW równe premii biegłości.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [
+      "resistance"
+    ],
+    "spellAbility": true,
+    "resource": {
+      "maximum": "proficiency",
+      "rest": "long"
+    }
+  },
+  {
+    "id": "arcane-undertaker",
+    "name": "Arcane Undertaker",
+    "source": "Arcana Unleashed",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:arcane-undertaker",
+    "description": "Poznajesz sztuczkę Necromancy z listy Cleric lub Wizard. Dodajesz 1k4 do INT (History) i WIS (Medicine). Help w celu ustabilizowania istoty na 0 PW daje ci Heroic Inspiration; raz na długi odpoczynek.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [],
+    "spellAbility": true,
+    "resource": {
+      "maximum": 1,
+      "rest": "long"
+    }
+  },
+  {
+    "id": "crafter",
+    "name": "Crafter",
+    "source": "PHB 2024",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:crafter",
+    "description": "Biegłość w trzech narzędziach z tabeli Fast Crafting. Rabat 20% na niemagiczne przedmioty. Po długim odpoczynku, mając narzędzia i biegłość, tworzysz jeden przedmiot z tabeli; rozpada się przy kolejnym długim odpoczynku.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [],
+    "spellAbility": false
+  },
+  {
+    "id": "familiar-friend",
+    "name": "Familiar Friend",
+    "source": "Arcana Unleashed",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:familiar-friend",
+    "description": "Find Familiar zawsze przygotowany: raz na długi odpoczynek bez miejsca i komponentów materialnych; można też używać miejsc. Chowaniec ma +2 PW na poziom postaci do bieżących i maksymalnych PW. Gdy jest do 5 stóp, możesz uzyskać ułatwienie testu biegłej umiejętności; premia biegłości użyć na długi odpoczynek.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [
+      "find-familiar"
+    ],
+    "spellAbility": true,
+    "resource": {
+      "maximum": "proficiency",
+      "rest": "long"
+    }
+  },
+  {
+    "id": "healer",
+    "name": "Healer",
+    "source": "PHB 2024",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:healer",
+    "description": "Akcją Utilize zużywasz użycie Healer’s Kit przy istocie do 5 stóp. Istota wydaje własną kość wytrzymałości; leczysz wynik tej kości + twoją premię biegłości. Przy leczeniu czarem lub tym atutem możesz przerzucić kość z wynikiem 1 i musisz użyć nowego wyniku.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [],
+    "spellAbility": false
+  },
+  {
+    "id": "lucky",
+    "name": "Lucky",
+    "source": "PHB 2024",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:lucky",
+    "description": "Punkty szczęścia równe premii biegłości, odnawiane po długim odpoczynku. Wydaj punkt przy swoim rzucie k20 na ułatwienie albo przy rzucie ataku przeciw tobie na utrudnienie.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [],
+    "spellAbility": false,
+    "resource": {
+      "maximum": "proficiency",
+      "rest": "long"
+    }
+  },
+  {
+    "id": "magic-initiate",
+    "name": "Magic Initiate",
+    "source": "PHB 2024",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:magic-initiate",
+    "description": "Wybierz listę Cleric, Druid lub Wizard: dwie sztuczki i zawsze przygotowany czar 1. kręgu. Wybrany czar rzucasz bez miejsca raz na długi odpoczynek lub ze swoich miejsc. Przy awansie możesz wymienić jeden wybrany czar na inny tego samego kręgu z tej listy. Powtarzalny dla różnych list.",
+    "repeatable": true,
+    "humanOnly": false,
+    "spells": [],
+    "spellAbility": true
+  },
+  {
+    "id": "musician",
+    "name": "Musician",
+    "source": "PHB 2024",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:musician",
+    "description": "Biegłość w trzech instrumentach. Po krótkim lub długim odpoczynku gra na instrumencie, w którym masz biegłość, daje Heroic Inspiration słyszącym cię sojusznikom; ich liczba równa premii biegłości.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [],
+    "spellAbility": false,
+    "resource": {
+      "maximum": "proficiency",
+      "rest": "long"
+    }
+  },
+  {
+    "id": "portal-jumper",
+    "name": "Portal Jumper",
+    "source": "Arcana Unleashed",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:portal-jumper",
+    "description": "Wybierz odporność: Necrotic, Psychic lub Radiant. Raz na turę możesz wydać 15 stóp ruchu na teleportację na wolne widoczne miejsce do 15 stóp. Premia biegłości użyć na długi odpoczynek.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [],
+    "spellAbility": false,
+    "resource": {
+      "maximum": "proficiency",
+      "rest": "long"
+    }
+  },
+  {
+    "id": "savage-attacker",
+    "name": "Savage Attacker",
+    "source": "PHB 2024",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:savage-attacker",
+    "description": "Raz na turę po trafieniu bronią rzuć kośćmi obrażeń broni dwukrotnie i wybierz jeden z wyników.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [],
+    "spellAbility": false
+  },
+  {
+    "id": "sharp-eye",
+    "name": "Sharp Eye",
+    "source": "Ravenloft - The Horrors Within",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:sharp-eye",
+    "description": "Przy Search lub Study możesz uzyskać ułatwienie dowolnego testu tej akcji. Premia biegłości użyć na długi odpoczynek; nieudany test nie zużywa użycia.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [],
+    "spellAbility": false,
+    "resource": {
+      "maximum": "proficiency",
+      "rest": "long"
+    }
+  },
+  {
+    "id": "skilled",
+    "name": "Skilled",
+    "source": "PHB 2024",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:skilled",
+    "description": "Dowolna kombinacja trzech biegłości w umiejętnościach lub narzędziach. Atut można otrzymać wielokrotnie.",
+    "repeatable": true,
+    "humanOnly": false,
+    "spells": [],
+    "spellAbility": false
+  },
+  {
+    "id": "survivor",
+    "name": "Survivor",
+    "source": "Ravenloft - The Horrors Within",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:survivor",
+    "description": "Przy inicjatywie możesz przerzucić k20 z wynikiem 9 lub niższym; musisz użyć nowego wyniku. Po nieudanym rzucie przeciw Charmed lub Frightened możesz reakcją dodać premię biegłości; raz na długi odpoczynek.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [],
+    "spellAbility": false,
+    "resource": {
+      "maximum": 1,
+      "rest": "long"
+    }
+  },
+  {
+    "id": "tavern-brawler",
+    "name": "Tavern Brawler",
+    "source": "PHB 2024",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:tavern-brawler",
+    "description": "Atak bez broni może zadawać 1k4 + STR Bludgeoning. Możesz przerzucać wyniki 1 kości obrażeń bez broni, używając nowego wyniku. Biegłość w broni improwizowanej. Raz na własną turę trafienie bez broni w akcji Ataku może też odepchnąć cel o 5 stóp.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [],
+    "spellAbility": false
+  },
+  {
+    "id": "tough",
+    "name": "Tough",
+    "source": "PHB 2024",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:tough",
+    "description": "Maksymalne PW zwiększają się o 2 na każdy poziom postaci, również kolejne.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [],
+    "spellAbility": false
+  },
+  {
+    "id": "transmuted-anatomy",
+    "name": "Transmuted Anatomy",
+    "source": "Arcana Unleashed",
+    "category": "Origin",
+    "group": "Common",
+    "url": "https://dnd2024.wikidot.com/feat:transmuted-anatomy",
+    "description": "Szybkość +5 stóp. Ułatwienie rzutów przeciw przymusowej zmianie kształtu. Po nieudanym rzucie na KON reakcją dodajesz 1k4; premia biegłości użyć na długi odpoczynek.",
+    "repeatable": false,
+    "humanOnly": false,
+    "spells": [],
+    "spellAbility": false,
+    "resource": {
+      "maximum": "proficiency",
+      "rest": "long"
+    },
+    "speedBonus": 5
+  }
+]

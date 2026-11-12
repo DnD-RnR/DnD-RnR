@@ -8,6 +8,7 @@ import { handleItems } from './items.mjs';
 import { handleWeapons } from './weapons.mjs';
 import { handleArmors } from './armors.mjs';
 import { handleStatistics } from './statistics.mjs';
+import { handleOriginFeats } from './origin-feats.mjs';
 import options from '../shared/character-options.json' with { type: 'json' };
 import { createServer } from 'node:http';
 import { createHash, randomBytes } from 'node:crypto';
@@ -94,6 +95,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
       }
       if (!user) return send(401, { error: 'Zaloguj się, aby kontynuować.' });
       if (handleWeapons(db, user, path, req.method, body, send)) return;
+      if (handleOriginFeats(db, user, path, req.method, body, send)) return;
       if (handleArmors(db, user, path, req.method, body, send)) return;
       const eventsRoute = path.match(/^\/api\/games\/([1-9]\d*)\/events$/);
       if (eventsRoute && req.method === 'GET') {
@@ -127,6 +129,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         const result = db.prepare('INSERT INTO characters (user_id, name, class, level, species, background, subclass) VALUES (?, ?, ?, ?, ?, ?, ?)').run(user.id, name.trim(), characterClass, level, species, background, subclass);
         const stats = emptyStatistics();
         stats.choices = { weaponMastery, fightingStyle: body.fightingStyle ?? '' };
+          if (characterClass.includes('Fighter')) stats.fighterChoices = { styleLevel: level };
         db.prepare('INSERT INTO character_statistics (character_id, data) VALUES (?, ?)').run(Number(result.lastInsertRowid), JSON.stringify(stats));
         return send(201, { id: Number(result.lastInsertRowid) });
       }
@@ -314,6 +317,17 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
           if (!fightingStyleChoicesValid({ class: characterClass, level }, body.fightingStyle ?? '')) return send(400, { error: 'Wybierz poprawny atut Fighting Style.' });
             if (!db.prepare("SELECT id FROM users WHERE id = ? AND role IN ('player', 'gm')").get(userId)) return send(400, { error: 'Nie znaleziono gracza.' });
             db.prepare('DELETE FROM game_members WHERE character_id = ? AND EXISTS (SELECT 1 FROM characters WHERE id = ? AND user_id != ?)').run(id, id, userId);
+            const priorCharacter = db.prepare('SELECT class, level FROM characters WHERE id = ?').get(id);
+            if (priorCharacter?.class.includes('Fighter')) {
+              const storedStats = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(id);
+              if (storedStats) {
+                const stats = JSON.parse(storedStats.data);
+                if (!stats.fighterChoices) {
+                  stats.fighterChoices = { styleLevel: priorCharacter.level };
+                  db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = ?').run(JSON.stringify(stats), id);
+                }
+              }
+            }
             db.prepare('UPDATE characters SET user_id = ?, name = ?, class = ?, level = ?, species = ?, background = ?, subclass = ? WHERE id = ?').run(userId, name.trim(), characterClass, level, species, background, subclass, id);
           }
           return send(200, { ok: true });
@@ -343,6 +357,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
           const result = db.prepare('INSERT INTO characters (user_id, name, class, level, species, background, subclass) VALUES (?, ?, ?, ?, ?, ?, ?)').run(userId, name.trim(), characterClass, level, species, background, subclass);
           const stats = emptyStatistics();
           stats.choices = { weaponMastery, fightingStyle: body.fightingStyle ?? '' };
+          if (characterClass.includes('Fighter')) stats.fighterChoices = { styleLevel: level };
           db.prepare('INSERT INTO character_statistics (character_id, data) VALUES (?, ?)').run(Number(result.lastInsertRowid), JSON.stringify(stats));
           return send(201, { ok: true });
         }

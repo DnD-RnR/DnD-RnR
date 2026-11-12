@@ -1,3 +1,7 @@
+import { paladinResources, restPaladin } from './paladin.mjs';
+import { druidProfile } from '../shared/druid.mjs';
+import { rageProfile } from '../shared/barbarian.mjs';
+import { selectedOriginFeats, originSpellGrants } from '../shared/origin-feats.mjs';
 import { spellcastingProfile, spellById, validateSpellSelection } from '../shared/spellcasting.mjs';
 import { spellEffects, spellAction } from '../shared/combat-spells.mjs';
 import { statisticsSummary } from './statistics-summary.mjs';
@@ -49,7 +53,7 @@ export const speciesResourceState = (db, id, character = null) => {
   };
 };
 export const secondWindMaximum = character => character.class?.includes('Fighter')
-  ? character.level >= 17 ? 5 : character.level >= 10 ? 4 : character.level >= 4 ? 3 : 2
+  ? character.level >= 10 ? 4 : character.level >= 4 ? 3 : 2
   : 0;
 export function saveResources(db, id, state) {
   state.version++;
@@ -68,16 +72,18 @@ export function casterData(db, id) {
   const state = resourceState(db, id), s = statisticsSummary(character, stats, equipment);
   const slots = profile.pactSlotLevel ? [] : profile.slots.map((total, i) => ({ level: i + 1, total, remaining: Math.max(0, total - (state.spent[i] ?? 0)), source: 'slot' })).filter(s => s.total);
   if (profile.pactSlotLevel) slots.push({ level: profile.pactSlotLevel, total: profile.slots[0], remaining: Math.max(0, profile.slots[0] - state.pactSpent), source: 'pact' });
+  const originGrants = originSpellGrants(selectedOriginFeats(character, stats.traits), stats.traits);
   const spells = [...ids].map(id => spellById.get(id)).filter(Boolean).map(spell => {
     const arcanum = profile.groups.find(g => g.id.startsWith('arcanum') && stats.spells.selections[g.id]?.includes(spell.id));
-    return { ...spell, action: spellAction(spell), effect: spellEffects[spell.id] ?? null, arcanum: Boolean(arcanum), arcanumRemaining: arcanum ? !state.arcanum[spell.id] : false };
+    const origin = originGrants.find(g => g.id === spell.id);
+    return { ...spell, originAbility: origin?.ability, originFreeCast: originGrants.some(g => g.id === spell.id && g.freeCast && !state.originSpellUses?.[g.reason]), action: spellAction(spell), effect: spellEffects[spell.id] ?? null, arcanum: Boolean(arcanum), arcanumRemaining: arcanum ? !state.arcanum[spell.id] : false };
   });
   const species = speciesResourceState(db, id, character);
   return { character, stats, profile, state, blocked: s.spellcastingBlocked, ability: s.abilities[profile.ability]?.modifier ?? null, attack: s.spellAttack, dc: s.spellDc, slots, spells, species, error };
 }
 export function publicCaster(db, id) {
   const c = casterData(db, id);
-  return { slots: c.slots, spells: c.spells, ability: c.ability, attack: c.attack, dc: c.dc, error: c.error, species: c.species, resourceVersion: c.state.version };
+  return { paladin: { ...paladinResources(c.character, c.state), channelDivinityDc: c.dc }, druid: { ...druidProfile(c.character), uses: Math.min(druidProfile(c.character).max, c.state.wildShapeUses ?? druidProfile(c.character).max), forms: c.stats.traits?.druidForms ?? [], wildShape: c.state.wildShape?.expiresAt > Date.now() ? c.state.wildShape : null, companion: c.state.wildCompanion ?? null }, slots: c.slots, spells: c.spells, ability: c.ability, attack: c.attack, dc: c.dc, error: c.error, species: c.species, barbarian: { ...rageProfile(c.character), uses: Math.min(rageProfile(c.character).max, c.state.rageUses ?? rageProfile(c.character).max), relentlessDC: c.state.relentlessRageDC ?? 10, recoveryAvailable: c.state.persistentRageAvailable !== false }, resourceVersion: c.state.version };
 }
 export function spendSpell(db, id, spellId, level, source) {
   const c = casterData(db, id), spell = c.spells.find(s => s.id === spellId);
@@ -88,6 +94,15 @@ export function spendSpell(db, id, spellId, level, source) {
     c.state.tieflingLegacyUses ??= {};
     c.state.tieflingLegacyUses[spellId] = true;
     saveResources(db, id, c.state);
+  } else if (spell.originFreeCast && source === 'origin') {
+    if (level !== spell.level) throw new Error('Bezpłatny czar atutu używa swojego podstawowego kręgu.');
+    const grant = originSpellGrants(selectedOriginFeats(c.character, c.stats.traits), c.stats.traits).find(g => g.id === spellId && g.freeCast && !c.state.originSpellUses?.[g.reason]);
+    c.state.originSpellUses ??= {};
+    c.state.originSpellUses[grant.reason] = true;
+    saveResources(db, id, c.state);
+  } else if (source === 'paladin-smite') {
+    if (spellId !== 'divine-smite' || level !== 1 || !paladinResources(c.character, c.state).smiteAvailable) throw new Error('Paladin Smite unavailable.');
+    c.state.paladinSmiteUsed = true; saveResources(db, id, c.state);
   } else if (spell.level === 0) {
     if (level !== 0) throw new Error('Sztuczki nie zużywają miejsc na czary.');
   } else if (source === 'arcanum') {
@@ -99,7 +114,9 @@ export function spendSpell(db, id, spellId, level, source) {
     if (source === 'pact') c.state.pactSpent++; else c.state.spent[level - 1] = (c.state.spent[level - 1] ?? 0) + 1;
     saveResources(db, id, c.state);
   }
-  return { ...c, spell };
+  const originMod = ['int', 'wis', 'cha'].includes(spell.originAbility) ? c.stats.values?.[spell.originAbility] : null;
+  const modifier = originMod == null ? null : Math.floor((originMod - 10) / 2);
+  return { ...c, ...(modifier === null ? {} : { ability: modifier, attack: modifier + proficiencyBonus(c.character.level) + (c.stats.values.spellBonus ?? 0), dc: 8 + modifier + proficiencyBonus(c.character.level) + (c.stats.values.spellDcBonus ?? 0) }), spell };
 }
 export function handleSpellResources(db, user, path, method, body, send) {
   const own = path.match(/^\/api\/characters\/([1-9]\d*)\/spell-resources$/);
@@ -124,7 +141,16 @@ export function handleSpellResources(db, user, path, method, body, send) {
   for (const { character_id: id } of characters) {
     const character = db.prepare('SELECT class, level, species FROM characters WHERE id = ?').get(id);
     const state = resourceState(db, id);
+    restPaladin(character, state, body.rest);
     const maxSecondWind = secondWindMaximum(character);
+    if (maxSecondWind && character.level >= 2) state.actionSurgeUses = 1;
+    const druid = druidProfile(character);
+    if (druid.max) state.wildShapeUses = body.rest === 'long' ? druid.max : Math.min(druid.max, (state.wildShapeUses ?? druid.max) + 1);
+    if (body.rest === 'long') { state.wildShape = null; state.wildCompanion = null; }
+    const rage = rageProfile(character);
+    state.rageUses = body.rest === 'long' ? rage.max : Math.min(rage.max, (state.rageUses ?? rage.max) + 1);
+    state.relentlessRageDC = 10;
+    if (body.rest === 'long') state.persistentRageAvailable = true;
     if (body.rest === 'long') {
       state.spent = Array(9).fill(0); state.arcanum = {}; state.concentration = null; state.secondWindUses = maxSecondWind;
       const maxAdrenalineRush = character.species === 'Ork (Orc)' ? proficiencyBonus(character.level) : 0;
@@ -137,10 +163,12 @@ export function handleSpellResources(db, user, path, method, body, send) {
       state.giantAncestryUses = goliath ? proficiencyBonus(character.level) : 0;
       state.largeFormAvailable = true;
       state.tieflingLegacyUses = {};
+      state.originSpellUses = {};
+      state.layOnHandsSpent = 0; state.paladinSmiteUsed = false;
       state.draconicFlightAvailable = true;
       state.relentlessEnduranceAvailable = true; state.lastLongRest = Date.now();
       if (character.species === 'Człowiek (Human)') state.heroicInspirationAvailable = true;
-    } else if (maxSecondWind) state.secondWindUses = Math.min(maxSecondWind, (state.secondWindUses ?? maxSecondWind - 1) + 1);
+    } else if (maxSecondWind) state.secondWindUses = Math.min(maxSecondWind, (state.secondWindUses ?? maxSecondWind) + 1);
     state.pactSpent = 0; state.lastRest = Date.now(); saveResources(db, id, state);
   }
   return reply(200, { restored: characters.length });

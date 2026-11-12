@@ -4,6 +4,24 @@ import { openDatabase, hashPassword } from './db.mjs';
 import { createApp } from './index.mjs';
 import { armorClassFromEquipment, armorTrainingEffects, hasStealthDisadvantage, speedFromEquipment } from './armor-class.mjs';
 
+test('AC is derived from one base, abilities and equipped armor rather than stored AC', () => {
+  const stats = { values: { ac: 99, dex: 16, con: 14, wis: 18 } };
+  const shield = { equipped: 1, armorCategory: 'shield', armorClass: '+2' };
+  const plate = { equipped: 1, armorCategory: 'heavy', armorClass: '18' };
+  assert.equal(armorClassFromEquipment(stats), 13);
+  assert.equal(armorClassFromEquipment(stats, [shield]), 15);
+  assert.equal(armorClassFromEquipment(stats, [], { class: 'Barbarian' }), 15);
+  assert.equal(armorClassFromEquipment(stats, [shield], { class: 'Barbarian' }), 17);
+  assert.equal(armorClassFromEquipment(stats, [], { class: 'Monk' }), 17);
+  assert.equal(armorClassFromEquipment(stats, [shield], { class: 'Monk' }), 15);
+  assert.equal(armorClassFromEquipment({ ...stats, armorClassBase: 'standard' }, [], { class: 'Barbarian' }), 13);
+  assert.equal(armorClassFromEquipment(stats, [plate, shield], { class: 'Barbarian' }), 20);
+  assert.equal(armorClassFromEquipment({ values: { dex: 8 } }), 9);
+  assert.equal(armorClassFromEquipment({ values: { dex: null } }), null);
+  assert.equal(armorClassFromEquipment({ values: { dex: null } }, [plate]), 18);
+  assert.equal(armorClassFromEquipment({ values: { dex: 16 } }, [], { class: 'Barbarian' }), null);
+});
+
 test('armor catalog is seeded and available to authenticated users', async () => {
   const db = openDatabase(':memory:');
   const password = 'armor-test-password';

@@ -3,9 +3,66 @@ import assert from 'node:assert/strict';
 import { openDatabase } from './db.mjs';
 import { emptyStatistics } from './statistics.mjs';
 import { handleBattles } from './battles.mjs';
-import { handleSpellResources, resourceState, publicCaster, saveResources, speciesResourceState } from './spell-resources.mjs';
+import { handleSpellResources, resourceState, publicCaster, saveResources, speciesResourceState, spendSpell } from './spell-resources.mjs';
 import progression from '../shared/spell-progression.json' with { type: 'json' };
 import { exportRows, hydrate } from './firestore.mjs';
+
+test('Origin spells use the selected ability and one free cast, renewed by a long rest', () => {
+  const { db, gm } = setup('wizard');
+  try {
+    db.prepare('UPDATE characters SET species = ? WHERE id = 1').run('Człowiek (Human)');
+    const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 1').get().data);
+    stats.values.cha = 20;
+    stats.traits = { humanFeat: ['Magic Initiate (Wizard)'], 'origin:Magic Initiate (Wizard):ability': ['cha'], 'origin:Magic Initiate (Wizard):spell': ['witch-bolt'] };
+    db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = 1').run(JSON.stringify(stats));
+    assert.equal(publicCaster(db, 1).spells.find(s => s.id === 'witch-bolt').originFreeCast, true);
+    const cast = spendSpell(db, 1, 'witch-bolt', 1, 'origin');
+    assert.equal(cast.ability, 5);
+    assert.equal(cast.dc, 15);
+    assert.equal(publicCaster(db, 1).spells.find(s => s.id === 'witch-bolt').originFreeCast, false);
+    assert.throws(() => spendSpell(db, 1, 'witch-bolt', 1, 'origin'));
+    assert.doesNotThrow(() => spendSpell(db, 1, 'witch-bolt', 1, 'slot'));
+    let result;
+    handleSpellResources(db, gm, '/api/games/1/spell-rest', 'POST', { rest: 'long' }, (status, data) => { result = { status, ...data }; });
+    assert.equal(result.status, 200);
+    assert.equal(publicCaster(db, 1).spells.find(s => s.id === 'witch-bolt').originFreeCast, true);
+  } finally { db.close(); }
+});
+
+test('Danger Sense applies to spell Dexterity saves without Rage and is disabled by Incapacitated', () => {
+  for (const incapacitated of [false, true]) {
+    const { db, call, start, gm, ally } = setup('wizard');
+    try {
+      db.prepare('UPDATE characters SET class = ?, level = 2 WHERE id = 2').run('Barbarzyńca (Barbarian)');
+      const id = start().battle.fighters[2].id;
+      if (incapacitated) assert.equal(call('act', { kind: 'condition', actorId: id, condition: 'incapacitated', enabled: true }, gm).status, 200);
+      const cast = call('act', { kind: 'cast', slot: 'action', spellId: 'burning-hands', source: 'slot', level: 1, targetIds: [id] });
+      assert.equal(cast.status, 200); assert.equal(cast.battle.pending.stage, 'save');
+      const single = call('act', { kind: 'spell-save', targetId: id, roll: 18 }, ally);
+      assert.equal(single.status, incapacitated ? 200 : 409);
+      if (!incapacitated) {
+        const saved = call('act', { kind: 'spell-save', targetId: id, roll: 1, roll2: 18 }, ally);
+        assert.equal(saved.status, 200); assert.equal(saved.battle.pending.targets[0].saved, true);
+      }
+    } finally { db.close(); }
+  }
+});
+
+test('spell attacks against a reckless barbarian automatically have advantage', () => {
+  const { db, call, start, gm, ally } = setup('wizard');
+  try {
+    db.prepare('UPDATE characters SET class = ?, level = 2 WHERE id = 2').run('Barbarzyńca (Barbarian)');
+    const b = start().battle, id = b.fighters[2].id;
+    call('next', {}, gm); call('next', {}, gm);
+    assert.equal(call('act', { kind: 'attack', slot: 'action', attackId: 'unarmed', targetId: b.fighters[1].id, reckless: true, roll: 1, roll2: 2 }, ally).status, 200);
+    call('next', {}, ally);
+    assert.equal(call('act', { kind: 'cast', slot: 'action', spellId: 'fire-bolt', source: 'cantrip', level: 0, targetIds: [id] }).status, 200);
+    assert.equal(call('act', { kind: 'spell-attack', roll: 1 }).status, 409);
+    const hit = call('act', { kind: 'spell-attack', roll: 1, roll2: 19 });
+    assert.equal(hit.status, 200); assert.equal(hit.battle.pending.stage, 'effect');
+    assert.equal(hit.battle.fighters[0].attackRollMade, true);
+  } finally { db.close(); }
+});
 
 function setup(classId = 'bard', level = 3) {
   const db = openDatabase(':memory:');
@@ -209,11 +266,11 @@ test('Shield can interrupt a hit after deferring reaction; it consumes one slot 
     assert.equal(hit.battle.pending.kind, 'damage');
     const shield = call('act', { kind: 'cast', actorId: self, slot: 'reaction', spellId: 'shield', level: 1, source: 'slot' });
     assert.equal(shield.status, 200);
-    assert.equal(shield.battle.fighters[0].ac, 17);
+    assert.equal(shield.battle.fighters[0].ac, 16);
     assert.equal(shield.battle.pending, null);
     assert.equal(resourceState(db, 1).spent[0], 1);
     call('next', {}, gm); call('next', {}, gm);
-    assert.equal(call().battle.fighters[0].ac, 12);
+    assert.equal(call().battle.fighters[0].ac, 11);
     assert.equal(call().battle.fighters[0].reaction, '');
   } finally { db.close(); }
 });

@@ -19,6 +19,7 @@ export type StatisticsSummary = {
   savingThrows: Record<string, number | null>; skills: Record<string, number | null>;
 };
 export type CharacterStatistics = {
+  armorClassBase?: 'standard' | 'class';
   proficiency: number;
   traits: import('../shared/character-traits.mjs').TraitSelection;
   spells: import('../shared/spellcasting.mjs').SpellSelection;

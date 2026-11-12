@@ -2,6 +2,8 @@ import type { CharacterStatistics, Character } from '../src/api';
 export type TraitSelection = Record<string, string[]>;
 export type TraitGroup = { id: string; label: string; limit: number; options: { id: string; label: string }[]; kind: string };
 export type TraitProfile = {
+  originFeatEntries: import('./origin-feats.mjs').OriginFeatEntry[];
+  invocationEntries: import('./warlock-invocation-effects.mjs').InvocationSheetEntry[]; swimSpeed: number | null;
   classId: string; source: string; groups: TraitGroup[]; skills: Record<string, number>; effectiveSkills: Record<string, number>;
   savingThrows: string[]; effectiveSavingThrows: string[]; skillSources: Record<string, string>; skillBonuses: Record<string, number | null>;
   languages: { id: string; label: string; standard: boolean }[]; tools: string[]; armor: string[]; weapons: string[]; feats: string[]; originFeatDescriptions: Record<string, string>;

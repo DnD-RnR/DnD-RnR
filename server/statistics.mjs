@@ -1,3 +1,7 @@
+import { paladinChoiceUpdate } from './paladin.mjs';
+import { druidChoiceUpdate } from './druid.mjs';
+import { resourceState } from './spell-resources.mjs';
+import { fighterChoiceUpdate } from './fighter-choices.mjs';
 import definitions from '../shared/statistics.json' with { type: 'json' };
 import { emptySpellSelection, spellcastingProfile, validateSpellSelection } from '../shared/spellcasting.mjs';
 import { characterTraits, emptyTraitSelection, validateTraitSelection } from '../shared/character-traits.mjs';
@@ -5,6 +9,7 @@ import { armorClassFromEquipment, armorSpeedPenalty, armorTrainingEffects, hasAr
 import { weaponMasteryChoicesValid } from '../shared/weapon-mastery.mjs';
 import { fightingStyleChoicesValid, wizardCantrips } from '../shared/fighting-style.mjs';
 import { fastCraftingOptions } from '../shared/crafter.mjs';
+import { pactMagicUpdate, invocationUpdate } from './warlock.mjs';
 
 const emptyArcaneWarrior = () => ({ cantrips: [], ability: '' });
 const validArcaneWarrior = value => value && typeof value === 'object' && !Array.isArray(value)
@@ -15,6 +20,7 @@ const validArcaneWarrior = value => value && typeof value === 'object' && !Array
 
 export function emptyStatistics() {
   return {
+    armorClassBase: 'class',
     traits: emptyTraitSelection(),
     spells: emptySpellSelection(),
     values: Object.fromEntries([...definitions.abilities, ...definitions.numbers].map(field => [field.id, null])),
@@ -27,10 +33,12 @@ export function emptyStatistics() {
 }
 function validStatistics(stats) {
   if (!stats || typeof stats !== 'object' || !stats.values || !stats.skills || !stats.notes || !Array.isArray(stats.savingThrows)) return false;
+  if (stats.armorClassBase !== undefined && !['standard', 'class'].includes(stats.armorClassBase)) return false;
   const abilities = definitions.abilities.map(ability => ability.id);
   if (stats.spellAbility !== '' && !abilities.includes(stats.spellAbility)) return false;
   if (stats.savingThrows.some(id => !abilities.includes(id)) || new Set(stats.savingThrows).size !== stats.savingThrows.length) return false;
   for (const field of [...definitions.abilities.map(ability => ({ ...ability, min: 1, max: 30 })), ...definitions.numbers]) {
+    if (field.id === 'ac') continue;
     const value = stats.values[field.id];
     if (value !== null && (!Number.isInteger(value) || value < field.min || value > field.max)) return false;
   }
@@ -82,7 +90,10 @@ export function handleStatistics(db, user, path, method, body, send) {
         || (body.fightingStyle === 'arcane-warrior' && !validArcaneWarrior(arcaneWarrior))) {
         send(400, { error: 'Wybierz poprawne, niepowtarzające się bronie do Weapon Mastery.' }); return true;
       }
+      const fighterUpdate = fighterChoiceUpdate(db, character, currentStats, body);
+      if (fighterUpdate.error) { send(400, { error: fighterUpdate.error }); return true; }
       const stats = currentStats;
+      if (fighterUpdate.history) stats.fighterChoices = fighterUpdate.history;
       if (fastCrafting !== '' && fastCrafting !== stats.choices?.fastCrafting) {
         const [kind, id] = fastCrafting.split(':');
         db.exec('BEGIN IMMEDIATE');
@@ -122,7 +133,7 @@ export function handleStatistics(db, user, path, method, body, send) {
       a.stealth_disadvantage AS stealthDisadvantage
       FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(characterId);
     const trainingEffects = armorTrainingEffects(characterTraits(character, statistics), equipment);
-    statistics.values.ac = armorClassFromEquipment(statistics, equipment.map(item => ({ ...item, trained: hasArmorTraining(characterTraits(character, statistics), item.armorCategory) })));
+    statistics.values.ac = armorClassFromEquipment(statistics, equipment.map(item => ({ ...item, trained: hasArmorTraining(characterTraits(character, statistics), item.armorCategory) })), character);
     statistics.values.speed = speedFromEquipment(statistics, equipment, statistics.values.speed);
     if (hasStealthDisadvantage(equipment)) statistics.stealthDisadvantage = true;
     Object.entries(trainingEffects).forEach(([key, value]) => { if (value) statistics[key] = true; });
@@ -149,16 +160,33 @@ export function handleStatistics(db, user, path, method, body, send) {
     const traits = Object.fromEntries(submittedTraitEntries.filter(([id]) => supportedTraitGroups.has(id)));
     const traitError = validateTraitSelection(character, { ...body, spells, traits, requireCompleteTraits: true });
     if (traitError) { send(400, { error: traitError }); return true; }
+    const druid = druidChoiceUpdate(character, { spells, traits }, stored ? JSON.parse(stored.data) : null, character.class === 'Druid' ? resourceState(db, characterId) : {}, Object.hasOwn(body, 'spells'), Object.hasOwn(body, 'traits'));
+    if (druid.error) { send(400, { error: druid.error }); return true; }
+    const paladin = paladinChoiceUpdate(character, spells, stored ? JSON.parse(stored.data) : null, character.class === 'Paladyn (Paladin)' ? resourceState(db, characterId) : {});
+    if (paladin.error) { send(400, { error: paladin.error }); return true; }
+    const pactMagic = pactMagicUpdate(character, spells, stored ? JSON.parse(stored.data) : null, traits, Object.hasOwn(body, 'spells'));
+    if (pactMagic.error) { send(400, { error: pactMagic.error }); return true; }
+    const invocation = invocationUpdate(character, { spells, traits }, stored ? JSON.parse(stored.data) : null, Object.hasOwn(body, 'traits'));
+    if (invocation.error) { send(400, { error: invocation.error }); return true; }
     const choices = Object.hasOwn(body, 'choices') ? body.choices : (stored ? JSON.parse(stored.data).choices : null) ?? { weaponMastery: [], fightingStyle: '', arcaneWarrior: emptyArcaneWarrior() };
     if (!choices || !weaponMasteryChoicesValid(character, choices.weaponMastery ?? []) || !fightingStyleChoicesValid(character, choices.fightingStyle ?? '')
       || (choices.fightingStyle === 'arcane-warrior' && !validArcaneWarrior(choices.arcaneWarrior))) { send(400, { error: 'Wybierz poprawne wybory Weapon Mastery i Fighting Style.' }); return true; }
+    if (character.class === 'Paladyn (Paladin)' && spells.choices.style === 'magic' && choices.fightingStyle) { send(400, { error: 'Blessed Warrior zast?puje Fighting Style.' }); return true; }
+    const fighterUpdate = fighterChoiceUpdate(db, character, stored ? JSON.parse(stored.data) : null, choices);
+    if (fighterUpdate.error) { send(400, { error: fighterUpdate.error }); return true; }
     // Store only supported fields, never arbitrary properties from the request.
     const stats = emptyStatistics();
-    for (const key of Object.keys(stats.values)) stats.values[key] = body.values[key];
+    if (fighterUpdate.history) stats.fighterChoices = fighterUpdate.history;
+    stats.armorClassBase = body.armorClassBase ?? 'class';
+    for (const key of Object.keys(stats.values)) stats.values[key] = key === 'ac' ? null : body.values[key];
     for (const key of Object.keys(stats.skills)) stats.skills[key] = body.skills[key];
     for (const key of Object.keys(stats.notes)) stats.notes[key] = body.notes[key];
     stats.savingThrows = body.savingThrows;
     stats.spells = spells;
+    if (druid.history) stats.druidProgression = druid.history;
+    if (paladin.history) stats.paladinProgression = paladin.history;
+    if (pactMagic.history) stats.pactMagicProgression = pactMagic.history;
+    if (invocation.history) stats.invocationProgression = invocation.history;
     stats.traits = traits;
     stats.choices = {
       weaponMastery: choices.weaponMastery,
@@ -177,7 +205,7 @@ export function handleStatistics(db, user, path, method, body, send) {
       FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(characterId);
     const outputTraits = characterTraits(character, stats);
     const outputEffects = armorTrainingEffects(outputTraits, outputEquipment);
-    stats.values.ac = armorClassFromEquipment(stats, outputEquipment.map(item => ({ ...item, trained: hasArmorTraining(outputTraits, item.armorCategory) })));
+    stats.values.ac = armorClassFromEquipment(stats, outputEquipment.map(item => ({ ...item, trained: hasArmorTraining(outputTraits, item.armorCategory) })), character);
     stats.values.speed = speedFromEquipment(stats, outputEquipment, stats.values.speed);
     if (hasStealthDisadvantage(outputEquipment)) stats.stealthDisadvantage = true;
     Object.entries(outputEffects).forEach(([key, value]) => { if (value) stats[key] = true; });
