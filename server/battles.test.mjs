@@ -978,3 +978,94 @@ test('Two-Weapon Fighting retains its modifier when executing the bonus attack',
     assert.equal(hit.battle.pending.attack.damageBonus, 3);
   } finally { db.close(); }
 });
+
+
+test('Psi Warrior level three: weapon strike spends its own die and rejects invalid dice atomically', () => {
+  const { db, call, start, player } = fixture();
+  try {
+    db.prepare("UPDATE characters SET subclass = 'Psi Warrior', level = 3 WHERE id = 1").run();
+    const b = start().battle, targetId = b.fighters[1].id;
+    assert.equal(b.fighters[0].psiUses, 4);
+    assert.equal(b.fighters[0].psiSides, 6);
+    call('act', { kind: 'attack', slot: 'action', attackId: '1', targetId, roll: 20 }, player);
+    assert.equal(call('act', { kind: 'damage', rolls: [2, 2], psiRoll: 7, psiConfirmed: true }, player).status, 409);
+    assert.equal(call().battle.fighters[0].psiUses, 4);
+    const hit = call('act', { kind: 'damage', rolls: [2, 2], psiRoll: 6, psiConfirmed: true }, player);
+    assert.equal(hit.status, 200);
+    assert.equal(hit.battle.fighters[0].psiUses, 3);
+    assert.equal(hit.battle.fighters[0].psiStrikeUsed, true);
+    assert.equal(resourceState(db, 1).psiUses, 3);
+  } finally { db.close(); }
+});
+
+test('Protective Field reduces incoming damage before temporary HP and consumes reaction', () => {
+  const { db, call, start, player, other } = fixture();
+  try {
+    db.prepare("UPDATE characters SET subclass = 'Psi Warrior', level = 3 WHERE id = 1").run();
+    const id = start().battle.fighters[0].id;
+    call('next');
+    const attack = { id: 'club', name: 'Club', bonus: 5, dice: 1, sides: 8, damageBonus: 4 };
+    call('act', { kind: 'attack', slot: 'action', targetId: id, roll: 15, attack });
+    const field = { kind: 'protective-field', actorId: id, targetId: id, roll: 6, psiConfirmed: true };
+    assert.equal(call('act', field, other).status, 409);
+    assert.equal(call('act', { ...field, roll: undefined }, player).status, 409);
+    assert.equal(call('act', field, player).status, 200);
+    assert.equal(call('act', field, player).status, 409);
+    const result = call('act', { kind: 'damage', rolls: [8] });
+    assert.equal(result.status, 200);
+    assert.equal(result.battle.fighters.find(f => f.id === id).hp, 27);
+    assert.equal(resourceState(db, 1).psiUses, 3);
+  } finally { db.close(); }
+});
+
+test('Telekinetic Movement is a Magic action with separate rest recovery and die restoration', () => {
+  const { db, call, start, player } = fixture();
+  try {
+    db.prepare("UPDATE characters SET subclass = 'Psi Warrior', level = 3 WHERE id = 1").run();
+    start();
+    const move = { kind: 'telekinetic-movement', description: 'Move a willing ally to an empty space within 30 feet', psiConfirmed: true };
+    assert.equal(call('act', { ...move, useActionSurge: true }, player).status, 409);
+    assert.equal(call('act', move, player).status, 200);
+    assert.equal(resourceState(db, 1).telekineticMovementAvailable, false);
+    call('act', { kind: 'resolve', note: 'Moved' });
+    assert.equal(call('act', { kind: 'restore-telekinetic-movement' }, player).status, 200);
+    assert.equal(resourceState(db, 1).psiUses, 3);
+    assert.equal(call('act', move, player).status, 409);
+    call('end');
+    let response;
+    handleSpellResources(db, { id: 1, role: 'gm' }, '/api/games/1/spell-rest', 'POST', { rest: 'short' }, (status, data) => { response = { status, ...data }; });
+    assert.equal(response.status, 200);
+    assert.equal(resourceState(db, 1).psiUses, 4);
+    assert.equal(start().battle.fighters[0].telekineticMovementAvailable, true);
+  } finally { db.close(); }
+});
+
+test('Psi Warrior powers are unavailable below level three or for another subclass', () => {
+  for (const [level, subclass] of [[2, 'Psi Warrior'], [3, 'Champion']]) {
+    const { db, call, start, player } = fixture();
+    try {
+      db.prepare('UPDATE characters SET subclass = ?, level = ? WHERE id = 1').run(subclass, level);
+      assert.equal(start().battle.fighters[0].psiMax, 0);
+      assert.equal(call('act', { kind: 'telekinetic-movement', description: 'Object', psiConfirmed: true }, player).status, 409);
+    } finally { db.close(); }
+  }
+});
+
+
+test('Protective Field reduces spell damage before resistance', () => {
+  const { db, call, start, player } = fixture();
+  try {
+    db.prepare("UPDATE characters SET subclass = 'Psi Warrior', level = 3 WHERE id = 1").run();
+    const b = start().battle, id = b.fighters[0].id;
+    b.pending = { kind: 'spell', actorId: b.fighters[1].id, spellName: 'Test force spell', stage: 'effect',
+      spec: { mode: 'save', dice: 2, sides: 6, bonus: 0, type: 'moc' },
+      targets: [{ id, saved: false, defenseReady: true, multiplier: 0.5 }] };
+    db.prepare('UPDATE session_battles SET data = ? WHERE session_id = 1').run(JSON.stringify(b));
+    assert.equal(call('act', { kind: 'protective-field', actorId: id, targetId: id, roll: 6, psiConfirmed: true }, player).status, 200);
+    const effect = call('act', { kind: 'spell-effect', rolls: [6, 6] });
+    assert.equal(effect.status, 200);
+    assert.equal(effect.battle.fighters[0].hp, 30);
+    assert.equal(effect.battle.fighters[0].tempHp, 0);
+    assert.equal(effect.battle.fighters[0].damageTaken, 3);
+  } finally { db.close(); }
+});

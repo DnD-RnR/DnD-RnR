@@ -123,7 +123,10 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
       persistVitals(db, target); log(b, `${p.spellName} → ${target.name}: odzyskano ${restored} PW.`);
     } else {
       const base = t.saved ? p.spec.half ? Math.floor(total / 2) : 0 : total;
-      const amount = Math.floor(base * (t.multiplier ?? 1));
+      // Damage reduction applies before resistance or vulnerability.
+      const reduced = Math.max(0, base - (target.psiReduction ?? 0));
+      target.psiReduction = 0;
+      const amount = Math.floor(reduced * (t.multiplier ?? 1));
       damage(db, target, amount, p.critical);
       if (!t.saved && p.spec.rider === 'mockery') target.mockery = { expiresRound: b.round + (b.fighters.indexOf(target) < b.turn ? 1 : 0) };
       if (!t.saved && p.spec.rider === 'push') log(b, `${target.name}: odepchnięcie 10 stóp — położenie ustala GM.`);

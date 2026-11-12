@@ -1,3 +1,4 @@
+import { psiResources, restPsi } from './psi-warrior.mjs';
 import { paladinResources, restPaladin } from './paladin.mjs';
 import { druidProfile } from '../shared/druid.mjs';
 import { rageProfile } from '../shared/barbarian.mjs';
@@ -17,7 +18,7 @@ export const resourceState = (db, id) => {
 };
 export const proficiencyBonus = level => 2 + Math.floor((level - 1) / 4);
 export const speciesResourceState = (db, id, character = null) => {
-  const c = character ?? db.prepare('SELECT class, level, species FROM characters WHERE id = ?').get(id);
+  const c = character ?? db.prepare('SELECT class, subclass, level, species FROM characters WHERE id = ?').get(id);
   const state = resourceState(db, id);
   const maxAdrenalineRush = c?.species === 'Ork (Orc)' ? proficiencyBonus(c.level) : 0;
   const row = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(id);
@@ -83,7 +84,7 @@ export function casterData(db, id) {
 }
 export function publicCaster(db, id) {
   const c = casterData(db, id);
-  return { paladin: { ...paladinResources(c.character, c.state), channelDivinityDc: c.dc }, druid: { ...druidProfile(c.character), uses: Math.min(druidProfile(c.character).max, c.state.wildShapeUses ?? druidProfile(c.character).max), forms: c.stats.traits?.druidForms ?? [], wildShape: c.state.wildShape?.expiresAt > Date.now() ? c.state.wildShape : null, companion: c.state.wildCompanion ?? null }, slots: c.slots, spells: c.spells, ability: c.ability, attack: c.attack, dc: c.dc, error: c.error, species: c.species, barbarian: { ...rageProfile(c.character), uses: Math.min(rageProfile(c.character).max, c.state.rageUses ?? rageProfile(c.character).max), relentlessDC: c.state.relentlessRageDC ?? 10, recoveryAvailable: c.state.persistentRageAvailable !== false }, resourceVersion: c.state.version };
+  return { psiWarrior: psiResources(c.character, c.state), paladin: { ...paladinResources(c.character, c.state), channelDivinityDc: c.dc }, druid: { ...druidProfile(c.character), uses: Math.min(druidProfile(c.character).max, c.state.wildShapeUses ?? druidProfile(c.character).max), forms: c.stats.traits?.druidForms ?? [], wildShape: c.state.wildShape?.expiresAt > Date.now() ? c.state.wildShape : null, companion: c.state.wildCompanion ?? null }, slots: c.slots, spells: c.spells, ability: c.ability, attack: c.attack, dc: c.dc, error: c.error, species: c.species, barbarian: { ...rageProfile(c.character), uses: Math.min(rageProfile(c.character).max, c.state.rageUses ?? rageProfile(c.character).max), relentlessDC: c.state.relentlessRageDC ?? 10, recoveryAvailable: c.state.persistentRageAvailable !== false }, resourceVersion: c.state.version };
 }
 export function spendSpell(db, id, spellId, level, source) {
   const c = casterData(db, id), spell = c.spells.find(s => s.id === spellId);
@@ -139,9 +140,10 @@ export function handleSpellResources(db, user, path, method, body, send) {
     WHERE m.game_id = ? AND m.status = 'accepted' AND s.ended_at IS NULL`).all(gameId);
   if (!characters.length) return reply(409, { error: 'Brak postaci w bieżącej sesji.' });
   for (const { character_id: id } of characters) {
-    const character = db.prepare('SELECT class, level, species FROM characters WHERE id = ?').get(id);
+    const character = db.prepare('SELECT class, subclass, level, species FROM characters WHERE id = ?').get(id);
     const state = resourceState(db, id);
     restPaladin(character, state, body.rest);
+    restPsi(character, state, body.rest);
     const maxSecondWind = secondWindMaximum(character);
     if (maxSecondWind && character.level >= 2) state.actionSurgeUses = 1;
     const druid = druidProfile(character);

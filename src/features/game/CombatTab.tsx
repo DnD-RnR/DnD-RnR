@@ -1,3 +1,4 @@
+import { psiResources } from '../../../shared/psi-warrior.mjs';
 import definitions from '../../../shared/statistics.json' with { type: 'json' };
 import { rageProfile, rageDescription, primalSkills, dangerSenseDescription, recklessAttackDescription } from '../../../shared/barbarian.mjs';
 import { SpellResources } from './SpellResources';
@@ -88,12 +89,12 @@ function weaponSectionLabel(item: InventoryItem) {
   return item.slot === 'main-hand' ? 'Ręka główna' : item.weapon?.type === 'dystansowa' ? 'Broń zasięgowa' : 'Broń w off-hand';
 }
 
-function WeaponList({ weapons, character, statistics, showMastery = false, grouped = false }: { weapons: readonly InventoryItem[]; character: Character; statistics: CharacterStatistics | null; showMastery?: boolean; grouped?: boolean }) {
+function WeaponList({ weapons, character, statistics, showMastery = false, grouped = false, opportunity = false }: { weapons: readonly InventoryItem[]; character: Character; statistics: CharacterStatistics | null; showMastery?: boolean; grouped?: boolean; opportunity?: boolean }) {
   const [finesseAbilities, setFinesseAbilities] = useState<Record<number, 'str' | 'dex'>>({});
   if (!weapons.length) return <p className="combat-weapon-empty">Brak założonej broni — możesz wykonać cios bez użycia broni.</p>;
   if (!statistics) return <p className="combat-weapon-empty">Wczytywanie statystyk broni…</p>;
   const traits = characterTraits(character, statistics);
-  const orderedWeapons = [...weapons].sort((a, b) => weaponDisplayOrder(a) - weaponDisplayOrder(b));
+  const orderedWeapons = weapons.filter(item => !opportunity || isMeleeWeapon(item)).sort((a, b) => weaponDisplayOrder(a) - weaponDisplayOrder(b));
   const modifier = (ability: string) => statistics.values[ability] == null ? null : Math.floor((statistics.values[ability]! - 10) / 2);
   const strength = modifier('str');
   const dexterity = modifier('dex');
@@ -105,9 +106,9 @@ function WeaponList({ weapons, character, statistics, showMastery = false, group
       const proficient = traits.weapons.some(value => value.toLowerCase().includes(item.weapon!.category === 'simple' ? 'simple' : 'martial'));
       const attackBonus = abilityModifier === null ? null : abilityModifier + (proficient ? statistics.proficiency : 0) +
         fightingStyleAttackBonus(statistics.choices?.fightingStyle, item.weapon);
-      const styleDamageBonus = fightingStyleDamageBonus(statistics.choices?.fightingStyle,
+      const styleDamageBonus = fightingStyleDamageBonus(opportunity && ['two-weapon-fighting', 'thrown-weapon-fighting'].includes(statistics.choices?.fightingStyle ?? '') ? '' : statistics.choices?.fightingStyle,
         item.weapon ? { ...item.weapon, slot: item.slot, grip: item.grip } : null, weapons, abilityModifier ?? 0);
-      const damageBonus = abilityModifier === null ? null : (item.slot === 'off-hand' ? styleDamageBonus : abilityModifier + styleDamageBonus);
+      const damageBonus = abilityModifier === null ? null : (item.slot === 'off-hand' && !opportunity ? styleDamageBonus : abilityModifier + styleDamageBonus);
       const heavyDisadvantage = hasProperty(item, 'ciężka', 'heavy') &&
         ((item.weapon?.type === 'dystansowa' && (statistics.values.dex === null || (statistics.values.dex ?? 0) < 13)) ||
          (item.weapon?.type !== 'dystansowa' && (statistics.values.str === null || (statistics.values.str ?? 0) < 13)));
@@ -119,6 +120,7 @@ function WeaponList({ weapons, character, statistics, showMastery = false, group
         <span>{weaponDamage(item)} {damageBonus === null ? '' : `${signed(damageBonus)} obrażeń`} {item.weapon?.damageType ? `· ${item.weapon.damageType}` : ''}</span>
         {rageProfile(character).max > 0 && <small>{ability === 'str' ? `W Szale: dodatkowe +${rageProfile(character).damage} obrażeń (również druga ręka i rzut bronią oparty na Sile).` : 'Premia Szału wymaga ataku opartego na Sile.'}</small>}
         <span>Atak: {attackBonus === null ? 'brak danych' : signed(attackBonus)} · {proficient ? 'biegłość' : 'brak biegłości'}</span>
+        {opportunity && <small>Trafienie: 1k20 + modyfikator {ability === 'str' ? 'Siły' : 'Zręczności'}{proficient ? ' + premia z biegłości' : ''} przeciwko KP celu. Obrażenia: kości broni + modyfikator cechy{styleDamageBonus ? ' + premia stylu walki' : ''}.</small>}
         <small>{item.grip === 'two' ? 'dwie ręce' : item.grip === 'none' ? 'broń dystansowa' : 'jedna ręka'}</small>
         {finesse && <label className="combat-weapon-choice">Modyfikator finezyjny:
           <select value={ability} onChange={event => setFinesseAbilities(previous => ({ ...previous, [item.id]: event.target.value as 'str' | 'dex' }))}>
@@ -130,11 +132,11 @@ function WeaponList({ weapons, character, statistics, showMastery = false, group
         {statistics.choices?.fightingStyle === 'great-weapon-fighting' && qualifiesForGreatWeaponFighting(item) &&
           <small>Gdy rzucasz na obrażenia za pomocą broni wręcz trzymanej oburącz, możesz traktować wynik 1 lub 2 na kości obrażeń jako 3.</small>}
         {hasProperty(item, 'zasięg', 'reach') && <small>+5 stóp zasięgu.</small>}
-        {hasProperty(item, 'miotana', 'thrown') && <small>Rzut tą bronią używa tego samego modyfikatora co atak wręcz.</small>}
+        {!opportunity && hasProperty(item, 'miotana', 'thrown') && <small>Rzut tą bronią używa tego samego modyfikatora co atak wręcz.</small>}
         {item.weapon?.type === 'dystansowa' && item.weapon.range && <small>Poza normalnym zasięgiem ({item.weapon.range.split('/')[0]} stóp): utrudnienie.</small>}
-        {hasProperty(item, 'lekka', 'light') && <small>{statistics.choices?.fightingStyle === 'two-weapon-fighting' ? 'Walka dwiema broniami pozwala dodać modyfikator cechy do obrażeń ataku drugą lekką bronią.' : 'Atak drugą lekką bronią nie dodaje modyfikatora cechy.'}</small>}
-        {item.slot === 'off-hand' && <small>Druga ręka: po ataku główną ręką.</small>}
-        {item.slot === 'off-hand' && item.weapon?.mastery === 'Nick' && <small>Nick: ten dodatkowy atak możesz wykonać w ramach Akcji zamiast Akcji bonusowej.</small>}
+        {!opportunity && hasProperty(item, 'lekka', 'light') && <small>{statistics.choices?.fightingStyle === 'two-weapon-fighting' ? 'Walka dwiema broniami pozwala dodać modyfikator cechy do obrażeń ataku drugą lekką bronią.' : 'Atak drugą lekką bronią nie dodaje modyfikatora cechy.'}</small>}
+        {!opportunity && item.slot === 'off-hand' && <small>Druga ręka: po ataku główną ręką.</small>}
+        {!opportunity && item.slot === 'off-hand' && item.weapon?.mastery === 'Nick' && <small>Nick: ten dodatkowy atak możesz wykonać w ramach Akcji zamiast Akcji bonusowej.</small>}
         {masterySelected && item.weapon && <div className="combat-weapon-mastery"><strong>{item.weapon.mastery}</strong><span>Weapon Mastery · {item.name}</span><small>{masteryProperties[item.weapon.mastery] ?? 'Właściwość mistrzostwa tej broni.'}</small></div>}
       </>;
       return <li key={item.id}>{grouped
@@ -159,6 +161,11 @@ function ActionList({ entries, spells, weapons, character, statistics, equippedI
                 <UnarmedStrike character={character} statistics={statistics} equippedItems={equippedItems ?? weapons ?? []} />
               </>}
               {name === 'Magia' && spells && <SpellList spells={spells} />}
+              {name === 'Atak okazyjny' && weapons && character && statistics !== undefined && <>
+                <p>Wybierz jedną z trzymanych broni wręcz albo cios bez broni. Poniższe wartości są wyliczane z aktualnych cech, biegłości, stylu walki i chwytu broni. Także przy ataku okazyjnym bronią z drugiej ręki dodajesz modyfikator cechy do obrażeń.</p>
+                <WeaponList weapons={weapons} character={character} statistics={statistics} showMastery grouped opportunity />
+                <UnarmedStrike character={character} statistics={statistics} equippedItems={equippedItems ?? weapons} />
+              </>}
             </details>
           </li>
         ))}
@@ -201,6 +208,9 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
       return groups;
     }, { action: [], bonus: [], reaction: [] } as Record<'action' | 'bonus' | 'reaction', Spell[]>);
   }, [character, statistics]);
+  const psi = psiResources(character, {});
+  const psiInt = statistics?.values.int == null ? null : Math.floor((statistics.values.int - 10) / 2);
+  const psiAmount = `1k${psi.psiSides} ${psiInt === null ? '+ modyfikator Inteligencji' : signed(psiInt)}`;
   const equippedWeapons = equippedItems.filter(item => item.weapon);
   const mainHand = equippedWeapons.find(item => item.slot === 'main-hand');
   const offHand = equippedWeapons.find(item => item.slot === 'off-hand');
@@ -226,6 +236,7 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}
       <SpellResources characterId={character.id} />
+      {!!psi.psiMax && <Card title="Psionic Power"><p>Pula Psionic Energy: {psi.psiMax}k{psi.psiSides}. Te kości służą wyłącznie zdolnościom Psi Warriora. Po krótkim odpoczynku odzyskujesz jedną zużytą kość, a po długim wszystkie. Zdolność wymagająca kości jest niedostępna, gdy pula jest wyczerpana.</p><p><strong>Psionic Strike — bez akcji:</strong> raz w każdej swojej turze, bezpośrednio po trafieniu celu w 30 stopach i zadaniu mu obrażeń bronią, możesz wydać jedną kość Psionic Energy. Cel otrzymuje dodatkowe {psiAmount} obrażeń mocy (Force). Kość nie jest podwajana przy trafieniu krytycznym.</p><p><strong>Odnowienie Telekinetic Movement — bez akcji:</strong> wydaj jedną kość Psionic Energy, aby odzyskać zużyte użycie tej zdolności. Nie rzucasz tą kością.</p></Card>}
       {rageProfile(character).dangerSense && <Card title="Zdolności barbarzyńcy"><p>{dangerSenseDescription}</p><p>{recklessAttackDescription}</p></Card>}
       {rageProfile(character).primalKnowledge && statistics && <details><summary>Primal Knowledge — testy Siły w Szale</summary><p>Możesz zastąpić zwykłą cechę Siłą, zachowując biegłość lub ekspertyzę. Te testy mają ułatwienie dzięki Szałowi.</p><dl className="gm-vitals">{definitions.skills.filter(skill => primalSkills.includes(skill.id)).map(skill => {
         const traits = characterTraits(character, statistics);
@@ -237,6 +248,7 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
         <Card title="Akcja" eyebrow="TURA">
           <ActionList entries={[
             ...(character.species === 'Smokowiec (Dragonborn)' ? [['Broń Oddechowa', `Wydalasz niszczycielską energię w stożku o długości 15 stóp albo linii o długości 30 stóp i szerokości 5 stóp. Cel wykonuje rzut obronny na Zręczność lub Kondycję (ST ${statistics?.values.con == null ? '8 + premia z biegłości + modyfikator Kondycji' : 8 + statistics.proficiency + Math.floor((statistics.values.con - 10) / 2)}). Obrażenia zależą od poziomu i typu wybranego przodka; obszar i rzuty rozstrzyga GM.`] as const] : []),
+            ...(psi.psiMax ? [['Telekinetic Movement', 'Akcja Magic: wybierz widoczny cel w 30 stopach — swobodny przedmiot rozmiaru Large lub mniejszy albo inną, chętną istotę. Przenieś go do 30 stóp na widoczne, niezajęte miejsce. Przedmiot Tiny możesz zamiast tego przenieść do swojej ręki lub z niej. Jedno użycie na krótki lub długi odpoczynek; kolejne możesz odzyskać, wydając kość Psionic Energy bez akcji.'] as const] : []),
             ...actionEntries,
           ]} spells={combatSpells.action} weapons={actionWeapons} character={character} statistics={statistics} equippedItems={equippedItems} />
         </Card>
@@ -252,6 +264,7 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
         </Card>
         <Card title="Reakcja" eyebrow="POZA TURĄ">
           <ActionList entries={[
+            ...(psi.psiMax ? [['Protective Field', `Gdy ty lub inna widoczna istota w 30 stopach otrzymuje obrażenia, możesz użyć reakcji i wydać jedną kość Psionic Energy. Zmniejsz te obrażenia o ${psiAmount} (minimum 1).`] as const] : []),
             ['Atak okazyjny', 'Możesz wykonać atak okazyjny, gdy widziana przez ciebie istota opuszcza twój zasięg, wykorzystując do tego akcję, akcję bonusową, reakcję lub jedną ze swoich Szybkości. Aby wykonać atak okazyjny, użyj reakcji i wykonaj jeden atak wręcz bronią lub cios bez użycia broni przeciwko prowokującej istocie. Atak następuje bezpośrednio przed opuszczeniem przez nią twojego zasięgu.'],
             ...(character.class.includes('Fighter')
               ? [['Action Surge', 'You can push yourself beyond your normal limits for a moment. On your turn, you can take one additional action, except the Magic action.'] as const]
@@ -262,7 +275,7 @@ export function CombatTab({ character, active: isActive, equippedItems }: { char
             ...(statistics?.choices?.fightingStyle === 'protection'
               ? [['Protection (Ochrona)', 'Gdy widziana przez ciebie istota atakuje pobliskiego sojusznika, możesz użyć reakcji i trzymając tarczę narzucić utrudnienie na ten atak. Efekt trwa, dopóki pozostajesz obok chronionego sojusznika.'] as const]
               : []),
-          ]} />
+          ]} weapons={equippedWeapons} character={character} statistics={statistics} equippedItems={equippedItems} />
           {!!combatSpells.reaction.length && <SpellList spells={combatSpells.reaction} />}
         </Card>
       </div>

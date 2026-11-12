@@ -1,3 +1,4 @@
+import { psiResources, handlePsi, psionicStrike } from './psi-warrior.mjs';
 import { handlePaladin, syncDivineSense } from './paladin.mjs';
 import { handleDruid, syncWildShapes, applyWildShape } from './druid.mjs';
 import { druidProfile, druidForms } from '../shared/druid.mjs';
@@ -16,7 +17,7 @@ const int = (n, min, max) => Number.isInteger(n) && n >= min && n <= max;
 const requireValue = (ok, message) => { if (!ok) throw new Error(message); };
 const fresh = f => {
   if (f.shieldAC) { f.ac -= f.shieldAC; f.shieldAC = 0; }
-  return Object.assign(f, { action: '', bonus: '', reaction: '', reactionDeferred: false, moved: 0, pounceMoved: 0, extraMove: 0, attacksLeft: 0, usedWeapons: [], lightExtraUsed: false, dodge: false, attackRollMade: false, recklessActive: false, actionSurgeUsedThisTurn: false, surgeAction: null, surgeAttacksLeft: 0, lastAbilityCheck: null });
+  return Object.assign(f, { action: '', bonus: '', reaction: '', reactionDeferred: false, moved: 0, pounceMoved: 0, extraMove: 0, attacksLeft: 0, usedWeapons: [], lightExtraUsed: false, dodge: false, attackRollMade: false, recklessActive: false, psiStrikeUsed: false, psiReduction: 0, actionSurgeUsedThisTurn: false, surgeAction: null, surgeAttacksLeft: 0, lastAbilityCheck: null });
 };
 const clearProtection = (b, protectorId) => b.fighters.forEach(f => {
   if (Array.isArray(f.protectedBy)) {
@@ -75,6 +76,7 @@ function characterFighter(db, sessionId, memberId) {
     divineSense: resources.divineSense?.expiresAt > Date.now() ? resources.divineSense : null,
     wildShapeUses: Math.min(druidProfile(c).max, resources.wildShapeUses ?? druidProfile(c).max), wildCompanion: resources.wildCompanion ?? null,
     rageProfile: rageProfile(c), rageUses: Math.min(rageProfile(c).max, resources.rageUses ?? rageProfile(c).max), relentlessRageDC: resources.relentlessRageDC ?? 10, rageRecoveryOffered: rageProfile(c).persistent && resources.persistentRageAvailable !== false,
+    ...psiResources(c, resources), psiInt: s.abilities.int.modifier,
     secondWindUses: secondWindMax ? Math.min(secondWindMax, resources.secondWindUses ?? secondWindMax) : 0, secondWindMax,
     actionSurgeMax: secondWindMax && c.level >= 2 ? 1 : 0, actionSurgeUses: secondWindMax && c.level >= 2 ? Math.min(1, resources.actionSurgeUses ?? 1) : 0,
     adrenalineRushUses: speciesResources.adrenalineRushUses, adrenalineRushMax: speciesResources.maxAdrenalineRush,
@@ -100,6 +102,7 @@ function persistVitals(db, f) {
     ON CONFLICT(character_id) DO UPDATE SET data = excluded.data`).run(f.characterId, JSON.stringify(stats));
 }
 function damage(db, f, amount, critical = false, damageType = null) {
+  amount = Math.max(0, amount - (f.psiReduction ?? 0)); f.psiReduction = 0;
   if (damageType && (f.damageResistance === damageType || f.rage && rageDamageTypes.includes(damageType.toLowerCase()))) amount = Math.floor(amount / 2);
   f.damageTaken = (f.damageTaken ?? Math.max(0, f.maxHp - f.hp)) + amount;
   const before = f.hp;
@@ -250,7 +253,9 @@ export function handleBattles(db, user, path, method, body, send) {
         const kind = body.kind;
         if (kind !== 'tactical-mind') b.fighters.forEach(f => { f.lastAbilityCheck = null; });
         const surgeState = prepareSurgeAction(b, body, canControl);
-        if (handleFighter({ db, b, body, canControl, activeMember, log })) {
+        if (handlePsi({ db, b, body, canControl, activeMember, log })) {
+          // Psionic resources share the battle transaction.
+        } else if (handleFighter({ db, b, body, canControl, activeMember, log })) {
           // Fighter resources use the same transaction as the battle.
         } else if (handlePaladin({ db, b, body, canControl, activeMember, persistVitals, log })) {
           // Paladin resources share the battle transaction.
@@ -298,7 +303,8 @@ export function handleBattles(db, user, path, method, body, send) {
               requireValue(Array.isArray(body.rolls) && body.rolls.length === count && body.rolls.every(n => int(n, 1, p.attack.sides)), 'Podaj wynik każdej kości obrażeń.');
               const amount = Math.max(0, body.rolls.reduce((sum, n) => sum + n, 0) + p.attack.damageBonus);
               const target = b.fighters.find(f => f.id === p.targetId);
-              damage(db, target, amount, p.critical, p.attack.type); log(b, `${actor.name} → ${target.name}: ${amount} obrażeń (${p.attack.type}).`); b.pending = null;
+              damage(db, target, amount, p.critical, p.attack.type);
+              psionicStrike(db, b, actor, body, amount, damage, target, log); log(b, `${actor.name} → ${target.name}: ${amount} obrażeń (${p.attack.type}).`); b.pending = null;
             } else {
               requireValue(!b.pending, 'Najpierw rozstrzygnij rozpoczęte działanie.');
               if (kind === 'move') {
@@ -441,6 +447,7 @@ export function handleBattles(db, user, path, method, body, send) {
       defeatedMonsterCount: battle.defeatedMonsters?.length ?? 0,
       remainingMonsterCount: battle.fighters.filter(f => !f.characterId).length,
     };
+    if (!battle.pending) battle.fighters.forEach(f => { f.psiReduction = 0; });
     battle.version++;
     db.prepare(`INSERT INTO session_battles (session_id, data) VALUES (?, ?) ON CONFLICT(session_id) DO UPDATE SET data = excluded.data`).run(session.id, JSON.stringify(battle));
     db.exec('RELEASE battle_action');

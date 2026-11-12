@@ -1,3 +1,4 @@
+import { PsiWarriorControls } from './PsiWarriorControls';
 import { BarbarianControls } from './BarbarianControls';
 import { barbarianAttackAdvantage } from '../../../shared/barbarian.mjs';
 import { useCallback, useEffect, useState } from 'react';
@@ -72,6 +73,7 @@ export function LiveBattle({ controller, onReturnToExploration }: { controller: 
     {battle.pending?.kind === 'waiting' && <p role="status">GM rozstrzyga działanie potwora.</p>}
     {battle.pending?.kind === 'spell' && <Card title="Rozliczenie czaru"><SpellResolution key={`${battle.pending.actorId}-${battle.pending.spellName}-${battle.pending.stage}-${battle.pending.targets.filter(t => t.saved !== undefined).length}`} controller={controller} /></Card>}
     {battle.pending?.kind === 'spell' && response.gm && <SpellDefenses controller={controller} />}
+    <PsiWarriorControls controller={controller} />
     <BarbarianControls controller={controller} />
     <SpellReactions controller={controller} />
     {battle.pending?.kind === 'request' && <Card title="Rozstrzygnięcie GM"><p>{battle.fighters.find(f => f.id === battle.pending?.actorId)?.name}: {battle.pending.description}</p>{battle.pending.roll && <p>Wynik k20: {battle.pending.roll}</p>}{response.gm ? <ResolveForm controller={controller} /> : <p>GM rozstrzyga działanie.</p>}</Card>}
@@ -194,10 +196,14 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
 function DamageForm({ controller }: { controller: Controller }) {
   const p = controller.response!.battle!.pending!;
   const [rolls, setRolls] = useState<string[]>([]);
+  const [psiRoll, setPsiRoll] = useState('');
+  const [psiConfirmed, setPsiConfirmed] = useState(false);
+  const b = controller.response!.battle!, actor = b.fighters[b.turn];
   if (p.kind !== 'damage') return null;
   const count = p.attack.dice * (p.critical ? 2 : 1);
-  return <form className="stack-form" onSubmit={e => { e.preventDefault(); void controller.mutate('act', { kind: 'damage', rolls: Array.from({ length: count }, (_, i) => Number(rolls[i])) }); }}>
+  return <form className="stack-form" onSubmit={e => { e.preventDefault(); void controller.mutate('act', { kind: 'damage', ...(psiRoll ? { psiRoll: Number(psiRoll), psiConfirmed } : {}), rolls: Array.from({ length: count }, (_, i) => Number(rolls[i])) }); }}>
     <p>{p.attack.name}: {count ? `${count}k${p.attack.sides}` : 'Stałe obrażenia'} {signed(p.attack.damageBonus)}. Podaj same wyniki kości; premia zostanie dodana automatycznie.</p>
+    {!!actor.psiMax && !actor.psiStrikeUsed && !!actor.psiUses && p.attack.id !== 'unarmed' && <fieldset><legend>Psionic Strike (opcjonalnie)</legend><p>Raz na twoją turę: dodatkowe k{actor.psiSides} + INT obrażeń mocy.</p><label>Wynik kości<input type="number" min={1} max={actor.psiSides} value={psiRoll} onChange={e => setPsiRoll(e.target.value)} /></label>{psiRoll && <label><input required type="checkbox" checked={psiConfirmed} onChange={e => setPsiConfirmed(e.target.checked)} />Cel jest w 30 stopach, a broń zadaje mu obrażenia.</label>}</fieldset>}
     <div className="battle-fields">{Array.from({ length: count }, (_, i) => <label key={i}>Kość {i + 1} (k{p.attack.sides})<input required type="number" min={1} max={p.attack.sides} value={rolls[i] ?? ''} onChange={e => setRolls(previous => { const next = [...previous]; next[i] = e.target.value; return next; })} /></label>)}</div>
     <button className="primary-button" disabled={controller.pending}>Zastosuj obrażenia</button>
   </form>;
