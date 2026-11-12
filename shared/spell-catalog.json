@@ -1,6 +1,6 @@
 {
   "source": "https://dnd2024.wikidot.com",
-  "edition": "Player’s Handbook 2024",
+  "edition": "Player’s Handbook 2024 + Warlock supplements",
   "spells": [
     {
       "id": "acid-splash",
@@ -927,6 +927,22 @@
       "upgrade": ""
     },
     {
+      "id": "entropic-embrace",
+      "name": "Entropic Embrace",
+      "level": 1,
+      "classes": [
+        "void elf",
+        "warlock"
+      ],
+      "castingTime": "Reaction(*)",
+      "url": "https://dnd2024.wikidot.com/spell:entropic-embrace",
+      "source": "World of Warcraft",
+      "range": "własny",
+      "duration": "1 minuta",
+      "description": "You are empowered by the essence of the Void for the duration, becoming swathed in shadow and taking on a dark-blue or purple appearance. While this effect lasts, you gain the following benefits.\n\nPreternatural Calm. You automatically succeed on Constitution saving throws to maintain Concentration.\n\nShadow Shroud. You are shrouded in shadow, making your space Lightly Obscured.\n\nTouch of the Void . Once on each of your turns, you can deal an extra 1d4 Necrotic damage to one creature when you deal damage to it, or you can restore an extra 1d4 Hit Points to one creature when you heal it.",
+      "upgrade": "The extra damage or healing from the Touch of the Void effect increases by 1d4 for each spell slot level above 1."
+    },
+    {
       "id": "expeditious-retreat",
       "name": "Expeditious Retreat",
       "level": 1,
@@ -1662,6 +1678,23 @@
       "upgrade": ""
     },
     {
+      "id": "battle-familiar",
+      "name": "Battle Familiar",
+      "level": 2,
+      "classes": [
+        "druid",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:battle-familiar",
+      "source": "Arcana Unleashed",
+      "range": "10 stóp",
+      "duration": "1 godzina",
+      "description": "You conjure a familiar imbued with magical might. The familiar appears in an unoccupied space within range; resembles an animal of your choice but is a Celestial, Fey, or Fiend (your choice); and uses the Battle Familiar stat block. When you cast this spell, choose the Brute, Flyer, or Stalker form. The choice determines certain details in the stat block.\n\nCombat. The familiar is an ally to you and your allies. It rolls its own Initiative and acts on its own turn.\n\nDisappearance of the Familiar. The battle familiar disappears when the spell ends, if it drops to 0 Hit Points, or if you die. When it disappears, it leaves behind in its space anything it was wearing or carrying. If you cast this spell again, you decide whether you summon the familiar that disappeared or a different one.\n\nBattle Familiar\n\nMedium Celestial, Fey, or Fiend (Your Choice); Neutral\n\nArmor Class: 11 + the spell's level + 2 (Brute only)\n\nInitiative Initiative +3 (13)\n\nHit Points: 30 (Brute only) or 20 (Flyer or Stalker only) + 5 for each spell level above 2\n\nSpeed: 40 ft., Fly 30 ft. hover; Flyer only, Swim 30 ft.\n\nSTR (Mod/Save) DEX (Mod/Save) CON (Mod/Save) INT (Mod/Save) WIS (Mod/Save) CHA (Mod/Save)\n\n16 (+3/+3) 16 (+3/+3) 12 (+1/+1) 8 (-1/-1) 13 (+1/+1) 10 (+0/+0)\n\nImmunities: Charmed, Frightened\n\nSenses: Passive Perception 11\n\nLanguages: Understands the languages that you know\n\nTraits\n\nFlyby (Flyer Only). The familiar doesn't provoke an Opportunity Attack when it flies out of an enemy's reach.\n\nTalented. Add half the spell's level (round down) to any ability check or saving throw the familiar makes.\n\nActions\n\nMultiattack. The familiar makes a number of Rend attacks equal to half this spell's level (round down). The familiar can replace one of these attacks with Prowl if available.\n\nRend. Melee Attack Roll: Bonus equals your spell attack modifier, reach 5 ft. Hit: 1d8 + 3 plus the spell's level Force damage.\n\nProwl (Stalker Only). The familiar moves up to half its Speed without provoking Opportunity Attacks. At the end of this movement, the familiar can take the Hide action.\n\nOne Familiar at a Time. You can't have more than one familiar at a time. If you cast this spell while you already have a familiar from this spell, that familiar is replaced by the new one.\n\nIf you have a familiar from the Find Familiar spell when you cast this spell, you empower your existing familiar rather than conjuring a new one. For the duration, your familiar can attack in addition to taking other actions as normal, and your familiar's game statistics are replaced by the Battle Familiar stat block, but it retains its creature type, alignment, Hit Points, Hit Point Dice, and any features granted by the Find Familiar spell. Your familiar gains a number of Temporary Hit Points equal to the Hit Points of the battle familiar. Battle Familiar ends early if the familiar has no more Temporary Hit Points left, and these Temporary Hit Points vanish if any remain when Battle Familiar ends. Your familiar reverts to its previous form when Battle Familiar ends.",
+      "upgrade": "Use the spell slot's level for the spell's level in the stat block."
+    },
+    {
       "id": "beast-sense",
       "name": "Beast Sense",
       "level": 2,
@@ -1790,6 +1823,21 @@
       "upgrade": ""
     },
     {
+      "id": "curse-of-agony",
+      "name": "Curse of Agony",
+      "level": 2,
+      "classes": [
+        "warlock"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:curse-of-agony",
+      "source": "World of Warcraft",
+      "range": "30 ft.",
+      "duration": "1 minuta",
+      "description": "You curse one creature within range with excruciating pain. The target makes a Constitution saving throw; the spell's damage starts at 1d4 Psychic damage. On a failed save, the target takes the spell's damage, and the spell's damage die increases: from 1d4 to 1d6, 1d6 to 1d8, 1d8 to 1d10, or 1d10 to 1d12 (the maximum). On a successful save, the target takes the spell's damage, and the effect ends. The target repeats the save at the end of each of its turns.",
+      "upgrade": ""
+    },
+    {
       "id": "darkness",
       "name": "Darkness",
       "level": 2,
@@ -1854,6 +1902,29 @@
       "duration": "Koncentracja, do 1 minuty",
       "description": "You touch one willing creature, and choose Acid, Cold, Fire, Lightning, or Poison. Until the spell ends, the target can take a Magic action to exhale a 15-foot Cone. Each creature in that area makes a Dexterity saving throw, taking 3d6 damage of the chosen type on a failed save or half as much damage on a successful one.",
       "upgrade": ""
+    },
+    {
+      "id": "dueling-ground",
+      "name": "Dueling Ground",
+      "level": 2,
+      "classes": [
+        "artificer",
+        "bard",
+        "cleric",
+        "druid",
+        "paladin",
+        "ranger",
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "10 minutes or R",
+      "url": "https://dnd2024.wikidot.com/spell:dueling-ground",
+      "source": "Arcana Unleashed",
+      "range": "dotyk",
+      "duration": "1 godzina",
+      "description": "You create a magical dueling ground bounded by a glowing, rune-scribed circle in a 15-foot-radius Sphere centered on a point on the ground you touch.\n\nAs part of creating the dueling ground, you designate two willing creatures within the Sphere as the targets. The spell ends early if a creature other than one of the targets enters the Sphere.\n\nIf a target drops to 0 Hit Points while in the dueling ground, the target is Stable and teleports to the nearest unoccupied space outside the dueling ground. If a target is subjected to an effect that would kill it instantly without dealing damage while in the dueling ground, the target doesn't die and instead has 0 Hit Points and the Unconscious condition, is Stable, and teleports to the nearest unoccupied space outside the dueling ground.\n\nWhen only one target remains in the dueling ground, runes matching those on the ground around the Sphere briefly flash around the remaining target's head like a crown.",
+      "upgrade": "You can target one additional willing creature for each spell slot level above 2."
     },
     {
       "id": "enhance-ability",
@@ -2517,6 +2588,24 @@
       "upgrade": ""
     },
     {
+      "id": "uncertain-footing",
+      "name": "Uncertain Footing",
+      "level": 2,
+      "classes": [
+        "artificer",
+        "bard",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:uncertain-footing",
+      "source": "Arcana Unleashed",
+      "range": "120 stóp",
+      "duration": "Koncentracja, do 1 minuty",
+      "description": "You create illusory obstacles such as rocks or spikes in an attempt to confuse up to three creatures you can see within range, affecting their ability to move. Each target makes an Intelligence saving throw. On a failed save, a target's Speed is halved, and it can't take the Dash action. A hampered target repeats the save at the end of each of its turns, ending the spell on itself on a success.",
+      "upgrade": ""
+    },
+    {
       "id": "warding-bond",
       "name": "Warding Bond",
       "level": 2,
@@ -2577,6 +2666,25 @@
       "duration": "Natychmiastowy",
       "description": "Choose a pile of bones or a corpse of a Medium or Small Humanoid within range. The target becomes an Undead creature: a Skeleton if you chose bones or a Zombie if you chose a corpse (see appendix B for the stat blocks).\n\nOn each of your turns, you can take a Bonus Action to mentally command any creature you made with this spell if the creature is within 60 feet of you (if you control multiple creatures, you can command any of them at the same time, issuing the same command to each one). You decide what action the creature will take and where it will move on its next turn, or you can issue a general command, such as to guard a chamber or corridor. If you issue no commands, the creature takes the Dodge action and moves only to avoid harm. Once given an order, the creature continues to follow it until its task is complete.\n\nThe creature is under your control for 24 hours, after which it stops obeying any command you've given it. To maintain control of the creature for another 24 hours, you must cast this spell on the creature again before the current 24-hour period ends. This use of the spell reasserts your control over up to four creatures you have animated with this spell rather than animating a new creature.",
       "upgrade": ""
+    },
+    {
+      "id": "astral-flood",
+      "name": "Astral Flood",
+      "level": 3,
+      "classes": [
+        "bard",
+        "cleric",
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:astral-flood",
+      "source": "D&D Beyond Drops - May 2026",
+      "range": "własny",
+      "duration": "Natychmiastowy",
+      "description": "You channel energy from the Astral Sea to unleash a torrent of magic from yourself. Choose Cold or Radiant for the type of energy channeled. Each creature in a 30-foot Cone originating from you makes a Dexterity saving throw. On a failed save, the target takes 4d10 damage of the chosen type and suffers an additional effect determined by the damage type:\n\nCold Damage. The target has Disadvantage on the next D20 Test it makes before the end of your next turn.\n\nRadiant Damage. The target has the Blinded condition until the end of your next turn.\n\nOn a successful save, the target takes half as much damage only.",
+      "upgrade": "Using a Higher-Level Spell Slot: The damage increases by 1d10 for each spell slot above 3."
     },
     {
       "id": "aura-of-vitality",
@@ -2917,6 +3025,21 @@
       "upgrade": ""
     },
     {
+      "id": "hand-of-guldan",
+      "name": "Hand of Gul'dan",
+      "level": 3,
+      "classes": [
+        "warlock"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:hand-of-guldan",
+      "source": "World of Warcraft",
+      "range": "120 ft.",
+      "duration": "Koncentracja, do 1 minuty",
+      "description": "A demonic meteor hurtles from you to a point you choose within range and then erupts. Each creature in a 20-foot-radius Sphere centered on that point makes a Dexterity saving throw, taking 2d8 Fire damage plus 2d8 Necrotic damage on a failed save or half as much damage on a successful one.\n\nDemonic spirits resembling fel imps flit about the Sphere for the duration. A creature that enters the Sphere or ends its turn there makes a Dexterity saving throw, taking 1d8 Fire damage plus 1d8 Necrotic damage on a failed save or half as much damage on a successful one. A creature can be affected by this spell only once per turn.",
+      "upgrade": ""
+    },
+    {
       "id": "haste",
       "name": "Haste",
       "level": 3,
@@ -2961,6 +3084,24 @@
       "range": "120 stóp",
       "duration": "Koncentracja, do 1 minuty",
       "description": "You create a twisting pattern of colors in a 30-foot Cube within range. The pattern appears for a moment and vanishes. Each creature in the area who can see the pattern must succeed on a Wisdom saving throw or have the Charmed condition for the duration. While Charmed, the creature has the Incapacitated condition and a Speed of 0.\n\nThe spell ends for an affected creature if it takes any damage or if someone else uses an action to shake the creature out of its stupor.",
+      "upgrade": ""
+    },
+    {
+      "id": "inflict-doubt",
+      "name": "Inflict Doubt",
+      "level": 3,
+      "classes": [
+        "bard",
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:inflict-doubt",
+      "source": "Arcana Unleashed",
+      "range": "120 stóp",
+      "duration": "Koncentracja, do 1 minuty",
+      "description": "You inflict self-doubt on a creature you can see within range. The target must succeed on a Wisdom saving throw or have Disadvantage on D20 Tests for the duration. At the end of each of its turns, the target repeats the save, ending the spell on itself on a success.",
       "upgrade": ""
     },
     {
@@ -3136,6 +3277,21 @@
       "duration": "Koncentracja, do 1 godziny",
       "description": "For the duration, the willing creature you touch has Resistance to one damage type of your choice: Acid, Cold, Fire, Lightning, or Thunder.",
       "upgrade": ""
+    },
+    {
+      "id": "rain-of-fire",
+      "name": "Rain of Fire",
+      "level": 3,
+      "classes": [
+        "warlock"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:rain-of-fire",
+      "source": "World of Warcraft",
+      "range": "120 ft.",
+      "duration": "Koncentracja, do 1 minuty",
+      "description": "Hellfire rains down in a 20-foot-radius, 40-foot-high Cylinder centered on a point within range. Until the spell ends, you can take a Magic action on later turns to move the Cylinder up to 60 feet.\n\nWhen the Cylinder appears, each creature in it makes a Dexterity saving throw, taking 3d8 Fire damage on a failed save or half as much damage on a successful one. A creature also makes this save when the spell's area moves into its space and when it enters the spell's area or ends its turn there. A creature makes this save only once per turn.\n\nYou have Advantage on spell attack rolls against a creature in the Cylinder, and you deal an extra 1d6 Necrotic damage to the target if you hit.",
+      "upgrade": "The Fire damage increases by 1d8 for each spell slot level above 3."
     },
     {
       "id": "remove-curse",
@@ -3445,6 +3601,24 @@
       "upgrade": ""
     },
     {
+      "id": "backlash",
+      "name": "Backlash",
+      "level": 4,
+      "classes": [
+        "bard",
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Reaction",
+      "url": "https://dnd2024.wikidot.com/spell:backlash",
+      "source": "Forgotten Realms - Heroes of Faerun",
+      "range": "60 stóp",
+      "duration": "Natychmiastowy",
+      "description": "You ward yourself against destructive energy, reducing the damage taken by 4d6 plus your spellcasting ability modifier.\n\nIf the triggering damage was from a creature within range, you can force the creature to make a Constitution saving throw. The creature takes 4d6 Force damage on a failed save or half as much damage on a successful one.",
+      "upgrade": "The damage reduction and Force damage from this spell both increase by 1d6 for every spell slot level above 4."
+    },
+    {
       "id": "banishment",
       "name": "Banishment",
       "level": 4,
@@ -3607,6 +3781,24 @@
       "upgrade": ""
     },
     {
+      "id": "distorted-distance",
+      "name": "Distorted Distance",
+      "level": 4,
+      "classes": [
+        "artificer",
+        "bard",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:distorted-distance",
+      "source": "Arcana Unleashed",
+      "range": "120 stóp",
+      "duration": "Koncentracja, do 10 minut",
+      "description": "You create an illusory spatial dilation that fills a 60-foot-radius Sphere centered on a point within range. For each creature you can see in the Sphere, you can choose one of the following effects for it:\n\nDizzying Elongation. The creature makes an Intelligence saving throw. On a failed save, the creature takes 2d10 Psychic damage, and the Sphere is Difficult Terrain for it until the end of its turn.\n\nShortened Space. The creature's Speed increases by 20 feet until the end of its next turn.\n\nUntil the spell ends, whenever a creature enters the Sphere or ends its turn there, you can choose for it to receive one of these effects. A creature can be affected by this spell only once per turn.",
+      "upgrade": ""
+    },
+    {
       "id": "divination",
       "name": "Divination",
       "level": 4,
@@ -3639,6 +3831,23 @@
       "upgrade": ""
     },
     {
+      "id": "doomtide",
+      "name": "Doomtide",
+      "level": 4,
+      "classes": [
+        "bard",
+        "cleric",
+        "warlock"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:doomtide",
+      "source": "Forgotten Realms - Heroes of Faerun",
+      "range": "120 stóp",
+      "duration": "Koncentracja, do 1 minuty",
+      "description": "You create a 20-foot-radius Sphere of inky fog within range. The fog is magical Darkness and lasts for the duration or until a strong wind (such as the one created by the Gust of Wind spell) disperses it, ending the spell.\n\nEach creature in the Sphere when it appears makes a Wisdom saving throw. On a failed save, a creature takes 5d6 Psychic damage and subtracts 1d6 from its saving throws until the end of its next turn. On a successful save, a creature takes half as much damage only. A creature also makes this save when the Sphere moves into its space, when it enters the Sphere, or when it ends its turn inside the Sphere. A creature makes this save only once per turn.\n\nThe Sphere moves 10 feet away from you at the start of each of your turns.\n\nCasting as a Circle Spell. Casting this as a Circle spell requires a minimum of five secondary casters. In addition to the spell's usual components, you must provide a special component (a string of three black pearls from Pandemonium), which the spell consumes. The spell's range increases to 1 mile, and its duration increases to until dispelled (no Concentration required). The spell ends early if any caster who participated in this casting contributes to another casting of Doomtide as a Circle spell.\n\nWhen the spell is cast, each secondary caster must expend a level 3+ spell slot; otherwise, the spell fails.",
+      "upgrade": ""
+    },
+    {
       "id": "evard-s-black-tentacles",
       "name": "Evard's Black Tentacles",
       "level": 4,
@@ -3666,6 +3875,24 @@
       "duration": "Natychmiastowy",
       "description": "You convert raw materials into products of the same material. For example, you can fabricate a wooden bridge from a clump of trees, a rope from a patch of hemp, or clothes from flax or wool.\n\nChoose raw materials that you can see within range. You can fabricate a Large or smaller object (contained within a 10-foot Cube or eight connected 5-foot Cubes) given a sufficient quantity of material. If you're working with metal, stone, or another mineral substance, however, the fabricated object can be no larger than Medium (contained within a 5-foot Cube). The quality of any fabricated objects is based on the quality of the raw materials.\n\nCreatures and magic items can't be created by this spell. You also can't use it to create items that require a high degree of skill - such as weapons and armor - unless you have proficiency with the type of Artisan's Tools used to craft such objects.",
       "upgrade": ""
+    },
+    {
+      "id": "festering-blast",
+      "name": "Festering Blast",
+      "level": 4,
+      "classes": [
+        "druid",
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:festering-blast",
+      "source": "Arcana Unleashed",
+      "range": "własny",
+      "duration": "1 minuta",
+      "description": "A 60-foot-long, 10-foot-wide Line of miasma blasts from you in a direction you choose. Each creature in the Line must make a Constitution saving throw. On a failed save, a target takes 4d10 Necrotic damage and has the Poisoned condition for the duration.\n\nA creature Poisoned by this spell takes 2d10 Poison damage at the start of each of its turns. At the end of each of its turns, a Poisoned target repeats the save, ending the spell on itself on a success.",
+      "upgrade": "The initial damage increases by 1d10 for each spell slot level above 4."
     },
     {
       "id": "fire-shield",
@@ -4046,6 +4273,22 @@
       "upgrade": ""
     },
     {
+      "id": "zone-of-amicability",
+      "name": "Zone of Amicability",
+      "level": 4,
+      "classes": [
+        "bard",
+        "warlock"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:zone-of-amicability",
+      "source": "Arcana Unleashed",
+      "range": "własny",
+      "duration": "10 minut",
+      "description": "A magical zone of amicability radiates from you in a 60-foot Emanation for the duration. When you make an ability check to influence a creature in that area, you can treat a d20 roll of 9 or lower as a 10.",
+      "upgrade": ""
+    },
+    {
       "id": "animate-objects",
       "name": "Animate Objects",
       "level": 5,
@@ -4335,6 +4578,23 @@
       "upgrade": ""
     },
     {
+      "id": "enervation",
+      "name": "Enervation",
+      "level": 5,
+      "classes": [
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:enervation",
+      "source": "Arcana Unleashed",
+      "range": "60 stóp",
+      "duration": "Koncentracja, do 1 minuty",
+      "description": "A tendril of inky darkness reaches out from you to drain life from a creature you can see within range.\n\nThe target makes a Dexterity saving throw. On a failed save, the target takes 6d8 Necrotic damage. On each of your subsequent turns, you can take a Bonus Action to deal 2d8 Necrotic damage to the target automatically. The spell ends if the target is ever outside the spell's range or it has Total Cover from you.\n\nOn a successful save, the target takes half the initial damage only, and the spell ends.\n\nWhenever this spell deals damage to a target, you regain Hit Points equal to half the amount of Necrotic damage dealt.",
+      "upgrade": "The initial damage increases by 1d8 for each spell slot level above 5."
+    },
+    {
       "id": "flame-strike",
       "name": "Flame Strike",
       "level": 5,
@@ -4365,6 +4625,23 @@
       "duration": "30 dni",
       "description": "You give a verbal command to a creature that you can see within range, ordering it to carry out some service or refrain from an action or a course of activity as you decide. The target must succeed on a Wisdom saving throw or have the Charmed condition for the duration. The target automatically succeeds if it can't understand your command.\n\nWhile Charmed, the creature takes 5d10 Psychic damage if it acts in a manner directly counter to your command. It takes this damage no more than once each day.\n\nYou can issue any command you choose, short of an activity that would result in certain death. Should you issue a suicidal command, the spell ends.\n\nA Remove Curse , Greater Restoration , or Wish spell ends this spell.",
       "upgrade": ""
+    },
+    {
+      "id": "grave-ground",
+      "name": "Grave Ground",
+      "level": 5,
+      "classes": [
+        "cleric",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:grave-ground",
+      "source": "Arcana Unleashed",
+      "range": "120 stóp",
+      "duration": "Koncentracja, do 1 minuty",
+      "description": "Skeletal hands burst from an area on the ground within range. The area consists of up to four 10-foot squares, which you arrange as you like. Each square must be contiguous with at least one other square. That area is Difficult Terrain for your enemies.\n\nAny enemy in that area when the skeletal hands appear makes a Strength saving throw. On a failed save, a creature takes 6d6 Necrotic damage, and until the end of its next turn, the creature subtracts 1d6 from all its damage rolls. An enemy also makes this save if it enters the area or ends its turn there. A creature makes this save only once per turn.",
+      "upgrade": "The damage increases by 1d6 for each spell slot level above 5."
     },
     {
       "id": "greater-restoration",
@@ -4511,6 +4788,22 @@
       "upgrade": ""
     },
     {
+      "id": "negative-energy-flood",
+      "name": "Negative Energy Flood",
+      "level": 5,
+      "classes": [
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:negative-energy-flood",
+      "source": "Arcana Unleashed",
+      "range": "60 stóp",
+      "duration": "Natychmiastowy",
+      "description": "You send ribbons of negative energy at one creature you can see within range. If the target isn't Undead, it makes a Constitution saving throw, taking 3d10 + 25 Necrotic damage on a failed save or half as much damage on a successful one. A Humanoid killed by this spell rises at the start of your next turn as a Zombie that follows your verbal orders for 24 hours, after which it acts according to its nature.\n\nIf the target is Undead, it gains 3d10 Temporary Hit Points.",
+      "upgrade": "The damage increases by 1d10 for each spell slot level above 5."
+    },
+    {
       "id": "passwall",
       "name": "Passwall",
       "level": 5,
@@ -4619,6 +4912,24 @@
       "range": "30 stóp",
       "duration": "8 godzin",
       "description": "You give an illusory appearance to each creature of your choice that you can see within range. An unwilling target can make a Charisma saving throw, and if it succeeds, it is unaffected by this spell.\n\nYou can give the same appearance or different ones to the targets. The spell can change the appearance of the targets' bodies and equipment. You can make each creature seem 1 foot shorter or taller and appear heavier or lighter. A target's new appearance must have the same basic arrangement of limbs as the target, but the extent of the illusion is otherwise up to you. The spell lasts for the duration.\n\nThe changes wrought by this spell fail to hold up to physical inspection. For example, if you use this spell to add a hat to a creature's outfit, objects pass through the hat.\n\nA creature that takes the Study action to examine a target can make an Intelligence (Investigation) check against your spell save DC. If it succeeds, it becomes aware that the target is disguised.",
+      "upgrade": ""
+    },
+    {
+      "id": "spirit-lantern",
+      "name": "Spirit Lantern",
+      "level": 5,
+      "classes": [
+        "artificer",
+        "cleric",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:spirit-lantern",
+      "source": "Arcana Unleashed",
+      "range": "własny",
+      "duration": "10 minut",
+      "description": "You conjure a floating, ghostly black lantern that hovers above you and sheds Dim Light in a 60-foot radius. When an enemy dies within this Dim Light, a fragment of the creature's soul flies into the lantern. The lantern can hold a number of soul fragments equal to your spellcasting ability modifier, and those fragments dissipate when the spell ends.\n\nAs a Bonus Action, you can expend a soul fragment to create one of the following effects.\n\nDrain Life. The soul fragment darts at a creature of your choice that you can see within 60 feet of yourself. The target makes a Constitution saving throw, taking Necrotic damage equal to 4d8 plus your spellcasting ability modifier on a failed save or half as much damage on a successful one.\n\nRepair Undead. The soul fragment flies into an Undead creature of your choice that you can see within 60 feet of yourself. That creature regains Hit Points equal to 4d8 plus your spellcasting ability modifier.\n\nWard Ally. The soul fragment darts around a creature of your choice that you can see within 60 feet of yourself. Other creatures have Disadvantage on attack rolls against the chosen creature until the start of your next turn.",
       "upgrade": ""
     },
     {
@@ -4772,6 +5083,23 @@
       "range": "120 stóp",
       "duration": "Koncentracja, do 10 minut",
       "description": "A nonmagical wall of solid stone springs into existence at a point you choose within range. The wall is 6 inches thick and is composed of ten 10-foot-by-10-foot panels. Each panel must be contiguous with another panel. Alternatively, you can create 10-foot-by-20-foot panels that are only 3 inches thick.\n\nIf the wall cuts through a creature's space when it appears, the creature is pushed to one side of the wall (you choose which side). If a creature would be surrounded on all sides by the wall (or the wall and another solid surface), that creature can make a Dexterity saving throw. On a success, it can use its Reaction to move up to its Speed so that it is no longer enclosed by the wall.\n\nThe wall can have any shape you desire, though it can't occupy the same space as a creature or object. The wall doesn't need to be vertical or rest on a firm foundation. It must, however, merge with and be solidly supported by existing stone. Thus, you can use this spell to bridge a chasm or create a ramp.\n\nIf you create a span greater than 20 feet in length, you must halve the size of each panel to create supports. You can crudely shape the wall to create battlements and the like.\n\nThe wall is an object made of stone that can be damaged and thus breached. Each panel has AC 15 and 30 Hit Points per inch of thickness, and it has Immunity to Poison and Psychic damage. Reducing a panel to 0 Hit Points destroys it and might cause connected panels to collapse at the DM's discretion.\n\nIf you maintain your Concentration on this spell for its full duration, the wall becomes permanent and can't be dispelled. Otherwise, the wall disappears when the spell ends.",
+      "upgrade": ""
+    },
+    {
+      "id": "waves-of-exhaustion",
+      "name": "Waves of Exhaustion",
+      "level": 5,
+      "classes": [
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Bonus Action",
+      "url": "https://dnd2024.wikidot.com/spell:waves-of-exhaustion",
+      "source": "Arcana Unleashed",
+      "range": "własny",
+      "duration": "Koncentracja, do 1 minuty",
+      "description": "You evoke a nimbus of flickering gray light around your body. For the duration, you can take a Magic action to emit a wave of gray light in a 60-foot Cone. Creatures in that area must succeed on a Constitution saving throw or gain 1 Exhaustion level. This spell can't increase a creature's Exhaustion level above 4.\n\nExhaustion levels gained from this spell are removed when the spell ends.",
       "upgrade": ""
     },
     {
@@ -5302,6 +5630,23 @@
       "upgrade": ""
     },
     {
+      "id": "aura-of-evasion",
+      "name": "Aura of Evasion",
+      "level": 7,
+      "classes": [
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:aura-of-evasion",
+      "source": "Arcana Unleashed",
+      "range": "własny",
+      "duration": "Koncentracja, do 1 minuty",
+      "description": "An aura of alacrity radiates from you in a 30-foot Emanation for the duration. While in the aura, you and your allies have Advantage on Dexterity saving throws. When an affected creature is subjected to an effect that allows it to make a Dexterity saving throw to take only half damage, it takes no damage if it succeeds on the save and only half damage if it fails. A creature with the Incapacitated condition doesn't gain any benefit from being in the aura.",
+      "upgrade": ""
+    },
+    {
       "id": "conjure-celestial",
       "name": "Conjure Celestial",
       "level": 7,
@@ -5411,6 +5756,24 @@
       "upgrade": ""
     },
     {
+      "id": "fractured-awareness",
+      "name": "Fractured Awareness",
+      "level": 7,
+      "classes": [
+        "bard",
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:fractured-awareness",
+      "source": "Arcana Unleashed",
+      "range": "120 stóp",
+      "duration": "Koncentracja, do 1 minuty",
+      "description": "You cause a creature to receive conflicting visions of multiple possible futures. Choose a creature you can see within range. The target makes an Intelligence saving throw. On a failed save, the target takes 12d10 Psychic damage and has Disadvantage on D20 Tests for the duration. On a successful save, the target takes half as much damage only, and the spell ends.\n\nAt the end of each of its turns, an affected target repeats the save, ending the spell on a success.",
+      "upgrade": ""
+    },
+    {
       "id": "mirage-arcane",
       "name": "Mirage Arcane",
       "level": 7,
@@ -5487,6 +5850,24 @@
       "range": "60 stóp",
       "duration": "Natychmiastowy",
       "description": "You fortify up to six creatures you can see within range. The spell bestows 120 Temporary Hit Points, which you divide among the spell's recipients.",
+      "upgrade": ""
+    },
+    {
+      "id": "power-word-pain",
+      "name": "Power Word Pain",
+      "level": 7,
+      "classes": [
+        "bard",
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:power-word-pain",
+      "source": "Arcana Unleashed",
+      "range": "60 stóp",
+      "duration": "1 minuta",
+      "description": "You speak a word of power that causes waves of intense pain to assail one creature you can see within range. If the target has 100 Hit Points or fewer, it takes 6d8 Force damage and has the Charmed condition for the duration. Otherwise, it takes 6d8 Force damage only.\n\nWhile the target is Charmed, its Speed can be no more than 10 feet, and it has Disadvantage on D20 Tests except Constitution saving throws. In addition, when the target tries to cast a spell, it must first succeed on a Constitution saving throw, or the spell dissipates with no effect, and the action, Bonus Action, or Reaction used to cast it is wasted. If that spell was cast with a spell slot, the slot isn't expended.\n\nAt the end of each of its turns, the Charmed target makes a Constitution saving throw, ending the spell on itself on a successful save.",
       "upgrade": ""
     },
     {
@@ -5568,6 +5949,24 @@
       "upgrade": ""
     },
     {
+      "id": "reweave-fate",
+      "name": "Reweave Fate",
+      "level": 7,
+      "classes": [
+        "bard",
+        "cleric",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Reaction",
+      "url": "https://dnd2024.wikidot.com/spell:reweave-fate",
+      "source": "Arcana Unleashed",
+      "range": "60 stóp",
+      "duration": "Natychmiastowy",
+      "description": "You untangle a single thread of fate to encourage a different result. The creature that failed the D20 Test can reroll it with Advantage, and the creature must use the new roll. If the D20 Test is successful, the creature gains 6d10 Temporary Hit Points from its strengthened fate.",
+      "upgrade": ""
+    },
+    {
       "id": "sequester",
       "name": "Sequester",
       "level": 7,
@@ -5627,6 +6026,39 @@
       "duration": "Natychmiastowy",
       "description": "This spell instantly transports you and up to eight willing creatures that you can see within range, or a single object that you can see within range, to a destination you select. If you target an object, it must be Large or smaller, and it can't be held or carried by an unwilling creature.\n\nThe destination you choose must be known to you, and it must be on the same plane of existence as you. Your familiarity with the destination determines whether you arrive there successfully. The DM rolls 1d100 and consults the Teleportation Outcome table and the explanations after it.",
       "upgrade": ""
+    },
+    {
+      "id": "transfix",
+      "name": "Transfix",
+      "level": 7,
+      "classes": [
+        "bard",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:transfix",
+      "source": "Arcana Unleashed",
+      "range": "własny",
+      "duration": "Koncentracja, do 1 minuty",
+      "description": "For the duration, your appearance becomes otherworldly and alluring. One creature of your choice that you can see within 60 feet of you must succeed on a Charisma saving throw or have the Charmed condition for the duration.\n\nWhile Charmed, the target has the Incapacitated condition, and if the target is more than 5 feet away from you, it moves on its turn toward you by the most direct route, trying to get within 5 feet of you. If the Charmed creature ends its turn within 5 feet of you, it takes 4d8 Psychic damage.\n\nThe target doesn't avoid Opportunity Attacks when moving toward you, but before moving into damaging terrain (such as lava or a pit), the target repeats the save, ending the spell on itself on a success.\n\nUntil the spell ends, you can take a Magic action on subsequent turns to target another creature, but you can't target a creature again if it has succeeded on a save against this casting of the spell.",
+      "upgrade": "The damage increases by 1d8 for each spell slot level above 7."
+    },
+    {
+      "id": "void-star",
+      "name": "Void Star",
+      "level": 7,
+      "classes": [
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:void-star",
+      "source": "D&D Beyond Drops - June 2026",
+      "range": "120 stóp",
+      "duration": "Natychmiastowy",
+      "description": "You conjure forth a fragment of a dark star and launch it at one creature that you can see within range. Make a ranged spell attack against the target. On a hit, the target takes 6d12 Necrotic damage. Hit or miss, the target takes 3d12 Necrotic damage at the end of its next turn, and you regain Hit Points equal to that damage.",
+      "upgrade": "The damage (both initial and later) increases by 1d12 for each spell slot level above 7."
     },
     {
       "id": "animal-shapes",
@@ -5770,6 +6202,24 @@
       "upgrade": ""
     },
     {
+      "id": "entrancing-mirrors",
+      "name": "Entrancing Mirrors",
+      "level": 8,
+      "classes": [
+        "bard",
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:entrancing-mirrors",
+      "source": "Arcana Unleashed",
+      "range": "90 stóp",
+      "duration": "Koncentracja, do 1 minuty",
+      "description": "You create dozens of illusory mirrors to confuse up to three creatures of your choice that you can see within range.\n\nEach target makes an Intelligence saving throw. On a failed save, a target takes 7d6 Psychic damage and has the Stunned condition. While the target is Stunned, its Speed is halved. On a successful save, a target takes half as much damage only.\n\nA Stunned target repeats the Intelligence saving throw at the end of each of its turns, ending the spell on itself on a success.",
+      "upgrade": ""
+    },
+    {
       "id": "glibness",
       "name": "Glibness",
       "level": 8,
@@ -5812,6 +6262,41 @@
       "range": "150 stóp",
       "duration": "Koncentracja, do 1 minuty",
       "description": "A swirling cloud of embers and smoke fills a 20-foot-radius Sphere centered on a point within range. The cloud's area is Heavily Obscured. It lasts for the duration or until a strong wind (like that created by Gust of Wind ) disperses it.\n\nWhen the cloud appears, each creature in it makes a Dexterity saving throw, taking 10d8 Fire damage on a failed save or half as much damage on a successful one. A creature must also make this save when the Sphere moves into its space and when it enters the Sphere or ends its turn there. A creature makes this save only once per turn.\n\nThe cloud moves 10 feet away from you in a direction you choose at the start of each of your turns.",
+      "upgrade": ""
+    },
+    {
+      "id": "iron-body",
+      "name": "Iron Body",
+      "level": 8,
+      "classes": [
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:iron-body",
+      "source": "Arcana Unleashed",
+      "range": "dotyk",
+      "duration": "Koncentracja, do 1 godziny",
+      "description": "One willing creature you touch transforms into living metal. Until the spell ends, the target's Exhaustion level can't increase; the target has Resistance to Bludgeoning, Fire, Piercing, and Slashing damage; and it has Immunity to Poison damage and the Paralyzed, Petrified, and Poisoned conditions. If the target is Paralyzed, Petrified, or Poisoned when you cast the spell, those conditions immediately end for the target.",
+      "upgrade": ""
+    },
+    {
+      "id": "lightning-ring",
+      "name": "Lightning Ring",
+      "level": 8,
+      "classes": [
+        "druid",
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Bonus Action",
+      "url": "https://dnd2024.wikidot.com/spell:lightning-ring",
+      "source": "Arcana Unleashed",
+      "range": "własny",
+      "duration": "Koncentracja, do 10 minut",
+      "description": "A ring of crackling electricity fills a 10-foot Emanation originating from you. Whenever the Emanation enters a creature's space and whenever a creature enters the Emanation or ends its turn there, you can force that creature to make a Constitution saving throw. On a failed save, the creature takes 3d6 Lightning damage plus 3d6 Thunder damage, and it has the Deafened condition for 1 minute. On a successful save, the creature takes half as much damage only.\n\nAs a Magic action while the spell is active, you can emit a 60-foot-long, 5-foot-wide Line out from you in a direction you choose. Each creature in the Line makes a Dexterity saving throw, taking 6d6 Lightning damage on a failed save or half as much damage on a successful one.",
       "upgrade": ""
     },
     {
@@ -5919,6 +6404,40 @@
       "range": "10 stóp",
       "duration": "do rozproszenia",
       "description": "You and up to eight willing creatures within range project your astral bodies into the Astral Plane (the spell ends instantly if you are already on that plane). Each target's body is left behind in a state of suspended animation; it has the Unconscious condition, doesn't need food or air, and doesn't age.\n\nA target's astral form resembles its body in almost every way, replicating it's game statistics and possessions. The principal difference is the addition of a silvery cord that trails from between the shoulderblades of the astral form. The cord fades from view after 1 foot. If the cord is cut - which happens only when an effect states that it does so - the target's body and astral form both die.\n\nA target's astral form can travel through the Astral Plane. The moment an astral form leaves that plane, the target's body and possessions travel along the silver cord, causing the target to re-enter its body on the new plane.\n\nAny damage or other effects that apply to an astral form have no effect on the target's body and vice versa. If a target's body or astral form drops to 0 Hit Points, the spell ends for that target. The spell ends for all the targets if you take a Magic action to dismiss it.\n\nWhen the spell ends for a target who isn't dead, the target reappears in its body and exits the state of suspended animation.",
+      "upgrade": ""
+    },
+    {
+      "id": "blade-of-disaster",
+      "name": "Blade of Disaster",
+      "level": 9,
+      "classes": [
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Bonus Action",
+      "url": "https://dnd2024.wikidot.com/spell:blade-of-disaster",
+      "source": "Forgotten Realms - Heroes of Faerun",
+      "range": "60 stóp",
+      "duration": "Koncentracja, do 1 minuty",
+      "description": "You create a 3-foot-long blade-shaped planar rift that lasts for the duration. The rift appears within range in a space of your choice, and you can immediately make up to two melee spell attacks, each one against a creature or object within 5 feet of the rift. On a hit, the target takes 10d6 Force damage. This attack scores a Critical Hit if the number on the d20 is 18 or higher.\n\nAs a Bonus Action on your later turns, you can move the rift up to 60 feet and repeat the two attacks against a creature or an object within 5 feet of it. You can direct the attacks at the same target or at different ones.\n\nThe blade can harmlessly pass through any barrier, including ones created by spells like Wall of Force .",
+      "upgrade": ""
+    },
+    {
+      "id": "detonate",
+      "name": "Detonate",
+      "level": 9,
+      "classes": [
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:detonate",
+      "source": "Arcana Unleashed",
+      "range": "500 stóp",
+      "duration": "Natychmiastowy",
+      "description": "You create a magical, explosive seed inside a creature you can see within range. The target makes a Constitution saving throw, taking 10d10 Fire damage on a failed save or half as much damage on a successful one.\n\nAn explosion then originates from the target. Each creature in a 60-foot Emanation originating from the target (not including the target) makes a Dexterity saving throw, with Disadvantage if this spell reduced the target to 0 Hit Points. A creature takes 10d10 Fire damage on a failed save or half as much damage on a successful one.\n\nA nonmagical object that isn't being worn or carried also takes the damage if it's in the Emanation, and the object starts burning if it's flammable.",
       "upgrade": ""
     },
     {
@@ -6119,6 +6638,41 @@
       "range": "dotyk",
       "duration": "Natychmiastowy",
       "description": "You touch a creature that has been dead for no longer than 200 years and that died for any reason except old age. The creature is revived with all its Hit Points.\n\nThis spell closes all wounds, neutralizes any poison, cures all magical contagions, and lifts any curses affecting the creature when it died. The spell replaces damaged or missing organs and limbs. If the creature was Undead, it is restored to its non-Undead form.\n\nThe spell can provide a new body if the original no longer exists, in which case you must speak the creature's name. The creature then appears in an unoccupied space you choose within 10 feet of you.",
+      "upgrade": ""
+    },
+    {
+      "id": "vision-of-elapsing-eons",
+      "name": "Vision of Elapsing Eons",
+      "level": 9,
+      "classes": [
+        "bard",
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:vision-of-elapsing-eons",
+      "source": "Arcana Unleashed",
+      "range": "120 stóp",
+      "duration": "1 minuta",
+      "description": "You trick a creature you can see within range into believing it is watching itself and its surroundings crumble away, as if eons were passing in moments. The target must succeed on an Intelligence saving throw or take 10d12 Psychic damage and have the Paralyzed condition for the duration.\n\nWhile Paralyzed, the target repeats the save at the end of each of its turns. On a failed save, it gains 1 Exhaustion level. On a successful save, the spell ends. The spell ends early if someone within 5 feet of the target takes an action to shake it free from the illusion.",
+      "upgrade": ""
+    },
+    {
+      "id": "wail-of-the-banshee",
+      "name": "Wail of the Banshee",
+      "level": 9,
+      "classes": [
+        "sorcerer",
+        "warlock",
+        "wizard"
+      ],
+      "castingTime": "Action",
+      "url": "https://dnd2024.wikidot.com/spell:wail-of-the-banshee",
+      "source": "Arcana Unleashed",
+      "range": "60 stóp",
+      "duration": "Natychmiastowy",
+      "description": "You emit a terrible scream that can kill those who hear it. Choose up to ten creatures within range. Each target with 50 Hit Points or fewer dies. Targets with more than 50 Hit Points make a Constitution saving throw. On a failed save, a target takes 12d10 Psychic damage and has the Deafened condition for 1 hour. On a successful save, a target takes half as much damage only. A target is unaffected by the spell if it can't hear you.",
       "upgrade": ""
     },
     {

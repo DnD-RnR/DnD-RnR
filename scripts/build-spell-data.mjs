@@ -1,4 +1,4 @@
-// Run with `node scripts/build-spell-data.mjs` to refresh factual PHB 2024 metadata.
+// Run with `node scripts/build-spell-data.mjs` to refresh PHB 2024 and the full Warlock list.
 // English spell descriptions and upgrade text are included in the generated catalog.
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import characterOptions from '../shared/character-options.json' with { type: 'json' };
@@ -42,8 +42,18 @@ const metadata = (html, label, transform = value => value) => {
   if (!match) throw new Error(`Missing ${label}`);
   return transform(text(match[1]));
 };
-function spellText(html) {
+function spellText(html, complete = false) {
   const content = html.slice(html.indexOf('<div id="page-content">'));
+  if (complete) {
+    // Preserve named effects, lists and summoned-creature statistics in supplements.
+    const body = content.slice(content.indexOf('</p>', content.indexOf('<strong>Duration:</strong>')) + 4).split('</div>')[0];
+    const upgradePattern = /<p\b[^>]*>\s*<strong>(?:Using a Higher-Level Spell Slot|Cantrip Upgrade|At Higher Levels)[^<]*<\/strong>[\s\S]*?<\/p>/i;
+    const upgrade = body.match(upgradePattern)?.[0] ?? '';
+    return {
+      description: body.replace(upgradePattern, '').split(/<\/p>|<\/tr>|<\/li>/i).map(text).filter(Boolean).join('\n\n'),
+      upgrade: text(upgrade).replace(/^(?:Using a Higher-Level Spell Slot|Cantrip Upgrade|At Higher Levels)\.\s*/i, '')
+    };
+  }
   const paragraphs = [...content.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)].map(match => match[1]);
   const metadataIndex = paragraphs.findIndex(paragraph => paragraph.includes('<strong>Duration:</strong>'));
   const body = paragraphs.slice(metadataIndex + 1);
@@ -82,15 +92,31 @@ for (const section of all.split(/<div id="wiki-tab-0-/).slice(1)) {
     catalog.set(id, { id, name: text(link[2]), level, classes: cells[2].toLowerCase().split(',').map(value => value.trim()), castingTime: cells[3], url: `${origin}/${link[1]}` });
   }
 }
+// The Warlock list also includes supplements; retain them when rebuilding the catalog.
+const warlockList = await page('warlock:spell-list');
+const warlockIds = new Set();
+for (const section of warlockList.split(/<div id="wiki-tab-0-/).slice(1)) {
+  const level = Number(section.match(/^(\d+)"/)[1]);
+  for (const row of section.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/g)) {
+    const link = row[1].match(/href="\/(spell:[^"]+)"[^>]*>(.*?)<\/a>/);
+    if (!link) continue;
+    const cells = [...row[1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/g)].map(cell => text(cell[1]));
+    const id = link[1].slice(6);
+    warlockIds.add(id);
+    catalog.set(id, { id, name: text(link[2]), level, classes: cells[2].toLowerCase().split(',').map(value => value.trim()), castingTime: cells[3], url: `${origin}/${link[1]}` });
+  }
+}
+if (warlockIds.size < 123) throw new Error(`Incomplete Warlock list: ${warlockIds.size}`);
 await mapLimited([...catalog.values()], async spell => {
   const html = await page(`spell:${spell.id}`);
   const source = text(html.slice(html.indexOf('id="page-content"'))).match(/Source:\s*(.*?)(?:Cantrip|Level \d|\d(?:st|nd|rd|th)[ -]level)/i)?.[1] ?? '';
   spell.phb = source.includes("Player's Handbook");
+  if (!spell.phb && warlockIds.has(spell.id)) spell.source = source.trim();
   spell.range = metadata(html, 'Range', polishRange);
   spell.duration = metadata(html, 'Duration', polishDuration);
-  Object.assign(spell, spellText(html));
+  Object.assign(spell, spellText(html, !spell.phb && warlockIds.has(spell.id)));
 });
-const spells = [...catalog.values()].filter(spell => spell.phb).map(({ phb, ...spell }) => spell).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+const spells = [...catalog.values()].filter(spell => spell.phb || warlockIds.has(spell.id)).map(({ phb, ...spell }) => spell).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
 if (spells.length < 380) throw new Error(`Incomplete PHB catalog: ${spells.length}`);
 const classes = {};
 const subclasses = {};
@@ -128,7 +154,7 @@ for (const entry of characterOptions.classes) {
     }
   }
 }
-writeFileSync(new URL('../shared/spell-catalog.json', import.meta.url), JSON.stringify({ source: origin, edition: 'Player’s Handbook 2024', spells }, null, 2) + '\n');
+writeFileSync(new URL('../shared/spell-catalog.json', import.meta.url), JSON.stringify({ source: origin, edition: 'Player’s Handbook 2024 + Warlock supplements', spells }, null, 2) + '\n');
 writeFileSync(new URL('../shared/spell-progression.json', import.meta.url), JSON.stringify(classes, null, 2) + '\n');
 writeFileSync(new URL('../shared/subclass-spells.json', import.meta.url), JSON.stringify(subclasses, null, 2) + '\n');
-console.log(`${spells.length} PHB spells; ${Object.keys(classes).length} class progressions`);
+console.log(`${spells.length} spells (PHB + Warlock supplements); ${Object.keys(classes).length} class progressions`);
