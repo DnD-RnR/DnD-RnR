@@ -1,6 +1,7 @@
 import { psiResources, restPsi } from './psi-warrior.mjs';
 import { paladinResources, restPaladin } from './paladin.mjs';
 import { druidProfile } from '../shared/druid.mjs';
+import { fiendProfile } from '../shared/warlock.mjs';
 import { rageProfile } from '../shared/barbarian.mjs';
 import { selectedOriginFeats, originSpellGrants } from '../shared/origin-feats.mjs';
 import { spellcastingProfile, spellById, validateSpellSelection } from '../shared/spellcasting.mjs';
@@ -77,18 +78,19 @@ export function casterData(db, id) {
   const spells = [...ids].map(id => spellById.get(id)).filter(Boolean).map(spell => {
     const arcanum = profile.groups.find(g => g.id.startsWith('arcanum') && stats.spells.selections[g.id]?.includes(spell.id));
     const origin = originGrants.find(g => g.id === spell.id);
-    return { ...spell, originAbility: origin?.ability, originFreeCast: originGrants.some(g => g.id === spell.id && g.freeCast && !state.originSpellUses?.[g.reason]), action: spellAction(spell), effect: spellEffects[spell.id] ?? null, arcanum: Boolean(arcanum), arcanumRemaining: arcanum ? !state.arcanum[spell.id] : false };
+    return { ...spell, ritualOnly: profile.automatic.find(s => s.id === spell.id)?.ritualOnly === true, originAbility: origin?.ability, originFreeCast: originGrants.some(g => g.id === spell.id && g.freeCast && !state.originSpellUses?.[g.reason]), action: spellAction(spell), effect: spellEffects[spell.id] ?? null, arcanum: Boolean(arcanum), arcanumRemaining: arcanum ? !state.arcanum[spell.id] : false };
   });
   const species = speciesResourceState(db, id, character);
   return { character, stats, profile, state, blocked: s.spellcastingBlocked, ability: s.abilities[profile.ability]?.modifier ?? null, attack: s.spellAttack, dc: s.spellDc, slots, spells, species, error };
 }
 export function publicCaster(db, id) {
   const c = casterData(db, id);
-  return { psiWarrior: psiResources(c.character, c.state), paladin: { ...paladinResources(c.character, c.state), channelDivinityDc: c.dc }, druid: { ...druidProfile(c.character), uses: Math.min(druidProfile(c.character).max, c.state.wildShapeUses ?? druidProfile(c.character).max), forms: c.stats.traits?.druidForms ?? [], wildShape: c.state.wildShape?.expiresAt > Date.now() ? c.state.wildShape : null, companion: c.state.wildCompanion ?? null }, slots: c.slots, spells: c.spells, ability: c.ability, attack: c.attack, dc: c.dc, error: c.error, species: c.species, barbarian: { ...rageProfile(c.character), uses: Math.min(rageProfile(c.character).max, c.state.rageUses ?? rageProfile(c.character).max), relentlessDC: c.state.relentlessRageDC ?? 10, recoveryAvailable: c.state.persistentRageAvailable !== false }, resourceVersion: c.state.version };
+  return { warlock: { fiend: fiendProfile(c.character, c.stats.values.cha) }, psiWarrior: psiResources(c.character, c.state), paladin: { ...paladinResources(c.character, c.state), channelDivinityDc: c.dc }, druid: { ...druidProfile(c.character), uses: Math.min(druidProfile(c.character).max, c.state.wildShapeUses ?? druidProfile(c.character).max), forms: c.stats.traits?.druidForms ?? [], wildShape: c.state.wildShape?.expiresAt > Date.now() ? c.state.wildShape : null, companion: c.state.wildCompanion ?? null }, slots: c.slots, spells: c.spells, ability: c.ability, attack: c.attack, dc: c.dc, error: c.error, species: c.species, barbarian: { ...rageProfile(c.character), uses: Math.min(rageProfile(c.character).max, c.state.rageUses ?? rageProfile(c.character).max), relentlessDC: c.state.relentlessRageDC ?? 10, recoveryAvailable: c.state.persistentRageAvailable !== false }, resourceVersion: c.state.version };
 }
 export function spendSpell(db, id, spellId, level, source) {
   const c = casterData(db, id), spell = c.spells.find(s => s.id === spellId);
   if (c.error || !spell) throw new Error(c.error || 'Ten czar nie jest przygotowany ani dostępny dla postaci.');
+  if (spell.ritualOnly) throw new Error('Animal Speaker: this spell can only be cast as a ritual outside combat.');
   if (!spell.action) throw new Error('Ten czar wymaga dłuższego czasu rzucania; rozstrzyga go GM.');
   const free = c.species?.tieflingLegacyUses?.[spellId] === true;
   if (free) {
@@ -127,6 +129,17 @@ export function handleSpellResources(db, user, path, method, body, send) {
   if (own) {
     const id = Number(own[1]);
     if (!db.prepare('SELECT 1 FROM characters WHERE id = ? AND user_id = ?').get(id, user.id)) return reply(404, { error: 'Nie znaleziono postaci.' });
+    if (method === 'POST' && body.kind === 'ritual') {
+      const c = casterData(db, id), spell = c.spells.find(s => s.id === body.spellId && s.ritualOnly);
+      if (c.error || !spell) return reply(409, { error: c.error || 'Ritual unavailable.' });
+      const battles = db.prepare('SELECT data FROM session_battles').all();
+      if (battles.some(row => { const b = JSON.parse(row.data); return b.active && b.fighters.some(f => f.characterId === id); })) return reply(409, { error: 'Complete rituals outside combat.' });
+      if (c.blocked) return reply(409, { error: 'Spellcasting is blocked.' });
+      if (spell.description?.includes('Concentration') || spell.id === 'beast-sense') {
+        c.state.concentration = spell.name; saveResources(db, id, c.state);
+      }
+      return reply(200, { spellcasting: publicCaster(db, id), ritual: { spellId: spell.id, ability: 'wis', additionalMinutes: 10, castingTime: spell.castingTime, resolution: 'GM confirms casting time, components, targets and effects.' } });
+    }
     if (method !== 'GET') return reply(405, { error: 'Niedozwolona metoda.' });
     return reply(200, { spellcasting: publicCaster(db, id), species: speciesResourceState(db, id) });
   }

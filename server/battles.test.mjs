@@ -7,13 +7,30 @@ import { handleStatistics } from './statistics.mjs';
 import { handleGames } from './games.mjs';
 import { exportRows, hydrate } from './firestore.mjs';
 import { resourceState, saveResources, handleSpellResources, publicCaster } from './spell-resources.mjs';
-import { rageProfile } from '../shared/barbarian.mjs';
+import { rageProfile, barbarianResistance, frenzyDice, wolfAttackAdvantage } from '../shared/barbarian.mjs';
 
 function barbarianFixture(level = 1) {
   const f = fixture();
   f.db.prepare('UPDATE characters SET class = ?, level = ? WHERE id = 1').run('Barbarzyńca (Barbarian)', level);
   return f;
 }
+
+test('Vengeance attack activates vow atomically, grants advantage and uses no bonus action', () => {
+  const { db, call, start, player } = fixture();
+  try {
+    db.prepare('UPDATE characters SET class = ?, subclass = ?, level = ? WHERE id = 1').run('Paladyn (Paladin)', 'Oath of Vengeance', 3);
+    const b = start().battle, targetId = b.fighters[1].id;
+    const attack = { kind: 'attack', slot: 'action', attackId: '1', targetId, vowTargetId: targetId, roll: 1 };
+    assert.equal(call('act', attack, player).status, 409);
+    assert.equal(resourceState(db, 1).channelDivinitySpent, undefined);
+    const result = call('act', { ...attack, roll2: 19 }, player);
+    assert.equal(result.status, 200);
+    assert.equal(result.battle.pending.kind, 'damage');
+    assert.equal(result.battle.fighters[0].bonus, '');
+    assert.equal(result.battle.fighters[0].vowOfEnmity.targetId, targetId);
+    assert.equal(resourceState(db, 1).channelDivinitySpent, 1);
+  } finally { db.close(); }
+});
 
 test('Danger Sense is level gated, works without Rage, cancels disadvantage and switches off during incapacitation', () => {
   for (const level of [1, 2]) {
@@ -358,6 +375,82 @@ test('Wild Companion spends a shared Wild Shape use or spell slot and expires on
       handleSpellResources(db, gm, '/api/games/1/spell-rest', 'POST', { rest: 'long' }, status => assert.equal(status, 200));
       assert.equal(resourceState(db, 1).wildCompanion, null);
       assert.equal(resourceState(db, 1).spent[0], 0);
+    } finally { db.close(); }
+  }
+});
+
+function fiendFixture(level = 3, subclass = 'Fiend Patron') {
+  const f = fixture();
+  f.db.prepare('UPDATE characters SET class = ?, subclass = ?, level = ? WHERE id = 1').run('Czarnoksiężnik (Warlock)', subclass, level);
+  f.db.prepare('UPDATE game_monster_entries SET hp = 1 WHERE game_id = 1').run();
+  const stats = JSON.parse(f.db.prepare('SELECT data FROM character_statistics WHERE character_id = 1').get().data);
+  stats.values.cha = 16;
+  stats.spells = { choices: {}, selections: { cantrips: ['eldritch-blast', 'prestidigitation'], prepared: ['hex', 'witch-bolt', 'hellish-rebuke', 'invisibility'] } };
+  f.db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = 1').run(JSON.stringify(stats));
+  return f;
+}
+
+test('Fiend blessing automatically grants persistent, non-stacking temporary HP on weapon and spell defeats', () => {
+  for (const spell of [false, true]) {
+    const { db, call, start, player } = fiendFixture();
+    try {
+      const b = start().battle, actor = b.fighters[0], target = b.fighters[1];
+      assert.equal(actor.spellcasting.warlock.fiend.temporaryHitPoints, 6);
+      const hit = spell
+        ? call('act', { kind: 'cast', spellId: 'burning-hands', level: 2, source: 'pact', slot: 'action', targetIds: [target.id] }, player)
+        : call('act', { kind: 'attack', attackId: actor.attacks.find(a => a.id !== 'unarmed').id, slot: 'action', targetId: target.id, roll: 19 }, player);
+      assert.equal(hit.status, 200, hit.error);
+      if (spell) {
+        const attack = call('act', { kind: 'spell-save', targetId: target.id, roll: 1 });
+        assert.equal(attack.status, 200, attack.error);
+        assert.equal(call('act', { kind: 'spell-defense', targetId: target.id, multiplier: 1 }).status, 200);
+      }
+      const result = call('act', { kind: spell ? 'spell-effect' : 'damage', rolls: spell ? [1, 1, 1, 1] : [1] }, player);
+      assert.equal(result.status, 200, result.error);
+      assert.equal(result.battle.fighters[0].tempHp, 6);
+      assert.deepEqual(result.battle.fiendDefeats[0].granted, [actor.id]);
+      assert.equal(result.battle.defeatedMonsters.length, 1);
+      const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 1').get().data);
+      assert.equal(stats.values.tempHp, 6);
+      assert.equal(call('act', { kind: 'dark-ones-blessing', eventId: result.battle.fiendDefeats[0].id, actorId: actor.id, enemy: true }).status, 409);
+    } finally { db.close(); }
+  }
+});
+
+test('nearby Fiend blessing needs a real defeat and GM confirmation, works outside own turn and cannot replay', () => {
+  const { db, call, start, player } = fiendFixture();
+  try {
+    const b = start().battle, actor = b.fighters[0], target = b.fighters[1];
+    const request = { kind: 'dark-ones-blessing', actorId: actor.id, enemy: true, within10Feet: true };
+    assert.equal(call('act', { ...request, eventId: 'invented' }).status, 409);
+    assert.equal(call('act', { kind: 'resolve', targetId: target.id, effect: 'damage', amount: 1, note: 'Enemy defeated by another creature' }).status, 200);
+    const event = call().battle.fiendDefeats[0];
+    assert.deepEqual(event.granted, []);
+    assert.equal(call('act', { ...request, eventId: event.id }, player).status, 409);
+    assert.equal(call('act', { ...request, eventId: event.id, enemy: false }).status, 409);
+    assert.equal(call('act', { ...request, eventId: event.id, within10Feet: false }).status, 409);
+    call('next');
+    const granted = call('act', { ...request, eventId: event.id });
+    assert.equal(granted.status, 200, granted.error);
+    assert.equal(granted.battle.fighters[0].tempHp, 6);
+    assert.equal(granted.battle.fighters[0].reaction, '');
+    assert.equal(call('act', { ...request, eventId: event.id }).status, 409);
+  } finally { db.close(); }
+});
+
+test('Fiend blessing preserves higher temporary HP and is unavailable below level three or for another patron', () => {
+  for (const [level, patron, enabled] of [[3, 'Fiend Patron', true], [2, 'Fiend Patron', false], [3, 'Archfey Patron', false]]) {
+    const { db, call, start } = fiendFixture(level, patron);
+    try {
+      const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 1').get().data);
+      stats.values.tempHp = 12;
+      db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = 1').run(JSON.stringify(stats));
+      const b = start().battle;
+      const result = call('act', { kind: 'resolve', targetId: b.fighters[1].id, effect: 'damage', amount: 1, note: 'Enemy defeated' });
+      assert.equal(result.status, 200, result.error);
+      assert.equal(Boolean(result.battle.fiendDefeats?.length), enabled);
+      if (enabled) assert.equal(call('act', { kind: 'dark-ones-blessing', actorId: b.fighters[0].id, eventId: result.battle.fiendDefeats[0].id, enemy: true, within10Feet: true }).status, 200);
+      assert.equal(call().battle.fighters[0].tempHp, 12);
     } finally { db.close(); }
   }
 });
@@ -1067,5 +1160,120 @@ test('Protective Field reduces spell damage before resistance', () => {
     assert.equal(effect.battle.fighters[0].hp, 30);
     assert.equal(effect.battle.fighters[0].tempHp, 0);
     assert.equal(effect.battle.fighters[0].damageTaken, 3);
+  } finally { db.close(); }
+});
+
+test('Moon Druid casts only circle spells in Wild Shape and retains resources across battles', () => {
+  for (const spellId of ['cure-wounds', 'moonbeam', 'starry-wisp', 'druidcraft', 'healing-word']) {
+    const { db, call, start, player } = druidFixture(3);
+    try {
+      db.prepare("UPDATE characters SET subclass = 'Circle of the Moon' WHERE id = 1").run();
+      const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 1').get().data);
+      stats.spells.selections.prepared = ['faerie-fire', 'thunderwave', 'entangle', 'healing-word', 'lesser-restoration', 'spike-growth'];
+      db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = 1').run(JSON.stringify(stats));
+      const initial = start().battle.fighters[0];
+      const result = call('act', { kind: 'wild-shape', formId: 'wolf', equipment: 'merge' }, player);
+      assert.equal(result.status, 200, result.error);
+      assert.equal(result.battle.fighters[0].tempHp, 9);
+      assert.ok(result.battle.fighters[0].ac >= 12);
+      call('end');
+      const restored = start().battle.fighters[0];
+      assert.equal(restored.wildShape.formId, 'wolf');
+      assert.equal(restored.wildShapeUses, 1);
+      const before = resourceState(db, 1).spent.slice();
+      const allowed = ['cure-wounds', 'moonbeam', 'starry-wisp'].includes(spellId);
+      const cast = call('act', { kind: 'cast', spellId, slot: spellId === 'healing-word' ? 'bonus' : 'action', level: spellId === 'starry-wisp' || spellId === 'druidcraft' ? 0 : spellId === 'moonbeam' ? 2 : 1, source: spellId === 'starry-wisp' || spellId === 'druidcraft' ? 'cantrip' : 'slot', targetIds: [restored.id] }, player);
+      assert.equal(cast.status, allowed ? 200 : 409, cast.error);
+      if (!allowed) assert.deepEqual(resourceState(db, 1).spent, before);
+    } finally { db.close(); }
+  }
+});
+
+
+test('Berserker Frenzy requires Rage and Reckless, validates dice and doubles on a critical', () => {
+  const { db, call, start, player } = barbarianFixture(3);
+  try {
+    db.prepare('UPDATE characters SET subclass = ? WHERE id = 1').run('Path of the Berserker');
+    const targetId = start().battle.fighters[1].id;
+    assert.equal(call('act', { kind: 'rage' }, player).status, 200);
+    const hit = call('act', { kind: 'attack', slot: 'action', attackId: '1', targetId, reckless: true, roll: 20, roll2: 10 }, player);
+    assert.equal(hit.status, 200); assert.equal(hit.battle.pending.frenzyDice, 2);
+    assert.equal(call('act', { kind: 'damage', rolls: [1, 1] }, player).status, 409);
+    const dealt = call('act', { kind: 'damage', rolls: [1, 1], frenzyRolls: [6, 6, 6, 6] }, player);
+    assert.equal(dealt.status, 200); assert.equal(dealt.battle.fighters[0].frenzyUsed, true);
+    assert.equal(JSON.parse(db.prepare('SELECT data FROM session_battles WHERE session_id = 1').get().data).fighters[1].hp, 49);
+  } finally { db.close(); }
+});
+
+test('Wild Heart chooses animal for each Rage, Eagle grants movement and conditions end effects', () => {
+  const { db, call, start, player } = barbarianFixture(3);
+  try {
+    db.prepare('UPDATE characters SET subclass = ? WHERE id = 1').run('Path of the Wild Heart');
+    const id = start().battle.fighters[0].id;
+    assert.equal(call('act', { kind: 'rage' }, player).status, 409);
+    assert.equal(call('act', { kind: 'rage', animal: 'invalid' }, player).status, 409);
+    const eagle = call('act', { kind: 'rage', animal: 'eagle' }, player);
+    assert.equal(eagle.status, 200); assert.equal(eagle.battle.fighters[0].extraMove, 30);
+    assert.equal(eagle.battle.fighters[0].disengaged, true);
+    assert.equal(call('act', { kind: 'eagle-flight' }, player).status, 409);
+    call('next', {}, player); call('next'); call('next');
+    assert.equal(call('act', { kind: 'eagle-flight' }, player).status, 200);
+    const ended = call('act', { kind: 'condition', actorId: id, condition: 'incapacitated', enabled: true });
+    assert.equal(ended.status, 200); assert.equal(ended.battle.fighters[0].rage, null);
+  } finally { db.close(); }
+});
+
+test('Wolf range is GM-controlled and grants allies advantage, including ranged attacks', () => {
+  const { db, call, start, player, other } = barbarianFixture(3);
+  try {
+    db.prepare('UPDATE characters SET subclass = ? WHERE id = 1').run('Path of the Wild Heart');
+    const fighters = start().battle.fighters, actorId = fighters[0].id, targetId = fighters[1].id;
+    call('act', { kind: 'rage', animal: 'wolf' }, player);
+    assert.equal(call('act', { kind: 'wolf-aura', actorId, targetIds: [targetId] }, player).status, 409);
+    assert.equal(call('act', { kind: 'wolf-aura', actorId, targetIds: [targetId] }).status, 200);
+    call('next', {}, player); call('next');
+    const hit = call('act', { kind: 'attack', slot: 'action', attackId: 'unarmed', targetId, roll: 15 }, other);
+    assert.equal(hit.status, 409);
+    assert.equal(call('act', { kind: 'attack', slot: 'action', attackId: 'unarmed', targetId, roll: 1, roll2: 20 }, other).status, 200);
+  } finally { db.close(); }
+});
+
+
+test('Bear resistance covers precisely nine damage types and stops with Rage', () => {
+  const bear = { rage: { animal: 'bear' } };
+  for (const type of ['bludgeoning', 'piercing', 'slashing', 'acid', 'cold', 'fire', 'lightning', 'poison', 'thunder']) assert.equal(barbarianResistance(bear, type), true, type);
+  for (const type of ['force', 'necrotic', 'psychic', 'radiant', 'unknown']) assert.equal(barbarianResistance(bear, type), false, type);
+  assert.equal(barbarianResistance({ rage: null }, 'fire'), false);
+  assert.equal(barbarianResistance({ rage: { animal: 'wolf' } }, 'fire'), false);
+});
+
+test('Frenzy gates subclass, level, ability, own turn, Rage and once per turn', () => {
+  const c = { class: 'Barbarian', level: 3, subclass: 'Path of the Berserker' };
+  const f = { id: 'hero', rageProfile: rageProfile(c), rage: {}, recklessActive: true };
+  const b = { fighters: [f, { id: 'enemy' }], turn: 0 };
+  assert.equal(frenzyDice(b, f, 'str'), 2);
+  for (const changes of [{ rage: null }, { recklessActive: false }, { frenzyUsed: true }, { rageProfile: rageProfile({ ...c, level: 2 }) }, { rageProfile: rageProfile({ ...c, subclass: 'Path of the Wild Heart' }) }]) assert.equal(frenzyDice(b, { ...f, ...changes }, 'str'), 0);
+  assert.equal(frenzyDice(b, f, 'dex'), 0);
+  b.turn = 1; assert.equal(frenzyDice(b, f, 'str'), 0);
+});
+
+test('Animal Speaker exposes Wisdom rituals, rejects combat casting and uses no slots', () => {
+  const { db, call, start, player } = barbarianFixture(3);
+  try {
+    db.prepare('UPDATE characters SET subclass = ? WHERE id = 1').run('Path of the Wild Heart');
+    const spells = publicCaster(db, 1).spells;
+    for (const id of ['beast-sense', 'speak-with-animals']) assert.equal(spells.find(s => s.id === id).ritualOnly, true);
+    const ritual = (user = player) => {
+      let result;
+      handleSpellResources(db, user, '/api/characters/1/spell-resources', 'POST', { kind: 'ritual', spellId: 'beast-sense' }, (status, data) => { result = { status, ...data }; });
+      return result;
+    };
+    assert.equal(ritual({ id: 3, role: 'player' }).status, 404);
+    assert.equal(ritual().ritual.ability, 'wis');
+    assert.equal(resourceState(db, 1).concentration, 'Beast Sense');
+    assert.deepEqual(publicCaster(db, 1).slots, []);
+    start();
+    assert.equal(ritual().status, 409);
+    assert.equal(call('act', { kind: 'cast', slot: 'action', spellId: 'speak-with-animals', level: 1, source: 'slot' }, player).status, 409);
   } finally { db.close(); }
 });

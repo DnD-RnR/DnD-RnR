@@ -2,6 +2,36 @@ import { resourceState, saveResources } from './spell-resources.mjs';
 import { spellcastingProfile } from '../shared/spellcasting.mjs';
 
 const check = (ok, message) => { if (!ok) throw new Error(message); };
+export const vengeanceEnabled = character => character?.class === 'Paladyn (Paladin)' && character.level >= 3 && character.subclass === 'Oath of Vengeance';
+
+export function vowAttackAdvantage(actor, target) {
+  return Boolean(actor?.vowOfEnmity && actor.vowOfEnmity.targetId === target?.id && !actor.vowOfEnmity.transferAvailable);
+}
+
+export function syncVows(battle) {
+  for (const actor of battle.fighters) {
+    const vow = actor.vowOfEnmity;
+    if (!vow) continue;
+    if (battle.round > vow.expiresRound || battle.round === vow.expiresRound && battle.turn >= battle.fighters.indexOf(actor)) {
+      actor.vowOfEnmity = null;
+      continue;
+    }
+    const target = battle.fighters.find(f => f.id === vow.targetId);
+    if (target && target.hp <= 0) vow.transferAvailable = true;
+  }
+}
+
+// Called inside the battle transaction, only when taking the Attack action.
+export function activateVow(db, battle, actor, targetId) {
+  const character = db.prepare('SELECT * FROM characters WHERE id = ?').get(actor.characterId);
+  const state = resourceState(db, actor.characterId);
+  check(vengeanceEnabled(character) && paladinResources(character, state).channelDivinityRemaining > 0, 'Vow of Enmity wymaga Oath of Vengeance i Channel Divinity.');
+  const target = battle.fighters.find(f => f.id === targetId);
+  check(target && target.id !== actor.id && target.hp > 0 && target.deathFailures < 3, 'Wybierz żywy cel Vow of Enmity w zasięgu 30 stóp, który widzisz (potwierdza GM).');
+  state.channelDivinitySpent = (state.channelDivinitySpent ?? 0) + 1;
+  saveResources(db, actor.characterId, state);
+  actor.vowOfEnmity = { targetId, expiresRound: battle.round + 10, radiusFeet: 30, transferAvailable: false };
+}
 export function paladinResources(character, state = {}) {
   const enabled = character?.class === 'Paladyn (Paladin)' && character.level >= 1;
   const max = enabled ? character.level * 5 : 0;
@@ -40,7 +70,8 @@ export function paladinChoiceUpdate(character, spells, stored, resources) {
   }
   const before = prior?.spells ?? stored?.spells;
   const rest = resources.lastLongRest ?? 0;
-  const removed = id => (before?.selections?.[id] ?? []).filter(s => !(spells.selections[id] ?? []).includes(s)).length;
+  const automatic = new Set(profile.automatic.map(s => s.id));
+  const removed = id => (before?.selections?.[id] ?? []).filter(s => !(spells.selections[id] ?? []).includes(s) && !(id === 'prepared' && automatic.has(s))).length;
   if (removed('prepared')) {
     if (removed('prepared') > 1 || rest === (history.preparedRest ?? rest)) return { error: 'Paladin: wymień jeden przygotowany czar po długim odpoczynku.' };
     history.preparedRest = rest;
@@ -55,9 +86,21 @@ export function paladinChoiceUpdate(character, spells, stored, resources) {
 }
 
 export function handlePaladin({ db, b, body, canControl, activeMember, persistVitals, log }) {
-  if (!['lay-on-hands', 'divine-sense'].includes(body.kind)) return false;
+  if (!['lay-on-hands', 'divine-sense', 'vow-of-enmity-transfer'].includes(body.kind)) return false;
   const actor = b.fighters.find(f => f.id === (body.actorId ?? b.fighters[b.turn]?.id));
   check(actor?.characterId && canControl(actor) && activeMember(db, b.sessionId, actor), 'Nie możesz sterować tą postacią.');
+  if (body.kind === 'vow-of-enmity-transfer') {
+    syncVows(b);
+    const character = db.prepare('SELECT * FROM characters WHERE id = ?').get(actor.characterId);
+    check(vengeanceEnabled(character) && actor.hp > 0 && !actor.incapacitated && !actor.unconscious && actor.deathFailures < 3, 'Vow of Enmity jest niedostępne.');
+    check(actor.vowOfEnmity?.transferAvailable, 'Poprzedni cel musi spaść do 0 PW przed końcem przysięgi.');
+    const target = b.fighters.find(f => f.id === body.targetId);
+    check(target && target.id !== actor.id && target.hp > 0 && target.deathFailures < 3, 'Wybierz żywy cel w zasięgu 30 stóp (potwierdza GM).');
+    actor.vowOfEnmity.targetId = target.id;
+    actor.vowOfEnmity.transferAvailable = false;
+    log(b, `${actor.name}: Vow of Enmity → ${target.name}.`);
+    return true;
+  }
   check(actor.id === b.fighters[b.turn]?.id && !b.pending && !b.fighters.some(f => f.concentrationDC || f.relentlessRagePending), 'Wymagana własna tura bez oczekujących działań.');
   check(actor.hp > 0 && actor.deathFailures < 3 && !actor.incapacitated && !actor.unconscious && !actor.bonus, 'Akcja dodatkowa jest niedostępna.');
   const character = db.prepare('SELECT * FROM characters WHERE id = ?').get(actor.characterId);

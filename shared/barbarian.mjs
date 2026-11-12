@@ -1,6 +1,8 @@
 export function rageProfile(character) {
   const level = character?.class?.includes('Barbarian') ? character.level : 0;
   return {
+    berserker: level >= 3 && character.subclass === 'Path of the Berserker',
+    wildHeart: level >= 3 && character.subclass === 'Path of the Wild Heart',
     max: level ? level >= 17 ? 6 : level >= 12 ? 5 : level >= 6 ? 4 : level >= 3 ? 3 : 2 : 0,
     damage: level ? level >= 16 ? 4 : level >= 9 ? 3 : 2 : 0,
     dangerSense: level >= 2, recklessAttack: level >= 2,
@@ -23,4 +25,30 @@ export function rageDescription(character) {
   const p = rageProfile(character);
   if (!p.max) return '';
   return `Szał: ${p.max} użycia; odzyskujesz 1 po krótkim i wszystkie po długim odpoczynku. Wchodzisz w Szał akcją dodatkową, bez ciężkiej zbroi. Odporność na obrażenia obuchowe, kłute i cięte; +${p.damage} do obrażeń ataków bronią i bez broni opartych na Sile; ułatwienie testów i rzutów obronnych na Siłę. Nie możesz rzucać czarów, a koncentracja zostaje przerwana. ${p.persistent ? 'Persistent Rage: trwa 10 minut bez przedłużania; kończy się przy Nieprzytomności lub założeniu ciężkiej zbroi. Przy inicjatywie możesz odzyskać wszystkie użycia raz na długi odpoczynek.' : 'Trwa do końca następnej tury. Atak na wroga (również chybiony), wymuszenie na wrogu rzutu obronnego lub akcja dodatkowa przedłużają go do końca następnej tury, maksymalnie do 10 minut. Kończy się przez Obezwładnienie lub ciężką zbroję.'}${p.primalKnowledge ? ' Primal Knowledge: w Szale możesz używać Siły do Akrobatyki, Zastraszania, Percepcji, Skradania się i Sztuki przetrwania, zachowując biegłość i ułatwienie.' : ''}${p.instinctivePounce ? ' Instinctive Pounce: przy aktywacji możesz poruszyć się do połowy Szybkości.' : ''}${p.relentless ? ` Relentless Rage: spadek do 0 PW bez natychmiastowej śmierci pozwala wykonać rzut obronny na Kondycję (ST 10, +5 przy każdym kolejnym użyciu; reset po krótkim lub długim odpoczynku). Sukces daje ${2 * character.level} PW zamiast 0.` : ''}`;
+}
+
+export const wildHeartAnimals = ['bear', 'eagle', 'wolf'];
+export const barbarianLevel3Features = {
+  primalKnowledge: { level: 3, skillChoices: ['animalHandling', 'athletics', 'intimidation', 'nature', 'perception', 'survival'], strengthSkills: primalSkills },
+  berserker: { level: 3, name: 'Frenzy', description: 'Podczas Szału i Reckless Attack pierwsze trafienie atakiem z Siły we własnej turze dodaje k6 w liczbie równej premii obrażeń Szału. Typ obrażeń pozostaje taki sam; krytyk podwaja kości.' },
+  wildHeart: { level: 3, name: 'Rage of the Wilds', options: [
+    { id: 'bear', description: 'Odporność na wszystkie typy obrażeń poza force, necrotic, psychic i radiant podczas Szału.' },
+    { id: 'eagle', description: 'Dash i Disengage przy aktywacji Szału oraz razem jako akcja dodatkowa podczas Szału.' },
+    { id: 'wolf', description: 'Sojusznicy mają ułatwienie wszystkich ataków przeciw twoim wrogom w odległości 5 stóp od ciebie podczas Szału.' },
+  ], rituals: ['beast-sense', 'speak-with-animals'], spellcastingAbility: 'wis' },
+};
+const bearDamageTypes = ['acid', 'cold', 'fire', 'lightning', 'poison', 'thunder', 'kwas', 'zimno', 'ogień', 'błyskawice', 'trucizna', 'grom'];
+export function barbarianResistance(fighter, type) {
+  const damageType = type?.toLowerCase();
+  return Boolean(fighter?.rage && (rageDamageTypes.includes(damageType)
+    || fighter.rage.animal === 'bear' && bearDamageTypes.includes(damageType)));
+}
+export function wolfAttackAdvantage(battle, actor, target) {
+  return Boolean(target && battle.fighters.some(f => f.id !== actor.id && Boolean(f.characterId) === Boolean(actor.characterId)
+    && f.rage?.animal === 'wolf' && f.hp > 0 && !f.incapacitated && !f.unconscious
+    && f.rage.wolfTargets?.includes(target.id)));
+}
+export function frenzyDice(battle, actor, ability) {
+  return actor.rageProfile?.berserker && actor.rage && actor.recklessActive && !actor.frenzyUsed
+    && ability === 'str' && battle.fighters[battle.turn]?.id === actor.id ? actor.rageProfile.damage : 0;
 }

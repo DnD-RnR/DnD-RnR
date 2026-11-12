@@ -1,6 +1,8 @@
+import { moonSpells } from '../shared/druid.mjs';
 import { spendSpell, resourceState, saveResources } from './spell-resources.mjs';
-import { rageDamageTypes, barbarianSaveAdvantage, barbarianAttackAdvantage } from '../shared/barbarian.mjs';
+import { barbarianResistance, barbarianSaveAdvantage, barbarianAttackAdvantage, wolfAttackAdvantage } from '../shared/barbarian.mjs';
 import { recordAttackRoll } from './barbarian.mjs';
+import { vowAttackAdvantage } from './paladin.mjs';
 
 const check = (condition, message) => { if (!condition) throw new Error(message); };
 const die = (n, sides = 20) => Number.isInteger(n) && n >= 1 && n <= sides;
@@ -14,8 +16,12 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
   const controlled = f => f && activeMember(db, b.sessionId, f) && canControl(f);
   const caster = b.fighters.find(f => f.id === (body.actorId ?? b.fighters[b.turn]?.id));
   if (body.kind === 'cast') {
-    check(!caster?.wildShape && !caster?.rage && !caster?.incapacitated && !caster?.unconscious, 'Wild Shape, Szał lub stan postaci uniemożliwia rzucanie czarów.');
+    check(!caster?.rage && !caster?.incapacitated && !caster?.unconscious, 'Wild Shape, Szał lub stan postaci uniemożliwia rzucanie czarów.');
     check(controlled(caster) && caster.characterId && caster.hp > 0 && caster.deathFailures < 3, 'Nie możesz rzucić czaru tą postacią.');
+    if (caster.wildShape) {
+      const character = db.prepare('SELECT * FROM characters WHERE id = ?').get(caster.characterId);
+      check(moonSpells(character).includes(body.spellId), 'W Wild Shape możesz rzucać tylko czary Kręgu Księżyca.');
+    }
     if (b.pending) {
       check(body.slot === 'reaction' && !b.suspendedAction, 'Najpierw rozstrzygnij rozpoczęte działanie.');
       b.suspendedAction = b.pending; b.pending = null;
@@ -77,7 +83,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     const target = p.targets.find(t => t.id === body.targetId);
     check(target && [0, 0.5, 1, 2].includes(body.multiplier), 'Wybierz cel i modyfikator obrażeń.');
     const fighter = b.fighters.find(f => f.id === target.id);
-    const rageResistance = fighter?.rage && rageDamageTypes.includes(p.spec.type?.toLowerCase());
+    const rageResistance = barbarianResistance(fighter, p.spec.type);
     target.multiplier = rageResistance && body.multiplier !== 0.5 ? body.multiplier * 0.5 : body.multiplier;
     target.defenseReady = true;
     return true;
@@ -100,7 +106,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     check(p.stage === 'attack', 'Czar nie oczekuje teraz na atak.');
     const target = b.fighters.find(f => f.id === p.targets[0].id);
     recordAttackRoll(b, actor, body, log);
-    const roll = d20({ ...body, advantage: body.advantage || barbarianAttackAdvantage(actor, target) }, target.dodge || target.attackDisadvantage || Boolean(actor.mockery));
+    const roll = d20({ ...body, advantage: body.advantage || vowAttackAdvantage(actor, target) || barbarianAttackAdvantage(actor, target) || wolfAttackAdvantage(b, actor, target) }, target.dodge || target.attackDisadvantage || Boolean(actor.mockery));
     actor.mockery = null;
     const hit = roll !== 1 && (roll === 20 || roll + p.attackBonus >= target.ac);
     log(b, `${actor.name} → ${target.name}: ${p.spellName} — ${hit ? roll === 20 ? 'trafienie krytyczne' : 'trafienie' : 'pudło'}.`);

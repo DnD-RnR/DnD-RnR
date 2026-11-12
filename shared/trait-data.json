@@ -2619,7 +2619,8 @@
         {
           "level": 3,
           "name": "Frenzy",
-          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-berserker"
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-berserker",
+          "description": "Podczas Szału i Reckless Attack pierwsze trafienie atakiem z Siły we własnej turze dodaje k6 w liczbie równej premii obrażeń Szału. Typ obrażeń pozostaje taki sam; krytyk podwaja kości."
         },
         {
           "level": 6,
@@ -2644,12 +2645,14 @@
         {
           "level": 3,
           "name": "Animal Speaker",
-          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-wild-heart"
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-wild-heart",
+          "description": "Beast Sense and Speak with Animals: rituals only; spellcasting ability: Wisdom."
         },
         {
           "level": 3,
           "name": "Rage of the Wilds",
-          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-wild-heart"
+          "url": "https://dnd2024.wikidot.com/barbarian:path-of-the-wild-heart",
+          "description": "bear: Odporność na wszystkie typy obrażeń poza force, necrotic, psychic i radiant podczas Szału. eagle: Dash i Disengage przy aktywacji Szału oraz razem jako akcja dodatkowa podczas Szału. wolf: Sojusznicy mają ułatwienie wszystkich ataków przeciw twoim wrogom w odległości 5 stóp od ciebie podczas Szału."
         },
         {
           "level": 6,
@@ -3874,6 +3877,7 @@
         {
           "level": 3,
           "name": "Dark One's Blessing",
+          "description": "Gdy sprowadzasz wroga do 0 PW albo ktoś inny sprowadza do 0 PW wroga w odległości do 10 stóp od ciebie, otrzymujesz tymczasowe PW: poziom warlocka + modyfikator Charyzmy, minimum 1. Tymczasowe PW nie sumują się.",
           "url": "https://dnd2024.wikidot.com/warlock:fiend-patron"
         },
         {

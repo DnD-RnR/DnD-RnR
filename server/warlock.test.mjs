@@ -7,6 +7,33 @@ import { characterTraits, validateTraitSelection } from '../shared/character-tra
 import { handleStatistics, emptyStatistics } from './statistics.mjs';
 import { openDatabase } from './db.mjs';
 import progression from '../shared/spell-progression.json' with { type: 'json' };
+import { fiendProfile } from '../shared/warlock.mjs';
+import { spellcastingProfile } from '../shared/spellcasting.mjs';
+
+test('Fiend level three has two second-level pact slots, three invocations and four additional prepared spells', () => {
+  const character = { ...hero(3), subclass: 'Fiend Patron' };
+  const p = spellcastingProfile(character);
+  assert.equal(p.pactSlotLevel, 2);
+  assert.deepEqual(p.slots, [2]);
+  assert.equal(invocationCount(character), 3);
+  assert.equal(p.groups.find(g => g.id === 'cantrips').limit, 2);
+  assert.equal(p.groups.find(g => g.id === 'prepared').limit, 4);
+  assert.deepEqual(p.automatic.map(s => s.id).sort(), ['burning-hands', 'command', 'scorching-ray', 'suggestion'].sort());
+  assert.ok(characterTraits(character, emptyStatistics()).features.some(f => f.name === "Dark One's Blessing" && f.description));
+  assert.equal(fiendProfile(character, 16).temporaryHitPoints, 6);
+  assert.equal(fiendProfile(character, 2).temporaryHitPoints, 1);
+  assert.equal(fiendProfile(character, null).temporaryHitPoints, null);
+  assert.equal(fiendProfile({ ...character, level: 2 }, 16).enabled, false);
+  assert.equal(fiendProfile({ ...character, class: 'Bard' }, 16).enabled, false);
+});
+
+test('Fiend advancement grants spells without using the ordinary replacement budget', () => {
+  const first = pactMagicUpdate(hero(2), selection(undefined, ['hex', 'suggestion', 'witch-bolt']), null, {});
+  const next = selection(undefined, ['hex', 'witch-bolt', 'darkness', 'invisibility']);
+  const result = pactMagicUpdate({ ...hero(3), subclass: 'Fiend Patron' }, next, saved(first), {});
+  assert.ok(result.history);
+  assert.equal(result.history.preparedRemaining, 1);
+});
 
 const hero = level => ({ class: progression.warlock.name, level, subclass: '', species: '', background: '' });
 const selection = (cantrips = ['eldritch-blast', 'prestidigitation'], prepared = ['hex', 'charm-person']) => ({ choices: {}, selections: { cantrips, prepared } });

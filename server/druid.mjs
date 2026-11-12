@@ -1,4 +1,4 @@
-import { druidForms, druidProfile, isDruid } from '../shared/druid.mjs';
+import { druidForms, druidProfile, isDruid, isMoonDruid, eligibleDruidForms } from '../shared/druid.mjs';
 import { spellcastingProfile } from '../shared/spellcasting.mjs';
 import { characterTraits } from '../shared/character-traits.mjs';
 import definitions from '../shared/statistics.json' with { type: 'json' };
@@ -21,7 +21,7 @@ export function druidChoiceUpdate(character, stats, stored, resources, explicitS
       const selected = stats.spells.selections[id] ?? [];
       if (selected.length !== profile.groups.find(g => g.id === id).limit) return { error: `Druid: uzupełnij wybór ${id}.` };
       const previous = previousSpells?.selections?.[id] ?? [];
-      const removed = previous.filter(s => !selected.includes(s)).length;
+      const removed = previous.filter(s => !selected.includes(s) && !profile.automatic.some(spell => spell.id === s)).length;
       if (id === 'cantrips' && removed > history.cantripSwaps) return { error: 'Druid: możesz wymienić jedną sztuczkę na zdobyty poziom.' };
       if (id === 'prepared' && removed && (old?.preparedRest ?? old?.rest ?? resources.lastLongRest ?? 0) === (resources.lastLongRest ?? 0)) return { error: 'Druid: przygotowane czary zmieniasz po długim odpoczynku.' };
       if (id === 'prepared' && (removed || !previous.length)) history.preparedRest = resources.lastLongRest ?? 0;
@@ -31,7 +31,7 @@ export function druidChoiceUpdate(character, stats, stored, resources, explicitS
   }
   if (explicitTraits && character.level >= 2) {
     const forms = stats.traits.druidForms ?? [];
-    if (forms.length !== 4 || new Set(forms).size !== 4 || forms.some(id => !druidForms.some(f => f.id === id))) return { error: 'Wild Shape: wybierz cztery różne dostępne formy bestii.' };
+    if (forms.length !== 4 || new Set(forms).size !== 4 || forms.some(id => !eligibleDruidForms(character).some(f => f.id === id))) return { error: 'Wild Shape: wybierz cztery różne dostępne formy bestii.' };
     const previous = old?.forms ?? stored?.traits?.druidForms ?? [];
     const removed = previous.filter(id => !forms.includes(id)).length;
     if (removed > history.formSwaps) return { error: 'Wild Shape: wymień najwyżej jedną formę po długim odpoczynku.' };
@@ -55,8 +55,8 @@ export function applyWildShape(f, form, character, stats, shape) {
   const formAbilities = Object.fromEntries(definitions.abilities.map(a => [a.id, mod(a.id)]));
   f.saves = Object.fromEntries(definitions.abilities.map(a => [a.id, Math.max(mod(a.id) + (traits.effectiveSavingThrows.includes(a.id) || form.saves?.includes(a.id) ? pb : 0), mod(a.id) + (form.saves?.includes(a.id) ? 2 : 0))]));
   f.formSkills = Object.fromEntries(definitions.skills.map(s => [s.id, mod(s.ability) + Math.max(pb * Math.max(traits.effectiveSkills[s.id], form.skills?.[s.id] ? 1 : 0), 2 * (form.skills?.[s.id] ?? 0)) + (traits.skillBonuses[s.id] ?? 0)]));
-  Object.assign(f, { ac: form.ac, speed: form.speed, maxAttacks: 1, size: form.size, climbSpeed: form.climb ?? 0, darkvision: form.darkvision ?? 0, formAbilities,
-    attacks: [{ ...form.attack, id: `beast:${form.id}`, ability: form.id === 'riding-horse' || form.id === 'wolf' ? 'str' : 'dex', light: false }], notes: form.notes ?? '',
+  Object.assign(f, { ac: isMoonDruid(character) ? Math.max(form.ac, 13 + mod('wis')) : form.ac, speed: form.speed, maxAttacks: 1, size: form.size, climbSpeed: form.climb ?? 0, darkvision: form.darkvision ?? 0, formAbilities,
+    attacks: [{ ...form.attack, id: `beast:${form.id}`, ability: form.id === 'riding-horse' || ['wolf', 'dire-wolf'].includes(form.id) ? 'str' : 'dex', light: false }], notes: form.notes ?? '',
     wildShape: { ...shape, original } });
 }
 export function syncWildShapes(db, b) {
@@ -97,11 +97,11 @@ export function handleDruid({ db, b, body, canControl, activeMember, persistVita
       check(uses > 0, 'Brak użyć Wild Shape.');
       const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(f.characterId).data);
       const form = druidForms.find(form => form.id === body.formId);
-      check(form && stats.traits?.druidForms?.includes(form.id), 'Nie znasz tej formy.');
+      check(form && eligibleDruidForms(character).some(f => f.id === form.id) && stats.traits?.druidForms?.includes(form.id), 'Nie znasz tej formy.');
       check(['merge', 'drop'].includes(body.equipment), 'Wybierz merge albo drop dla wyposażenia.');
       state.wildShape = { formId: form.id, equipment: body.equipment, expiresAt: Date.now() + profile.durationHours * 3600000 };
       applyWildShape(f, form, character, stats, state.wildShape);
-      f.tempHp = Math.max(f.tempHp, character.level); state.wildShapeUses = uses - 1;
+      f.tempHp = Math.max(f.tempHp ?? 0, profile.temporaryHitPoints); state.wildShapeUses = uses - 1;
     }
     f.bonus = body.kind === 'wild-shape' ? 'Wild Shape' : 'Koniec Wild Shape';
     persistVitals(db, f);

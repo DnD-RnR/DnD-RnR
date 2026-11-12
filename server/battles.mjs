@@ -1,9 +1,10 @@
 import { psiResources, handlePsi, psionicStrike } from './psi-warrior.mjs';
-import { handlePaladin, syncDivineSense } from './paladin.mjs';
+import { handlePaladin, syncDivineSense, activateVow, syncVows, vowAttackAdvantage } from './paladin.mjs';
 import { handleDruid, syncWildShapes, applyWildShape } from './druid.mjs';
-import { druidProfile, druidForms } from '../shared/druid.mjs';
+import { handleFiend, recordFiendDefeats } from './warlock.mjs';
+import { druidProfile, druidForms, eligibleDruidForms } from '../shared/druid.mjs';
 import { handleFighter, prepareSurgeAction, finishSurgeAction } from './fighter.mjs';
-import { rageProfile, rageDamageTypes, barbarianAttackAdvantage } from '../shared/barbarian.mjs';
+import { rageProfile, barbarianResistance, barbarianAttackAdvantage, wolfAttackAdvantage, frenzyDice } from '../shared/barbarian.mjs';
 import { handleBarbarian, syncRage, extendRage, endRage, recordAttackRoll } from './barbarian.mjs';
 import { randomUUID } from 'node:crypto';
 import { statisticsSummary } from './statistics-summary.mjs';
@@ -17,7 +18,7 @@ const int = (n, min, max) => Number.isInteger(n) && n >= min && n <= max;
 const requireValue = (ok, message) => { if (!ok) throw new Error(message); };
 const fresh = f => {
   if (f.shieldAC) { f.ac -= f.shieldAC; f.shieldAC = 0; }
-  return Object.assign(f, { action: '', bonus: '', reaction: '', reactionDeferred: false, moved: 0, pounceMoved: 0, extraMove: 0, attacksLeft: 0, usedWeapons: [], lightExtraUsed: false, dodge: false, attackRollMade: false, recklessActive: false, psiStrikeUsed: false, psiReduction: 0, actionSurgeUsedThisTurn: false, surgeAction: null, surgeAttacksLeft: 0, lastAbilityCheck: null });
+  return Object.assign(f, { action: '', bonus: '', reaction: '', reactionDeferred: false, moved: 0, pounceMoved: 0, extraMove: 0, attacksLeft: 0, usedWeapons: [], lightExtraUsed: false, dodge: false, attackRollMade: false, recklessActive: false, frenzyUsed: false, disengaged: false, psiStrikeUsed: false, psiReduction: 0, actionSurgeUsedThisTurn: false, surgeAction: null, surgeAttacksLeft: 0, lastAbilityCheck: null });
 };
 const clearProtection = (b, protectorId) => b.fighters.forEach(f => {
   if (Array.isArray(f.protectedBy)) {
@@ -91,7 +92,7 @@ function characterFighter(db, sessionId, memberId) {
     protectionAvailable: stats.choices?.fightingStyle === 'protection' && equipment.some(item => item.equipped && item.armorCategory === 'shield'),
     deathSuccesses: s.deathSuccesses ?? 0, deathFailures: s.deathFailures ?? 0 });
   const form = druidForms.find(form => form.id === resources.wildShape?.formId);
-  if (druidProfile(c).max && form && resources.wildShape.expiresAt > Date.now()) applyWildShape(fighter, form, c, stats, resources.wildShape);
+  if (druidProfile(c).max && form && eligibleDruidForms(c).some(f => f.id === form.id) && resources.wildShape.expiresAt > Date.now()) applyWildShape(fighter, form, c, stats, resources.wildShape);
   return fighter;
 }
 function persistVitals(db, f) {
@@ -103,7 +104,7 @@ function persistVitals(db, f) {
 }
 function damage(db, f, amount, critical = false, damageType = null) {
   amount = Math.max(0, amount - (f.psiReduction ?? 0)); f.psiReduction = 0;
-  if (damageType && (f.damageResistance === damageType || f.rage && rageDamageTypes.includes(damageType.toLowerCase()))) amount = Math.floor(amount / 2);
+  if (damageType && (f.damageResistance === damageType || barbarianResistance(f, damageType))) amount = Math.floor(amount / 2);
   f.damageTaken = (f.damageTaken ?? Math.max(0, f.maxHp - f.hp)) + amount;
   const before = f.hp;
   const absorbed = Math.min(f.tempHp, amount);
@@ -207,6 +208,8 @@ export function handleBattles(db, user, path, method, body, send) {
   if (!action) return reply(200, response());
   db.exec('SAVEPOINT battle_action');
   try {
+    const hpBefore = new Map((battle?.fighters ?? []).map(f => [f.id, f.hp]));
+    const damageSourceId = ['damage', 'spell-effect', 'resolve'].includes(body.kind) ? battle?.pending?.actorId ?? null : null;
     requireValue(body.sessionId === session.id, 'Sesja zmieniła się. Odśwież widok.');
     requireValue(body.version === (battle?.version ?? 0), 'Walka została zaktualizowana. Odświeżono widok; powtórz wybór.');
     if (action === 'start') {
@@ -251,9 +254,12 @@ export function handleBattles(db, user, path, method, body, send) {
         fresh(b.fighters[b.turn]); log(b, `Runda ${b.round}: tura ${b.fighters[b.turn].name}.`);
       } else {
         const kind = body.kind;
+        syncVows(b);
         if (kind !== 'tactical-mind') b.fighters.forEach(f => { f.lastAbilityCheck = null; });
         const surgeState = prepareSurgeAction(b, body, canControl);
-        if (handlePsi({ db, b, body, canControl, activeMember, log })) {
+        if (handleFiend({ db, b, body, gm, activeMember, persistVitals, log })) {
+          // Nearby defeats require GM confirmation because the battle has no positions.
+        } else if (handlePsi({ db, b, body, canControl, activeMember, log })) {
           // Psionic resources share the battle transaction.
         } else if (handleFighter({ db, b, body, canControl, activeMember, log })) {
           // Fighter resources use the same transaction as the battle.
@@ -301,7 +307,10 @@ export function handleBattles(db, user, path, method, body, send) {
               requireValue(p?.kind === 'damage' && p.actorId === actor.id, 'Brak trafienia do rozliczenia.');
               const count = p.attack.dice * (p.critical ? 2 : 1);
               requireValue(Array.isArray(body.rolls) && body.rolls.length === count && body.rolls.every(n => int(n, 1, p.attack.sides)), 'Podaj wynik każdej kości obrażeń.');
-              const amount = Math.max(0, body.rolls.reduce((sum, n) => sum + n, 0) + p.attack.damageBonus);
+              const frenzyCount = (p.frenzyDice ?? 0) * (p.critical ? 2 : 1);
+              requireValue(!frenzyCount || Array.isArray(body.frenzyRolls) && body.frenzyRolls.length === frenzyCount && body.frenzyRolls.every(n => int(n, 1, 6)), 'Podaj wyniki wszystkich kosci k6 Frenzy.');
+              const frenzyDamage = frenzyCount ? body.frenzyRolls.reduce((sum, n) => sum + n, 0) : 0;
+              const amount = Math.max(0, frenzyDamage + body.rolls.reduce((sum, n) => sum + n, 0) + p.attack.damageBonus);
               const target = b.fighters.find(f => f.id === p.targetId);
               damage(db, target, amount, p.critical, p.attack.type);
               psionicStrike(db, b, actor, body, amount, damage, target, log); log(b, `${actor.name} → ${target.name}: ${amount} obrażeń (${p.attack.type}).`); b.pending = null;
@@ -343,17 +352,24 @@ export function handleBattles(db, user, path, method, body, send) {
                 }
                 const target = b.fighters.find(f => f.id === body.targetId);
                 requireValue(target && target.id !== actor.id && target.deathFailures < 3, 'Wybierz cel ataku.');
+                if (body.vowTargetId != null) {
+                  requireValue(slot === 'action' && actor.usedWeapons.length === 1, 'Vow of Enmity aktywuj przy rozpoczęciu akcji Atak.');
+                  activateVow(db, b, actor, body.vowTargetId);
+                  log(b, `${actor.name}: Vow of Enmity (1 minuta; zasięg i widoczność potwierdza GM).`);
+                }
                 if (actor.rage && attack.ability === 'str') attack = { ...attack, damageBonus: attack.damageBonus + actor.rageProfile.damage };
                 if (Boolean(actor.characterId) !== Boolean(target.characterId)) extendRage(b, actor);
                 const disadvantage = Boolean(attack.disadvantage || target.dodge || target.attackDisadvantage || body.disadvantage || actor.mockery);
                 recordAttackRoll(b, actor, body, log);
-                const advantage = Boolean(body.advantage || barbarianAttackAdvantage(actor, target, attack.ability));
+                const advantage = Boolean(body.advantage || vowAttackAdvantage(actor, target) || barbarianAttackAdvantage(actor, target, attack.ability) || wolfAttackAdvantage(b, actor, target));
                 requireValue(int(body.roll, 1, 20) && (disadvantage === advantage || int(body.roll2, 1, 20)), 'Podaj wynik k20; przy ułatwieniu lub utrudnieniu podaj dwie kości.');
                 const roll = disadvantage === advantage ? body.roll : disadvantage ? Math.min(body.roll, body.roll2) : Math.max(body.roll, body.roll2);
                 actor.mockery = null;
                 const hit = roll !== 1 && (roll === 20 || roll + attack.bonus >= target.ac);
                 log(b, `${actor.name} → ${target.name}: ${roll} + ${attack.bonus}: ${hit ? roll === 20 ? 'trafienie krytyczne' : 'trafienie' : 'pudło'}.`);
-                if (hit) b.pending = { kind: 'damage', actorId: actor.id, targetId: target.id, attack, critical: roll === 20, attackTotal: roll + attack.bonus };
+                const frenzy = hit ? frenzyDice(b, actor, attack.ability) : 0;
+                if (frenzy) actor.frenzyUsed = true;
+                if (hit) b.pending = { kind: 'damage', actorId: actor.id, targetId: target.id, attack, frenzyDice: frenzy, critical: roll === 20, attackTotal: roll + attack.bonus };
               } else if (kind === 'second-wind') {
                 requireValue(actor.characterId && actor.secondWindMax > 0, 'Drugi oddech jest dostępny tylko dla wojownika.');
                 requireValue(body.slot === 'bonus', 'Drugi oddech wymaga akcji bonusowej.');
@@ -422,6 +438,7 @@ export function handleBattles(db, user, path, method, body, send) {
                 if (skipAttacks) actor.attacksLeft = 0;
                 if (kind === 'dash') actor.extraMove += actor.speed;
                 if (kind === 'dodge') actor.dodge = true;
+                if (kind === 'disengage') actor.disengaged = true;
                 log(b, `${actor.name}: ${labels[kind]}.`);
               }
             }
@@ -441,6 +458,8 @@ export function handleBattles(db, user, path, method, body, send) {
     syncRage(db, battle);
     syncWildShapes(db, battle);
     syncDivineSense(db, battle);
+    syncVows(battle);
+    if (action === 'act') recordFiendDefeats({ db, b: battle, before: hpBefore, sourceId: damageSourceId, activeMember, persistVitals, log });
     removeDeadMonsters(battle);
     if (!battle.active && !battle.summary) battle.summary = {
       endedAt: Date.now(), rounds: battle.round,

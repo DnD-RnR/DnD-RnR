@@ -1,4 +1,29 @@
-# Paladin — poziomy 1–2 (2024)
+# Paladin — poziomy 1–3 (2024)
+
+## Oath of Vengeance — poziom 3
+
+Źródło: https://dnd2024.wikidot.com/paladin:oath-of-vengeance
+
+Statyczne dane udostępniają Bane i Hunter's Mark jako zawsze przygotowane,
+poza limitem 4 wybranych czarów. Paladyn ma 3 miejsca 1. kręgu i pulę
+15 punktów Lay on Hands. Karta cech pokazuje również pulę Channel Divinity.
+
+Akcja `attack`, `slot: 'action'` przyjmuje opcjonalne `vowTargetId` przy
+pierwszym ataku akcji Atak. Cel przysięgi może być inny niż cel ataku.
+Vow of Enmity zużywa jedno Channel Divinity, bez dodatkowej akcji ani
+koncentracji. Zasięg 30 stóp i widoczność celu potwierdza GM.
+Niepoprawny atak wycofuje także zużycie zasobu.
+
+Pole `vowOfEnmity` uczestnika przechowuje cel i koniec czasu trwania.
+Ułatwienie jest automatyczne dla ataków bronią i czarami przeciw temu celowi;
+utrudnienie standardowo je znosi. Efekt kończy się na początku tury paladyna
+10 rund później. Ponowna aktywacja zastępuje poprzednią przysięgę.
+
+Gdy cel spada do 0 PW, `transferAvailable` pozwala użyć akcji API
+`vow-of-enmity-transfer` z `actorId` i `targetId`, również poza własną turą.
+Przeniesienie nie zużywa działania ani zasobu i nie przedłuża efektu.
+Nowy cel musi być w promieniu 30 stóp (potwierdza GM).
+Stan przysięgi jest zapisywany razem z walką i nie przechodzi do nowej walki.
 
 Źródło: https://dnd2024.wikidot.com/paladin:main
 

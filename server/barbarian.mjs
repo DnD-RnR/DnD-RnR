@@ -1,4 +1,4 @@
-import { primalSkills, barbarianSaveAdvantage } from '../shared/barbarian.mjs';
+import { primalSkills, barbarianSaveAdvantage, wildHeartAnimals } from '../shared/barbarian.mjs';
 import { characterTraits } from '../shared/character-traits.mjs';
 import { resourceState, saveResources } from './spell-resources.mjs';
 import { statisticsSummary } from './statistics-summary.mjs';
@@ -28,9 +28,9 @@ export function syncRage(db, b) {
   }
 }
 export function handleBarbarian({ db, b, body, gm, canControl, activeMember, persistVitals, log }) {
-  if (!['rage', 'rage-extend', 'rage-end', 'rage-recover', 'relentless-rage', 'ability-check', 'saving-throw', 'condition', 'rage-force-save'].includes(body.kind)) return false;
+  if (!['wolf-aura', 'eagle-flight', 'rage', 'rage-extend', 'rage-end', 'rage-recover', 'relentless-rage', 'ability-check', 'saving-throw', 'condition', 'rage-force-save'].includes(body.kind)) return false;
   const f = b.fighters.find(f => f.id === (body.actorId ?? b.fighters[b.turn].id));
-  check(f && activeMember(db, b.sessionId, f) && (canControl(f) || gm && ['condition', 'rage-force-save'].includes(body.kind)), 'Nie możesz sterować tym uczestnikiem.');
+  check(f && activeMember(db, b.sessionId, f) && (canControl(f) || gm && ['condition', 'rage-force-save', 'wolf-aura'].includes(body.kind)), 'Nie możesz sterować tym uczestnikiem.');
   const state = f.characterId ? resourceState(db, f.characterId) : null;
   const p = f.rageProfile;
   const d20 = advantage => {
@@ -93,6 +93,19 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
   }
   check(f.hp > 0 && !f.incapacitated && !f.unconscious, 'Ta postać nie może teraz działać.');
   check(p?.max, 'Szał jest dostępny tylko dla barbarzyńcy.');
+  if (body.kind === 'wolf-aura') {
+    check(gm && f.rage?.animal === 'wolf' && !b.pending, 'Zasięg Wilka potwierdza GM podczas Szału.');
+    check(Array.isArray(body.targetIds) && body.targetIds.every(id => b.fighters.some(t => t.id === id && Boolean(t.characterId) !== Boolean(f.characterId) && t.hp > 0)), 'Wybierz wrogów w odległości 5 stóp.');
+    f.rage.wolfTargets = [...new Set(body.targetIds)];
+    log(b, `${f.name}: GM aktualizuje wrogów w zasięgu Wilka (5 stóp).`);
+    return true;
+  }
+  if (body.kind === 'eagle-flight') {
+    check(f.id === b.fighters[b.turn].id && !b.pending && !f.bonus && f.rage?.animal === 'eagle', 'Orzeł wymaga Szału i wolnej akcji dodatkowej we własnej turze.');
+    f.extraMove += f.speed; f.disengaged = true; f.bonus = 'Eagle: Dash + Disengage';
+    log(b, `${f.name}: Eagle — Dash i Disengage.`);
+    return true;
+  }
   if (body.kind === 'rage-recover') {
     check(p.persistent && f.rageRecoveryOffered && state.persistentRageAvailable !== false, 'Odzyskanie użyć przy inicjatywie jest niedostępne.');
     f.rageUses = p.max; state.rageUses = p.max; state.persistentRageAvailable = false; f.rageRecoveryOffered = false;
@@ -111,8 +124,13 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
     else {
       check(!f.rage && f.rageUses > 0, 'Brak użyć lub Szał już aktywny.');
       check(!db.prepare(`SELECT 1 FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ? AND i.equipped = 1 AND a.category = 'heavy'`).get(f.characterId), 'Ciężka zbroja uniemożliwia Szał.');
+      check(p.wildHeart ? wildHeartAnimals.includes(body.animal) : body.animal == null, 'Wild Heart wymaga wyboru bear, eagle lub wolf przy aktywacji Szału.');
       f.rageUses--; state.rageUses = f.rageUses;
       f.rage = { expiresRound: b.round + 1, maxRound: b.round + 100 };
+      if (p.wildHeart) {
+        f.rage.animal = body.animal;
+        if (body.animal === 'eagle') { f.extraMove += f.speed; f.disengaged = true; }
+      }
       f.concentration = null; f.concentrationDC = null; f.concentrationChecks = []; state.concentration = null;
       const feet = body.feet ?? 0;
       check(Number.isInteger(feet) && feet >= 0 && feet <= (p.instinctivePounce ? Math.floor(f.speed / 2) : 0), 'Przekroczono ruch Instinctive Pounce.');

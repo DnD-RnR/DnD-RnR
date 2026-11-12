@@ -33,9 +33,12 @@ export function spellcastingProfile(character, selection = emptySpellSelection()
   const group = (id, label, limit, options, fromBook = false, hint = '') => profile.groups.push({ id, label, limit, options, fromBook, hint });
   if (!row) {
     const subclass = character.subclass;
-    if (level >= 3 && subclass === 'Path of the Wild Heart') {
+    if (character.class?.includes('Barbarian') && level >= 3 && subclass === 'Path of the Wild Heart') {
       grant(['beast-sense', 'speak-with-animals'], 'Animal Speaker — tylko rytuały');
       if (level >= 10) grant(['commune-with-nature'], 'Nature Speaker — tylko rytuał');
+      for (const id of ['beast-sense', 'speak-with-animals', ...(level >= 10 ? ['commune-with-nature'] : [])]) {
+        automatic.set(id, { ...automatic.get(id), ritualOnly: true, spellcastingAbility: 'wis' });
+      }
       profile.ability = 'wis';
     }
     if (level >= 3 && subclass === 'Warrior of Shadow') {

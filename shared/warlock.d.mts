@@ -1,0 +1,1 @@
+export function fiendProfile(character: { class?: string; subclass?: string; level: number }, charisma: number | null | undefined): { enabled: boolean; temporaryHitPoints: number | null; nearbyFeet: number };

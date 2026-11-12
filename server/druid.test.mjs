@@ -64,3 +64,41 @@ test('Wild Shape replaces physical statistics while keeping HP, mental saves and
   assert.equal(f.attacks[0].id, 'beast:wolf');
   endWildShape(f); assert.equal(f.ac, 15); assert.equal(f.speed, 30); assert.equal(f.wildShape, null);
 });
+
+const moon = { ...hero(3), subclass: 'Circle of the Moon' };
+test('Moon level 3 grants slots, six prepared choices and three additional spells', () => {
+  const profile = spellcastingProfile(moon);
+  assert.deepEqual(profile.slots.slice(0, 2), [4, 2]);
+  assert.equal(profile.groups.find(g => g.id === 'prepared').limit, 6);
+  for (const id of ['cure-wounds', 'moonbeam', 'starry-wisp']) {
+    assert.ok(profile.automatic.some(s => s.id === id));
+    assert.ok(profile.groups.every(g => !g.options.some(s => s.id === id)));
+  }
+  assert.equal(druidProfile(moon).maxCR, 1);
+  assert.equal(druidProfile(moon).temporaryHitPoints, 9);
+  assert.equal(druidProfile(hero(3)).maxCR, 0.25);
+});
+test('Moon advancement makes Cure Wounds automatic without spending a prepared replacement', () => {
+  const initial = druidChoiceUpdate(hero(2), choices(2), null, {}, true, true);
+  const next = choices(2);
+  next.spells.selections.prepared = ['faerie-fire', 'thunderwave', 'entangle', 'healing-word', 'lesser-restoration', 'spike-growth'];
+  assert.ok(druidChoiceUpdate(moon, next, stored(initial), {}, true, true).history);
+});
+test('CR 1 forms require Moon, four known forms and the normal long rest exchange', () => {
+  const next = choices(2); next.traits.druidForms[0] = 'dire-wolf';
+  assert.ok(druidChoiceUpdate(hero(3), next, null, {}, false, true).error);
+  assert.ok(druidChoiceUpdate(moon, next, null, {}, false, true).history);
+  const initial = druidChoiceUpdate(hero(2), choices(2), null, {}, true, true);
+  assert.ok(druidChoiceUpdate(moon, next, stored(initial), {}, false, true).error);
+  assert.ok(druidChoiceUpdate(moon, next, stored(initial), { lastLongRest: 1 }, false, true).history);
+});
+test('Moon form uses the higher AC and restores original statistics on exit', () => {
+  for (const wis of [8, 16, 20]) {
+    const stats = emptyStatistics(); stats.values.wis = wis;
+    const f = { ac: 18, speed: 30, attacks: [], saves: {}, hp: 20 };
+    applyWildShape(f, druidForms.find(f => f.id === 'dire-wolf'), moon, stats, { formId: 'dire-wolf' });
+    assert.equal(f.ac, Math.max(14, 13 + Math.floor((wis - 10) / 2)));
+    assert.equal(f.hp, 20); assert.equal(f.attacks[0].ability, 'str');
+    endWildShape(f); assert.equal(f.ac, 18);
+  }
+});

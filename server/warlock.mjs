@@ -1,5 +1,58 @@
 import { spellcastingProfile } from '../shared/spellcasting.mjs';
 import { invocationCount, invocationOptions } from '../shared/warlock-invocations.mjs';
+import { fiendProfile } from '../shared/warlock.mjs';
+import { randomUUID } from 'node:crypto';
+
+const check = (ok, message) => { if (!ok) throw new Error(message); };
+const blessingFor = (db, fighter) => {
+  if (!fighter.characterId) return { enabled: false };
+  const character = db.prepare('SELECT * FROM characters WHERE id = ?').get(fighter.characterId);
+  const row = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(fighter.characterId);
+  return fiendProfile(character, row ? JSON.parse(row.data).values?.cha : null);
+};
+const grantBlessing = (db, fighter, amount, persistVitals, log, b) => {
+  check(amount !== null, 'Uzupełnij Charyzmę warlocka.');
+  fighter.tempHp = Math.max(fighter.tempHp ?? 0, amount);
+  persistVitals(db, fighter);
+  log(b, `${fighter.name}: Dark One's Blessing — ${amount} tymczasowych PW (łącznie ${fighter.tempHp}).`);
+};
+
+// Record actual positive-HP -> zero-HP transitions before defeated monsters leave initiative.
+export function recordFiendDefeats({ db, b, before, sourceId, activeMember, persistVitals, log }) {
+  for (const target of b.fighters) {
+    if (target.hp > 0) { delete target.fiendDefeatPending; continue; }
+    if (!(before.get(target.id) > 0 || target.fiendDefeatPending)) continue;
+    const defeatSource = target.fiendDefeatPending?.sourceId ?? sourceId;
+    if (target.relentlessRagePending) { target.fiendDefeatPending = { sourceId: defeatSource }; continue; }
+    delete target.fiendDefeatPending;
+    const candidates = b.fighters.filter(f => f.id !== target.id && activeMember(db, b.sessionId, f) && blessingFor(db, f).enabled);
+    if (!candidates.length) continue;
+    const event = { id: randomUUID(), targetId: target.id, targetName: target.name, sourceId: defeatSource, candidates: candidates.map(f => f.id), granted: [] };
+    for (const fighter of candidates) {
+      const profile = blessingFor(db, fighter);
+      if (!target.characterId && defeatSource === fighter.id && profile.temporaryHitPoints !== null) {
+        grantBlessing(db, fighter, profile.temporaryHitPoints, persistVitals, log, b);
+        event.granted.push(fighter.id);
+      }
+    }
+    b.fiendDefeats = [...(b.fiendDefeats ?? []), event].slice(-100);
+  }
+}
+
+export function handleFiend({ db, b, body, gm, activeMember, persistVitals, log }) {
+  if (body.kind !== 'dark-ones-blessing') return false;
+  check(gm, 'GM potwierdza wroga i odległość dla Dark One’s Blessing.');
+  const event = b.fiendDefeats?.find(e => e.id === body.eventId);
+  const fighter = b.fighters.find(f => f.id === body.actorId);
+  check(event && fighter && event.candidates.includes(fighter.id) && !event.granted.includes(fighter.id), 'Brak nierozliczonego zdarzenia dla tej postaci.');
+  check(activeMember(db, b.sessionId, fighter) && body.enemy === true, 'Potwierdź, że pokonana istota była wrogiem warlocka.');
+  check(event.sourceId === fighter.id || body.within10Feet === true, 'Potwierdź odległość najwyżej 10 stóp od pokonanego wroga.');
+  const profile = blessingFor(db, fighter);
+  check(profile.enabled, 'Wymagany Fiend Patron i 3. poziom warlocka.');
+  grantBlessing(db, fighter, profile.temporaryHitPoints, persistVitals, log, b);
+  event.granted.push(fighter.id);
+  return true;
+}
 
 export function invocationUpdate(character, stats, stored, explicit = true) {
   if (!invocationCount(character)) return {};
