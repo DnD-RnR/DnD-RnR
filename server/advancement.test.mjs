@@ -135,6 +135,7 @@ test('Tough adds HP for all levels and survives normal statistics edits without 
     assert.equal(current.statistics.values.maxHp, 28); // fixed 6 + CON 2 + Tough 8
     assert.ok(characterTraits(current.character, current.statistics).feats.includes('Tough'));
     const body = { ...current.statistics, levelFeats: [{ level: 1, name: 'Alert' }] };
+    handleStatistics(db, player, '/api/characters/1/statistics', 'GET', {}, (_status, data) => { body.expectedRevision = data.revision; });
     let response;
     handleStatistics(db, player, '/api/characters/1/statistics', 'POST', body, (status, data) => { response = { status, ...data }; });
     assert.equal(response.status, 200, response.error);

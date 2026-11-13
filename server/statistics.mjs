@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { paladinChoiceUpdate } from './paladin.mjs';
 import { druidChoiceUpdate } from './druid.mjs';
 import { resourceState } from './spell-resources.mjs';
@@ -17,6 +18,15 @@ const validArcaneWarrior = value => value && typeof value === 'object' && !Array
   && new Set(value.cantrips).size === 2
   && value.cantrips.every(id => wizardCantrips.some(spell => spell.id === id))
   && ['int', 'wis', 'cha'].includes(value.ability);
+
+// Include every source used to derive editable statistics. Compute this inside
+// the request transaction, so a Firestore retry checks the latest state again.
+function statisticsRevision(db, character) {
+  const stored = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(character.id);
+  const equipment = db.prepare(`SELECT i.id, i.equipped, i.armor_id, a.category, a.armor_class, a.strength, a.stealth_disadvantage
+    FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ? ORDER BY i.id`).all(character.id);
+  return createHash('sha256').update(JSON.stringify({ character, stored: stored?.data ?? null, equipment })).digest('hex');
+}
 
 export function emptyStatistics() {
   return {
@@ -137,9 +147,15 @@ export function handleStatistics(db, user, path, method, body, send) {
     statistics.values.speed = speedFromEquipment(statistics, equipment, statistics.values.speed);
     if (hasStealthDisadvantage(equipment)) statistics.stealthDisadvantage = true;
     Object.entries(trainingEffects).forEach(([key, value]) => { if (value) statistics[key] = true; });
-    send(200, { statistics });
+    send(200, { statistics, revision: statisticsRevision(db, character) });
   } else if (method === 'POST') {
     if (!validStatistics(body)) { send(400, { error: 'Sprawdź statystyki: cechy 1–30, zakresy liczb i długość notatek (do 1500 znaków).' }); return true; }
+    if (typeof body.expectedRevision !== 'string' || !/^[a-f0-9]{64}$/.test(body.expectedRevision)) {
+      send(428, { error: 'Ten formularz nie ma aktualnej wersji danych. Odśwież stronę i ponownie rozpocznij edycję.' }); return true;
+    }
+    if (body.expectedRevision !== statisticsRevision(db, character)) {
+      send(409, { error: 'Karta zmieniła się od rozpoczęcia edycji. Nie zapisano Twoich zmian, aby nie nadpisać nowszych danych.' }); return true;
+    }
     const stored = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(characterId);
     const combats = db.prepare(`SELECT b.data FROM session_battles b JOIN game_sessions s ON s.id = b.session_id
       JOIN game_members m ON m.game_id = s.game_id WHERE m.character_id = ? AND s.ended_at IS NULL`).all(characterId);
@@ -212,7 +228,7 @@ export function handleStatistics(db, user, path, method, body, send) {
     stats.values.speed = speedFromEquipment(stats, outputEquipment, stats.values.speed);
     if (hasStealthDisadvantage(outputEquipment)) stats.stealthDisadvantage = true;
     Object.entries(outputEffects).forEach(([key, value]) => { if (value) stats[key] = true; });
-    send(200, { statistics: stats });
+    send(200, { statistics: stats, revision: statisticsRevision(db, character) });
   } else send(405, { error: 'Niedozwolona metoda.' });
   return true;
 }

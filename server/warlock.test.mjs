@@ -93,7 +93,9 @@ test('statistics endpoint persists server progression and rejects forged history
     stats.traits = { languages: ['elvish', 'dwarvish'], classSkills: ['arcana', 'deception'], invocations: ['pact-of-the-blade'] };
     const call = body => {
       let result;
-      handleStatistics(db, { id: 1 }, '/api/characters/1/statistics', 'POST', body, (status, data) => { result = { status, data }; });
+      let current;
+      handleStatistics(db, { id: 1 }, '/api/characters/1/statistics', 'GET', {}, (_status, data) => { current = data; });
+      handleStatistics(db, { id: 1 }, '/api/characters/1/statistics', 'POST', { ...body, expectedRevision: current.revision }, (status, data) => { result = { status, data }; });
       return result;
     };
     assert.equal(call(stats).status, 200);

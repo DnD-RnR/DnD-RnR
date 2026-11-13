@@ -6,15 +6,19 @@ import { rageProfile, dangerSenseDescription } from '../../../shared/barbarian.m
 import { SpellSelection } from './SpellSelection';
 import { spellcastingProfile } from '../../../shared/spellcasting.mjs';
 import { useEffect, useState, type FormEvent } from 'react';
-import { api, type Character, type CharacterStatistics, type InventoryItem } from '../../api';
+import { api, ApiError, type Character, type CharacterStatistics, type InventoryItem } from '../../api';
 import definitions from '../../../shared/statistics.json' with { type: 'json' };
 
 const signed = (value: number | null) => value === null ? '—' : value >= 0 ? `+${value}` : String(value);
 const display = (value: number | null) => value ?? '—';
+type StatisticsSnapshot = { statistics: CharacterStatistics; revision: string };
+type StatisticsDraft = CharacterStatistics & { expectedRevision: string };
 
 export function StatisticsTab({ character }: { character: Character }) {
-  const [statistics, setStatistics] = useState<CharacterStatistics | null>(null);
-  const [draft, setDraft] = useState<CharacterStatistics | null>(null);
+  const [snapshot, setSnapshot] = useState<StatisticsSnapshot | null>(null);
+  const statistics = snapshot?.statistics;
+  const [draft, setDraft] = useState<StatisticsDraft | null>(null);
+  const [conflict, setConflict] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [pending, setPending] = useState(false);
@@ -22,7 +26,7 @@ export function StatisticsTab({ character }: { character: Character }) {
   const path = `/characters/${character.id}/statistics`;
   useEffect(() => {
     let active = true;
-    const stop = watchLive(() => api<{ statistics: CharacterStatistics }>(path).then(data => { if (active) setStatistics(data.statistics); }).catch(e => { if (active) setError(e.message); }));
+    const stop = watchLive(() => api<StatisticsSnapshot>(path).then(data => { if (active) setSnapshot(data); }).catch(e => { if (active) setError(e.message); }));
     return () => { active = false; stop(); };
   }, [path]);
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -30,9 +34,21 @@ export function StatisticsTab({ character }: { character: Character }) {
     if (pending || !draft) return;
     setPending(true); setError(''); setMessage('');
     try {
-      const result = await api<{ statistics: CharacterStatistics }>(path, draft);
-      setStatistics(result.statistics); setDraft(null); setMessage('Statystyki zapisane.');
-    } catch (e) { setError(e instanceof Error ? e.message : 'Nie udało się zapisać statystyk.'); }
+      const result = await api<StatisticsSnapshot>(path, draft);
+      setSnapshot(result); setDraft(null); setConflict(false); setMessage('Statystyki zapisane.');
+    } catch (e) {
+      setConflict(e instanceof ApiError && (e.status === 409 || e.status === 428));
+      setError(e instanceof Error ? e.message : 'Nie udało się zapisać statystyk.');
+    }
+    finally { setPending(false); }
+  }
+  async function discardAndReload() {
+    if (pending) return;
+    setPending(true);
+    try {
+      const latest = await api<StatisticsSnapshot>(path);
+      setSnapshot(latest); setDraft(null); setConflict(false); setError(''); setMessage('Wczytano aktualne dane karty.');
+    } catch (e) { setError(e instanceof Error ? e.message : 'Nie udało się wczytać karty. Twoje zmiany pozostają w formularzu.'); }
     finally { setPending(false); }
   }
   async function exportPdf() {
@@ -67,8 +83,9 @@ export function StatisticsTab({ character }: { character: Character }) {
     }} /></label>;
   }
   return <div className="statistics-tab">
-    <div className="inventory-section-heading"><div><p className="eyebrow">KARTA BOHATERA</p><h2>Statystyki</h2></div>{!draft && <div className="admin-actions"><button className="text-button" disabled={exporting} onClick={() => void exportPdf()}>{exporting ? 'Przygotowywanie PDF…' : 'Eksportuj PDF'}</button><button className="primary-button" disabled={exporting} onClick={() => { setDraft(structuredClone(stats)); setMessage(''); setError(''); }}>Uzupełnij / edytuj</button></div>}</div>
+    <div className="inventory-section-heading"><div><p className="eyebrow">KARTA BOHATERA</p><h2>Statystyki</h2></div>{!draft && <div className="admin-actions"><button className="text-button" disabled={exporting} onClick={() => void exportPdf()}>{exporting ? 'Przygotowywanie PDF…' : 'Eksportuj PDF'}</button><button className="primary-button" disabled={exporting} onClick={() => { setDraft({ ...structuredClone(stats), expectedRevision: snapshot!.revision }); setConflict(false); setMessage(''); setError(''); }}>Uzupełnij / edytuj</button></div>}</div>
     {error && <p className="form-error" role="alert">{error}</p>}{message && <p role="status">{message}</p>}
+    {draft && conflict && <div className="stack-form"><p>Twoje niezapisane zmiany pozostają w formularzu. Możesz je skopiować przed wczytaniem aktualnej karty.</p><button type="button" className="text-button" disabled={pending} onClick={() => void discardAndReload()}>Odrzuć moje zmiany i wczytaj aktualne dane</button></div>}
     {rageProfile(character).dangerSense && <p>{dangerSenseDescription}</p>}
     {rageProfile(character).primalKnowledge && <p>Primal Knowledge: wybierz dodatkową biegłość z listy umiejętności barbarzyńcy w sekcji cech postaci. W Szale możesz używać Siły do Akrobatyki, Zastraszania, Percepcji, Skradania się i Sztuki przetrwania, zachowując biegłość lub ekspertyzę oraz ułatwienie Szału.</p>}
     {draft ? <form className="stack-form statistics-editor" onSubmit={save}><fieldset disabled={pending}>
