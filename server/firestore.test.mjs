@@ -11,6 +11,8 @@ import { emptyStatistics } from './statistics.mjs';
 import samples from '../shared/sample-monsters.json' with { type: 'json' };
 import { createHash } from 'node:crypto';
 import { resourceState } from './spell-resources.mjs';
+import { createGameEvents } from './game-events.mjs';
+import { EventEmitter } from 'node:events';
 
 test('HTTP battle end retries an aborted transaction without consuming its body twice or duplicating the summary', async () => {
   const firestore = cloud();
@@ -147,21 +149,38 @@ function cloud() {
   }
   source.close();
   data.set(root, { revision: 1, schemaVersion: 1 });
-  const collection = path => ({ path, doc: id => ({ path: `${path}/${id}`, collection: name => collection(`${path}/${id}/${name}`) }) });
+  const watchers = new Set();
+  const notify = () => {
+    for (const watcher of watchers) queueMicrotask(() => {
+      if (watchers.has(watcher)) watcher.next({ exists: true, get: field => data.get(root)?.[field] });
+    });
+  };
+  const collection = path => ({ path, doc: id => ({ path: `${path}/${id}`, collection: name => collection(`${path}/${id}/${name}`),
+    onSnapshot(next, error) {
+      assert.equal(`${path}/${id}`, root, 'Only metadata may be watched');
+      const watcher = { next, error }; watchers.add(watcher);
+      queueMicrotask(() => { if (watchers.has(watcher)) next({ exists: true, get: field => data.get(root)?.[field] }); });
+      return () => watchers.delete(watcher);
+    },
+  }) });
   let reject = false;
   return {
     collection,
     failNextCommit() { reject = true; },
     data,
-    async runTransaction(work) {
+    watcherCount: () => watchers.size,
+    failWatch() { for (const watcher of [...watchers]) watcher.error(new Error('Watch unavailable')); },
+    async runTransaction(work, { maxAttempts = 1 } = {}) {
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const snapshot = new Map([...data].map(([key, value]) => [key, structuredClone(value)]));
       const writes = [];
       const output = await work({
         get: async ref => {
           if (ref.path.split('/').length % 2 === 0) {
-            const value = structuredClone(data.get(ref.path));
+            const value = structuredClone(snapshot.get(ref.path));
             return { exists: value !== undefined, get: field => value?.[field] };
           }
-          return { docs: [...data].filter(([key]) => key.startsWith(ref.path + '/') && key.split('/').length === ref.path.split('/').length + 1)
+          return { docs: [...snapshot].filter(([key]) => key.startsWith(ref.path + '/') && key.split('/').length === ref.path.split('/').length + 1)
             .map(([, value]) => ({ data: () => structuredClone(value) })) };
         },
         set: (ref, value) => writes.push(() => data.set(ref.path, structuredClone(value))),
@@ -169,11 +188,252 @@ function cloud() {
         update: (ref, value) => writes.push(() => data.set(ref.path, { ...data.get(ref.path), ...value })),
       });
       if (reject) { reject = false; throw new Error('Cloud unavailable'); }
+      if (data.get(root).revision !== snapshot.get(root).revision) {
+        if (attempt + 1 === maxAttempts) throw new Error('Transaction contention');
+        continue;
+      }
       for (const write of writes) write();
+      if (writes.length) notify();
       return output;
+      }
     },
   };
 }
+
+test('SSE coalesces refreshes and never publishes a change from a failed transaction', async () => {
+  const firestore = cloud();
+  const db = await openFirestoreDatabase(firestore);
+  await db.run(() => {
+    db.exec("UPDATE users SET role = 'gm' WHERE id = 1; INSERT INTO games (id, gm_id, name) VALUES (1, 1, 'Events');");
+    db.prepare('INSERT INTO sessions VALUES (?, 1, ?)').run('events', Date.now() + 60000);
+  });
+  const events = createGameEvents(db);
+  const clients = [];
+  try {
+    for (let i = 0; i < 2; i++) {
+      const client = { gameId: 1, userId: 1, token: 'events' };
+      await db.run(() => { client.fingerprint = events.fingerprint(client); });
+      const res = new EventEmitter(); res.messages = []; res.writeHead = () => {};
+      res.write = message => { res.messages.push(message); return true; };
+      res.end = () => { res.emit('close'); }; res.destroy = res.end;
+      events.subscribe(new EventEmitter(), res, client); clients.push(res);
+    }
+    await db.run(() => db.prepare("UPDATE games SET name = 'Changed' WHERE id = 1").run());
+    const before = db.metrics();
+    await Promise.all([events.publish(), events.publish()]);
+    assert.equal(db.metrics().transactions - before.transactions, 1);
+    for (const res of clients) assert.equal(res.messages.filter(message => message.includes('event: change')).length, 1);
+    await db.run(() => db.prepare("UPDATE games SET name = 'Another' WHERE id = 1").run());
+    firestore.failNextCommit();
+    await events.publish();
+    for (const res of clients) assert.equal(res.messages.filter(message => message.includes('event: change')).length, 1);
+  } finally { clients.forEach(res => res.end()); db.close(); }
+});
+
+test('shared root watch notifies another instance only after commit, stays idle without reads and revokes sessions', async () => {
+  const firestore = cloud();
+  const writer = await openFirestoreDatabase(firestore);
+  await writer.run(() => writer.prepare('INSERT INTO sessions VALUES (?, 1, ?)').run('sync', Date.now() + 60000));
+  const reader = await openFirestoreDatabase(firestore);
+  const events = createGameEvents(reader, { heartbeatMs: 5 });
+  const responses = [];
+  const waitFor = async condition => {
+    for (let i = 0; i < 200 && !condition(); i++) await new Promise(resolve => setTimeout(resolve, 5));
+    assert.ok(condition(), 'Timed out waiting for a committed notification');
+  };
+  const subscribe = () => {
+    const res = new EventEmitter(); res.messages = [];
+    res.writeHead = () => {};
+    res.write = message => { res.messages.push(message); return true; };
+    res.end = () => { res.writableEnded = true; res.emit('close'); }; res.destroy = res.end;
+    events.subscribe(new EventEmitter(), res, { userId: 1, token: 'sync' });
+    responses.push(res); return res;
+  };
+  try {
+    const first = subscribe(), second = subscribe();
+    await waitFor(() => responses.every(res => res.messages.some(value => value.includes('event: ready'))));
+    assert.equal(firestore.watcherCount(), 1);
+    const before = reader.metrics();
+    await new Promise(resolve => setTimeout(resolve, 25));
+    assert.equal(reader.metrics().documentReads, before.documentReads, 'Heartbeats must not query Firestore');
+    assert.ok(first.messages.some(value => value.includes('keep-alive')));
+    const changes = res => res.messages.filter(value => value.includes('event: change')).length;
+    firestore.failNextCommit();
+    await assert.rejects(writer.run(() => writer.prepare("UPDATE users SET name = 'Rolled back' WHERE id = 1").run()), /Cloud unavailable/);
+    await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(changes(first), 0); assert.equal(changes(second), 0);
+    await writer.run(() => writer.prepare("UPDATE users SET name = 'From another instance' WHERE id = 1").run());
+    await waitFor(() => changes(first) === 1 && changes(second) === 1);
+    await reader.run(() => assert.equal(reader.prepare('SELECT name FROM users WHERE id = 1').get().name, 'From another instance'));
+    assert.doesNotMatch(first.messages.join(''), /another instance|users|revision|token/);
+    await writer.run(() => writer.prepare("DELETE FROM sessions WHERE token = 'sync'").run());
+    await waitFor(() => responses.every(res => res.writableEnded));
+    assert.ok(first.messages.some(value => value.includes('event: expired')));
+    assert.equal(firestore.watcherCount(), 0);
+    assert.equal(reader.metrics().watchStarts, 1); assert.equal(reader.metrics().watchStops, 1);
+    await writer.run(() => writer.prepare('INSERT INTO sessions VALUES (?, 1, ?)').run('sync', Date.now() + 60000));
+    const reconnected = subscribe();
+    await waitFor(() => reconnected.messages.some(value => value.includes('event: ready')));
+    firestore.failWatch();
+    assert.equal(reconnected.writableEnded, true); assert.equal(firestore.watcherCount(), 0);
+  } finally { responses.forEach(res => res.end()); writer.close(); reader.close(); }
+});
+
+test('a commit arriving while notification delivery is pending gets another refresh pass', async () => {
+  const firestore = cloud();
+  const writer = await openFirestoreDatabase(firestore);
+  await writer.run(() => writer.prepare('INSERT INTO sessions VALUES (?, 1, ?)').run('pending', Date.now() + 60000));
+  const reader = await openFirestoreDatabase(firestore);
+  const events = createGameEvents(reader);
+  const res = new EventEmitter(); res.messages = []; res.writeHead = () => {};
+  res.write = text => { res.messages.push(text); return true; };
+  res.end = () => res.emit('close'); res.destroy = res.end;
+  const flush = () => new Promise(resolve => setTimeout(resolve, 10));
+  let release;
+  try {
+    events.subscribe(new EventEmitter(), res, { userId: 1, token: 'pending' });
+    await events.publish(); await flush();
+    const originalRun = reader.run.bind(reader);
+    let block = true;
+    let entered;
+    const waiting = new Promise(resolve => { entered = resolve; });
+    const barrier = new Promise(resolve => { release = resolve; });
+    reader.run = async work => {
+      const output = await originalRun(work);
+      if (block) { block = false; entered(); await barrier; }
+      return output;
+    };
+    await writer.run(() => writer.prepare("UPDATE users SET name = 'First commit' WHERE id = 1").run());
+    await waiting;
+    await writer.run(() => writer.prepare("UPDATE users SET name = 'Second commit' WHERE id = 1").run());
+    release(); await events.publish();
+    assert.equal(res.messages.filter(message => message.includes('event: change')).length, 2);
+    await reader.run(() => assert.equal(reader.prepare('SELECT name FROM users WHERE id = 1').get().name, 'Second commit'));
+  } finally { release?.(); res.end(); writer.close(); reader.close(); }
+});
+
+test('SSE ends before the Vercel deadline and releases its Firestore watch', async () => {
+  const firestore = cloud();
+  const db = await openFirestoreDatabase(firestore);
+  await db.run(() => db.prepare('INSERT INTO sessions VALUES (?, 1, ?)').run('deadline', Date.now() + 60000));
+  const events = createGameEvents(db, { maxAgeMs: 25 });
+  const res = new EventEmitter(); let ended = false;
+  res.writeHead = () => {}; res.write = () => true;
+  res.end = () => { ended = true; res.emit('close'); }; res.destroy = res.end;
+  try {
+    events.subscribe(new EventEmitter(), res, { userId: 1, token: 'deadline' });
+    await new Promise(resolve => setTimeout(resolve, 50));
+    assert.equal(ended, true); assert.equal(firestore.watcherCount(), 0);
+  } finally { res.end(); db.close(); }
+});
+
+test('new sync endpoint accepts authenticated players, rejects strangers and streams no private payload', async () => {
+  const firestore = cloud();
+  const db = await openFirestoreDatabase(firestore);
+  await db.run(() => db.prepare('INSERT INTO sessions VALUES (?, 1, ?)').run(createHash('sha256').update('sync-http').digest('hex'), Date.now() + 60000));
+  const app = createApp(db);
+  await new Promise(resolve => app.listen(0, '127.0.0.1', resolve));
+  const abort = new AbortController();
+  const url = `http://127.0.0.1:${app.address().port}/api/sync/events`;
+  try {
+    assert.equal((await fetch(url)).status, 401);
+    assert.equal((await fetch(url, { headers: { Cookie: 'session=invalid' } })).status, 401);
+    const response = await fetch(url, { headers: { Cookie: 'session=sync-http' }, signal: abort.signal });
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get('content-type'), /text\/event-stream/);
+    const stream = response.body.getReader();
+    let text = '';
+    while (!text.includes('event: ready')) text += new TextDecoder().decode((await stream.read()).value);
+    assert.match(text, /data: \{\}/); assert.doesNotMatch(text, /Owner|hash|sync-http|revision/);
+  } finally {
+    abort.abort(); app.closeAllConnections();
+    await new Promise(resolve => app.close(resolve));
+    await new Promise(resolve => setImmediate(resolve)); db.close();
+  }
+});
+
+test('startup uses one transaction and unchanged reads query only the root', async () => {
+  const db = await openFirestoreDatabase(cloud());
+  try {
+    assert.equal(db.metrics().transactions, 1);
+    assert.equal(db.metrics().fullReloads, 1);
+    const before = db.metrics();
+    await db.run(() => {});
+    assert.equal(db.metrics().documentReads - before.documentReads, 1);
+    assert.equal(db.metrics().collectionQueries, before.collectionQueries);
+    assert.equal(db.metrics().documentWrites, before.documentWrites);
+  } finally { db.close(); }
+});
+
+test('partial refresh spans skipped revisions, deletes and legacy writers safely', async () => {
+  const firestore = cloud();
+  const first = await openFirestoreDatabase(firestore);
+  // Establish tracking, as an existing migrated database has no table metadata.
+  await first.run(() => first.prepare("UPDATE users SET name = 'Tracked' WHERE id = 1").run());
+  const second = await openFirestoreDatabase(firestore);
+  try {
+    await first.run(() => first.prepare("UPDATE users SET name = 'New' WHERE id = 1").run());
+    await first.run(() => first.prepare("INSERT INTO sessions VALUES ('token', 1, 123)").run());
+    const before = second.metrics();
+    await second.run(() => {
+      assert.equal(second.prepare('SELECT name FROM users WHERE id = 1').get().name, 'New');
+      assert.equal(second.prepare('SELECT COUNT(*) AS n FROM sessions').get().n, 1);
+    });
+    assert.equal(second.metrics().collectionQueries - before.collectionQueries, 2);
+    await first.run(() => first.prepare('DELETE FROM sessions').run());
+    await second.run(() => assert.equal(second.prepare('SELECT COUNT(*) AS n FROM sessions').get().n, 0));
+    assert.equal(second.metrics().fullReloads, before.fullReloads);
+    // Old scripts preserve unknown metadata and increment only global revision.
+    firestore.data.get('dnd_rnr/main').revision++;
+    firestore.data.get('dnd_rnr/main/users/1').name = 'Legacy';
+    await second.run(() => assert.equal(second.prepare('SELECT name FROM users WHERE id = 1').get().name, 'Legacy'));
+    assert.equal(second.metrics().fullReloads, before.fullReloads + 1);
+  } finally { first.close(); second.close(); }
+});
+
+test('simultaneous instances retry against fresh state without losing another writer changes', async () => {
+  const firestore = cloud();
+  const first = await openFirestoreDatabase(firestore);
+  const second = await openFirestoreDatabase(firestore);
+  try {
+    await Promise.all([
+      first.run(async () => { await Promise.resolve(); first.prepare("UPDATE users SET name = 'Concurrent' WHERE id = 1").run(); }),
+      second.run(async () => { await Promise.resolve(); second.prepare("UPDATE users SET username = 'concurrent' WHERE id = 1").run(); }),
+    ]);
+    assert.ok(first.metrics().attempts + second.metrics().attempts > first.metrics().transactions + second.metrics().transactions);
+    for (const db of [first, second]) await db.run(() => {
+      const user = db.prepare('SELECT * FROM users WHERE id = 1').get();
+      assert.equal(user.name, 'Concurrent'); assert.equal(user.username, 'concurrent');
+    });
+  } finally { first.close(); second.close(); }
+});
+
+test('cost benchmark: seven instances, 30 writes and 210 synchronized reads', async t => {
+  async function scenario(legacy) {
+    const firestore = cloud();
+    const clients = [];
+    for (let i = 0; i < 7; i++) clients.push(await openFirestoreDatabase(firestore));
+    const started = performance.now();
+    try {
+      for (let turn = 0; turn < 30; turn++) {
+        const writer = clients[turn % clients.length];
+        await writer.run(() => writer.prepare('UPDATE users SET name = ? WHERE id = 1').run(`Turn ${turn}`));
+        // Reproduce the old global invalidation policy, with the same workload.
+        if (legacy) delete firestore.data.get('dnd_rnr/main').trackedRevision;
+        await Promise.all(clients.map(db => db.run(() => {
+          assert.equal(db.prepare('SELECT name FROM users WHERE id = 1').get().name, `Turn ${turn}`);
+        })));
+      }
+      const totals = {};
+      for (const db of clients) for (const [key, value] of Object.entries(db.metrics())) totals[key] = (totals[key] || 0) + value;
+      return { ...totals, wallMs: Math.round(performance.now() - started) };
+    } finally { clients.forEach(db => db.close()); }
+  }
+  const before = await scenario(true), after = await scenario(false);
+  assert.ok(after.documentReads < before.documentReads / 2);
+  assert.equal(before.documentWrites, after.documentWrites);
+  t.diagnostic(JSON.stringify({ before, after }));
+});
 
 test('Firestore preserves IDs and password hashes, refreshes between processes, and persists deletion', async () => {
   const firestore = cloud();

@@ -1,5 +1,6 @@
 import { createApp } from '../server/index.mjs';
 import { openFirestoreDatabase } from '../server/firestore.mjs';
+import { invokeRequestListener } from '../server/request-listener.mjs';
 
 // Reuse the Firestore-backed application within a warm Vercel Function instance.
 let listenerPromise;
@@ -39,7 +40,7 @@ export default async function handler(req, res) {
     }
     const listener = await listenerPromise;
     if (isHealth) return json(res, 200, { ok: true, database: 'ready' });
-    return await listener(req, res);
+    return await invokeRequestListener(listener, req, res);
   } catch (error) {
     console.error('DnD-RnR API unavailable:', error);
     if (!res.headersSent) return json(res, 503, { error: 'API jest chwilowo niedostępne.' });

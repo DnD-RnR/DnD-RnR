@@ -1,4 +1,5 @@
 import { LuckInput } from './LuckInput';
+import { watchLive } from '../../lib/live-sync';
 import { WarlockControls } from './WarlockControls';
 import { bondAdvantage, hexActive } from '../../../shared/warlock.mjs';
 import { PsiWarriorControls } from './PsiWarriorControls';
@@ -11,6 +12,11 @@ import type { Attack, CombatResponse } from './battle-types';
 import definitions from '../../../shared/statistics.json' with { type: 'json' };
 import { SpellCastForm, SpellResolution, ConcentrationForm, SpellDefenses } from './CombatSpellForms';
 
+function acceptResponse(previous: CombatResponse | null, data: CombatResponse) {
+  if ((data.battle?.version ?? 0) < (previous?.battle?.version ?? 0)) return previous;
+  return previous && JSON.stringify(previous) === JSON.stringify(data) ? previous : data;
+}
+
 export function useBattle(gameId: number, sessionId: number) {
   const [response, setResponse] = useState<CombatResponse | null>(null);
   const [error, setError] = useState('');
@@ -18,28 +24,26 @@ export function useBattle(gameId: number, sessionId: number) {
   const [pending, setPending] = useState(false);
   const refresh = useCallback(async () => {
     const data = await api<CombatResponse>(`/games/${gameId}/battle`);
-    setResponse(previous => (data.battle?.version ?? 0) >= (previous?.battle?.version ?? 0) ? data : previous);
+    setResponse(previous => acceptResponse(previous, data));
   }, [gameId]);
   useEffect(() => {
     let alive = true, running = false;
     const load = async () => {
       if (running) return;
       running = true;
-      try { const data = await api<CombatResponse>(`/games/${gameId}/battle`); if (alive) { setResponse(previous => (data.battle?.version ?? 0) >= (previous?.battle?.version ?? 0) ? data : previous); setConnectionError(''); } }
+      try { const data = await api<CombatResponse>(`/games/${gameId}/battle`); if (alive) { setResponse(previous => acceptResponse(previous, data)); setConnectionError(''); } }
       catch (e) { if (alive) setConnectionError(e instanceof Error ? e.message : 'Błąd połączenia z walką.'); }
       finally { running = false; }
     };
-    void load();
-    const timer = window.setInterval(() => void load(), 2000);
-    window.addEventListener('focus', load);
-    return () => { alive = false; window.clearInterval(timer); window.removeEventListener('focus', load); };
+    const stop = watchLive(load);
+    return () => { alive = false; stop(); };
   }, [gameId, sessionId]);
   async function mutate(action: 'start' | 'act' | 'next' | 'end', body: Record<string, unknown> = {}) {
     if (pending || !response) return false;
     setPending(true); setError('');
     try {
       const data = await api<CombatResponse>(`/games/${gameId}/battle/${action}`, { ...body, sessionId, version: response.battle?.version ?? 0 });
-      setResponse(previous => (data.battle?.version ?? 0) >= (previous?.battle?.version ?? 0) ? data : previous); return true;
+      setResponse(previous => acceptResponse(previous, data)); return true;
     } catch (e) {
       try { await refresh(); } catch { /* Preserve the mutation failure. */ }
       setError(e instanceof Error ? e.message : 'Nie udało się zapisać działania.'); return false;

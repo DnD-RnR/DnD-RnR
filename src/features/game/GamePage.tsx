@@ -1,4 +1,5 @@
 import { formatDice } from '../../lib/dice';
+import { watchLive } from '../../lib/live-sync';
 import { StatisticsTab } from './StatisticsTab';
 import { CharacterGameInfo } from '../characters/CharacterGameInfo';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -27,11 +28,9 @@ export function GamePage({ character: initialCharacter, onBack }: { character: C
   const inventoryPath = `/characters/${character.id}/inventory`;
   useEffect(() => {
     let alive = true;
-    const refresh = () => { void api<{ characters: Character[] }>('/characters').then(data => { const next = data.characters.find(c => c.id === initialCharacter.id); if (alive && next) updateCharacter(next); }).catch(() => {}); };
-    refresh();
-    const timer = window.setInterval(refresh, 20000);
-    window.addEventListener('focus', refresh);
-    return () => { alive = false; window.clearInterval(timer); window.removeEventListener('focus', refresh); };
+    const refresh = () => api<{ characters: Character[] }>('/characters').then(data => { const next = data.characters.find(c => c.id === initialCharacter.id); if (alive && next) updateCharacter(next); }).catch(() => {});
+    const stop = watchLive(refresh);
+    return () => { alive = false; stop(); };
   }, [initialCharacter.id, updateCharacter]);
   async function load() {
     const data = await api<{ items: InventoryItem[] }>(inventoryPath);
@@ -39,7 +38,15 @@ export function GamePage({ character: initialCharacter, onBack }: { character: C
   }
   useEffect(() => {
     heading.current?.focus();
-    load().catch(e => setError(e.message)).finally(() => setLoading(false));
+    let alive = true;
+    const stop = watchLive(async () => {
+      try {
+        const data = await api<{ items: InventoryItem[] }>(inventoryPath);
+        if (alive) setItems(data.items);
+      } catch (e) { if (alive) setError(e instanceof Error ? e.message : 'Błąd odczytu ekwipunku.'); }
+      finally { if (alive) setLoading(false); }
+    });
+    return () => { alive = false; stop(); };
   }, [character.id]);
   async function mutate(path: string, body: unknown, success: string) {
     if (pending) return;

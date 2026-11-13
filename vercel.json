@@ -1,5 +1,9 @@
 {
   "version": 2,
+  "functions": { "api/index.mjs": { "maxDuration": 60 } },
+  "git": {
+    "deploymentEnabled": { "perf/firestore-sync-audit": false }
+  },
   "rewrites": [
     { "source": "/api/:apiPath*", "destination": "/api?apiPath=:apiPath*" }
   ]

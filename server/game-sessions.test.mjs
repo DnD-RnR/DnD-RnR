@@ -97,6 +97,23 @@ test('GM removes selected inventory quantities only from accepted members of the
   } finally { await new Promise(resolve => app.close(resolve)); db.close(); }
 });
 
+test('GM snapshot matches separate endpoints and preserves ownership restrictions', async () => {
+  const db = openDatabase(':memory:'); seed(db);
+  const app = createApp(db);
+  await new Promise(resolve => app.listen(0, '127.0.0.1', resolve));
+  const request = (path, id = 1) => fetch(`http://127.0.0.1:${app.address().port}/api${path}`, {
+    headers: { Cookie: `session=test-${id}` },
+  });
+  try {
+    const snapshot = await (await request('/games/1/snapshot')).json();
+    const game = await (await request('/games/1')).json();
+    assert.deepEqual(snapshot, { ...game,
+      ...await (await request('/items')).json(), ...await (await request('/armors')).json() });
+    for (const id of [2, 3, 6]) assert.equal((await request('/games/1/snapshot', id)).status, 404);
+    assert.equal((await request('/games/999/snapshot')).status, 404);
+  } finally { app.closeAllConnections(); await new Promise(resolve => app.close(resolve)); db.close(); }
+});
+
 test('GM event stream reports relevant mutations and stops after logout', async () => {
   const db = openDatabase(':memory:'); seed(db);
   const app = createApp(db);
