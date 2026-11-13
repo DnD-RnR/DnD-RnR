@@ -7,7 +7,7 @@ import { handleMonsters } from './monsters.mjs';
 import { handleAdvancement } from './advancement.mjs';
 import { characterTraits } from '../shared/character-traits.mjs';
 import { handleBattles } from './battles.mjs';
-import { emptyStatistics } from './statistics.mjs';
+import { emptyStatistics, handleStatistics } from './statistics.mjs';
 import samples from '../shared/sample-monsters.json' with { type: 'json' };
 import { createHash } from 'node:crypto';
 import { resourceState } from './spell-resources.mjs';
@@ -405,6 +405,40 @@ test('simultaneous instances retry against fresh state without losing another wr
       const user = db.prepare('SELECT * FROM users WHERE id = 1').get();
       assert.equal(user.name, 'Concurrent'); assert.equal(user.username, 'concurrent');
     });
+  } finally { first.close(); second.close(); }
+});
+
+test('statistics revisions reject a competing instance after Firestore retries against a newer commit', async () => {
+  const firestore = cloud();
+  const first = await openFirestoreDatabase(firestore);
+  await first.run(() => {
+    first.exec("INSERT INTO characters (id,user_id,name,class,level) VALUES (1,1,'Hero','Wojownik (Fighter)',1)");
+    const stats = emptyStatistics();
+    stats.traits.languages = ['elvish', 'dwarvish']; stats.traits.classSkills = ['acrobatics', 'athletics'];
+    stats.values.hp = 11;
+    first.prepare('INSERT INTO character_statistics VALUES (1, ?)').run(JSON.stringify(stats));
+  });
+  const second = await openFirestoreDatabase(firestore);
+  const request = (connection, method, body = {}) => connection.run(() => {
+    let result;
+    handleStatistics(connection, { id: 1, role: 'player' }, '/api/characters/1/statistics', method, body,
+      (status, data) => { result = { status, ...data }; });
+    return result;
+  });
+  try {
+    const snapshot = await request(first, 'GET');
+    const makeBody = hp => ({ ...structuredClone(snapshot.statistics), expectedRevision: snapshot.revision,
+      values: { ...snapshot.statistics.values, hp } });
+    const results = await Promise.all([request(first, 'POST', makeBody(9)), request(second, 'POST', makeBody(8))]);
+    assert.deepEqual(results.map(result => result.status).sort(), [200, 409]);
+    const accepted = results.find(result => result.status === 200);
+    const fresh = await request(second, 'GET');
+    assert.equal(fresh.statistics.values.hp, accepted.statistics.values.hp);
+    assert.equal(fresh.revision, accepted.revision);
+    assert.ok(first.metrics().attempts + second.metrics().attempts > first.metrics().transactions + second.metrics().transactions);
+    const before = first.metrics().documentWrites;
+    assert.equal((await request(first, 'POST', makeBody(1))).status, 409);
+    assert.equal(first.metrics().documentWrites, before);
   } finally { first.close(); second.close(); }
 });
 

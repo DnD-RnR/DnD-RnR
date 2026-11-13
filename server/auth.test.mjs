@@ -19,6 +19,10 @@ test('statistics persist, validate values and remain private to the character ow
   await new Promise(resolve => app.listen(0, '127.0.0.1', resolve));
   const endpoint = `/characters/${characterId}/statistics`;
   async function request(path, body, cookie = '') {
+    if (path === endpoint && body && typeof body === 'object') {
+      const current = await (await request(path, undefined, cookie)).json();
+      body = { ...body, expectedRevision: current.revision };
+    }
     return fetch(`http://127.0.0.1:${app.address().port}/api${path}`, { method: body === undefined ? 'GET' : 'POST', headers: { Cookie: cookie, Origin: 'http://127.0.0.1:5173', 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
   }
   async function login(username) {

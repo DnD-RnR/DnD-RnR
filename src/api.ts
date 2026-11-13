@@ -36,6 +36,10 @@ export type CharacterStatistics = {
   hasCrafter?: boolean;
 };
 
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) { super(message); }
+}
+
 export async function api<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(`/api${path}`, {
     credentials: 'same-origin',
@@ -44,7 +48,7 @@ export async function api<T>(path: string, body?: unknown): Promise<T> {
   const data = await response.json();
   if (!response.ok) {
     if (response.status === 401 && path !== '/login' && path !== '/me') window.dispatchEvent(new Event('session-expired'));
-    throw new Error(data.error || 'Nie udało się wykonać operacji.');
+    throw new ApiError(data.error || 'Nie udało się wykonać operacji.', response.status);
   }
   return data;
 }

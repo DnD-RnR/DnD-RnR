@@ -11,7 +11,7 @@
     "db:migrate": "node --env-file-if-exists=.env scripts/migrate-firestore.mjs",
     "db:check": "node --env-file-if-exists=.env scripts/check-firestore.mjs",
     "db:rules": "node --env-file-if-exists=.env scripts/firestore-rules.mjs",
-    "test": "node --test server/advancement.test.mjs server/paladin.test.mjs server/druid.test.mjs server/origin-feats.test.mjs server/warlock.test.mjs server/auth.test.mjs server/spellcasting.test.mjs server/character-traits.test.mjs server/game-sessions.test.mjs server/monsters.test.mjs server/battles.test.mjs server/combat-spells.test.mjs server/weapons.test.mjs server/armors.test.mjs server/firestore.test.mjs server/live-sync.test.mjs",
+    "test": "node --test server/advancement.test.mjs server/paladin.test.mjs server/druid.test.mjs server/origin-feats.test.mjs server/warlock.test.mjs server/auth.test.mjs server/spellcasting.test.mjs server/character-traits.test.mjs server/game-sessions.test.mjs server/monsters.test.mjs server/battles.test.mjs server/combat-spells.test.mjs server/weapons.test.mjs server/armors.test.mjs server/firestore.test.mjs server/live-sync.test.mjs server/statistics-concurrency.test.mjs",
     "perf:firestore": "node --test --test-name-pattern=\"cost benchmark\" server/firestore.test.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview",

@@ -900,6 +900,7 @@ test('GM monster attacks persist temporary HP absorption and actual character HP
     assert.equal(call().battle.fighters[0].hp, 21);
     const staleStats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 1').get().data);
     staleStats.values.hp = 30;
+    handleStatistics(db, player, '/api/characters/1/statistics', 'GET', {}, (_status, data) => { staleStats.expectedRevision = data.revision; });
     let savedStatus;
     handleStatistics(db, player, '/api/characters/1/statistics', 'POST', staleStats, status => { savedStatus = status; });
     assert.equal(savedStatus, 409);

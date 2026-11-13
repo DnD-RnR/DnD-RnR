@@ -2,7 +2,7 @@
   "version": 2,
   "functions": { "api/index.mjs": { "maxDuration": 60 } },
   "git": {
-    "deploymentEnabled": { "perf/firestore-sync-audit": false }
+    "deploymentEnabled": { "perf/firestore-sync-audit": false, "fix/statistics-concurrent-edits": false }
   },
   "rewrites": [
     { "source": "/api/:apiPath*", "destination": "/api?apiPath=:apiPath*" }

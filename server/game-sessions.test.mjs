@@ -120,6 +120,10 @@ test('GM event stream reports relevant mutations and stops after logout', async 
   await new Promise(resolve => app.listen(0, '127.0.0.1', resolve));
   const controller = new AbortController();
   async function request(path, body, userId) {
+    if (/\/statistics$/.test(path) && body && typeof body === 'object') {
+      const current = await (await request(path, undefined, userId)).json();
+      body = { ...body, expectedRevision: current.revision };
+    }
     return fetch(`http://127.0.0.1:${app.address().port}/api${path}`, {
       method: body === undefined ? 'GET' : 'POST', signal: controller.signal,
       headers: { Origin: 'http://127.0.0.1:5173', 'Content-Type': 'application/json', Cookie: userId ? `session=test-${userId}` : '' },
