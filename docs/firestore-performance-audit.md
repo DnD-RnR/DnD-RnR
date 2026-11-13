@@ -1,5 +1,9 @@
 # Audyt Firebase / Vercel — 12 listopada 2026
 
+> Aktualizacja 13 listopada: poniżej zachowano wyniki pierwszego etapu audytu.
+> Polling 2/5/10 s został następnie zastąpiony wspólnymi powiadomieniami po commit.
+> Aktualna architektura, koszty reconnect i wyniki testów: [Synchronizacja po zapisie](live-sync.md).
+
 ## Zakres i wniosek
 
 Zbadano lokalny `master` acd33c1 i zdalny draft [PR #2](https://github.com/DnD-RnR/DnD-RnR/pull/2),

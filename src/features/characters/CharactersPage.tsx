@@ -1,5 +1,5 @@
 import { CharacterGameInfo } from './CharacterGameInfo';
-import { poll } from '../../lib/poll';
+import { watchLive } from '../../lib/live-sync';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useEffect, useState } from 'react';
@@ -17,7 +17,7 @@ export function CharactersPage({ onSelect, onCreate, onEnter }: { onCreate: () =
       catch (e) { if (alive) setError(e instanceof Error ? e.message : 'Błąd połączenia.'); }
       finally { if (alive) setLoading(false); }
     };
-    const stop = poll(load, 5000);
+    const stop = watchLive(load);
     return () => { alive = false; stop(); };
   }, []);
   async function join(character: Character) {

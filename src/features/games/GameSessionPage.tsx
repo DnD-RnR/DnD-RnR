@@ -1,5 +1,5 @@
 import { SpellRestControls } from './SpellRestControls';
-import { poll } from '../../lib/poll';
+import { watchLive } from '../../lib/live-sync';
 import { MilestoneControls } from './MilestoneControls';
 import { BattlePage } from './BattlePage';
 import { MonstersPage } from './MonstersPage';
@@ -28,30 +28,13 @@ export function GameSessionPage({ gameId, userId }: { gameId: number; userId: nu
   useEffect(() => {
     if (editing) return;
     let alive = true;
-    let running = false;
-    let again = false;
     const refresh = async () => {
-      if (running) { again = true; return; }
-      running = true;
-      do {
-        again = false;
-        try { await load(); }
-        catch (e) { if (alive) setError(e instanceof Error ? e.message : 'Błąd połączenia.'); }
-        finally { if (alive) setLoading(false); }
-      } while (alive && again);
-      running = false;
+      try { await load(); if (alive) setError(''); }
+      catch (e) { if (alive) setError(e instanceof Error ? e.message : 'Błąd połączenia.'); }
+      finally { if (alive) setLoading(false); }
     };
-    const events = new EventSource(`/api/games/${gameId}/events`);
-    events.onopen = () => { setConnectionLost(false); void refresh(); };
-    events.onerror = () => { if (alive) setConnectionLost(true); };
-    events.addEventListener('change', () => void refresh());
-    // SSE connections can expire in serverless runtimes. Keep an independent
-    // fallback while disconnected, so a GM still sees other instances' writes.
-    const stopFallback = poll(async () => {
-      if (events.readyState !== EventSource.OPEN) await refresh();
-    }, 20000);
-    window.addEventListener('focus', refresh);
-    return () => { alive = false; stopFallback(); events.close(); window.removeEventListener('focus', refresh); };
+    const stop = watchLive(refresh, connected => { if (alive) setConnectionLost(!connected); });
+    return () => { alive = false; stop(); };
   }, [load, editing, gameId]);
   useEffect(() => {
     const previous = document.title;

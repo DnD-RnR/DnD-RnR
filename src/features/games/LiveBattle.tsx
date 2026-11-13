@@ -1,5 +1,5 @@
 import { LuckInput } from './LuckInput';
-import { poll } from '../../lib/poll';
+import { watchLive } from '../../lib/live-sync';
 import { WarlockControls } from './WarlockControls';
 import { bondAdvantage, hexActive } from '../../../shared/warlock.mjs';
 import { PsiWarriorControls } from './PsiWarriorControls';
@@ -22,7 +22,6 @@ export function useBattle(gameId: number, sessionId: number) {
   const [error, setError] = useState('');
   const [connectionError, setConnectionError] = useState('');
   const [pending, setPending] = useState(false);
-  const pollInterval = response && !response.battle?.active ? 10000 : 2000;
   const refresh = useCallback(async () => {
     const data = await api<CombatResponse>(`/games/${gameId}/battle`);
     setResponse(previous => acceptResponse(previous, data));
@@ -36,9 +35,9 @@ export function useBattle(gameId: number, sessionId: number) {
       catch (e) { if (alive) setConnectionError(e instanceof Error ? e.message : 'Błąd połączenia z walką.'); }
       finally { running = false; }
     };
-    const stop = poll(load, pollInterval);
+    const stop = watchLive(load);
     return () => { alive = false; stop(); };
-  }, [gameId, sessionId, pollInterval]);
+  }, [gameId, sessionId]);
   async function mutate(action: 'start' | 'act' | 'next' | 'end', body: Record<string, unknown> = {}) {
     if (pending || !response) return false;
     setPending(true); setError('');

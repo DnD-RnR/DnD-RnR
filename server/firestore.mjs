@@ -75,13 +75,38 @@ export async function openFirestoreDatabase(firestore = connectFirestore()) {
   // Process-local counters count SDK work, including retries. Billing may include
   // additional operations; aggregate all instances and compare with Cloud metrics.
   const metrics = { transactions: 0, attempts: 0, documentReads: 0, collectionQueries: 0,
-    documentWrites: 0, documentDeletes: 0, fullReloads: 0, partialReloads: 0, failures: 0, durationMs: 0 };
+    documentWrites: 0, documentDeletes: 0, fullReloads: 0, partialReloads: 0, failures: 0, durationMs: 0,
+    watchStarts: 0, watchStops: 0, watchReads: 0 };
+  const watches = new Set();
   let queue = Promise.resolve();
   const db = {
     metrics() { return { ...metrics }; },
+    watchChanges(onChange, onError) {
+      let active = true;
+      metrics.watchStarts++;
+      const unsubscribe = root.onSnapshot(snapshot => {
+        if (!active) return;
+        metrics.watchReads++;
+        metrics.documentReads++;
+        if (!snapshot.exists || snapshot.get('schemaVersion') !== 1) {
+          onError(new Error('Invalid Firestore metadata'));
+          return;
+        }
+        onChange(snapshot.get('revision'));
+      }, error => { if (active) onError(error); });
+      const stop = () => {
+        if (!active) return;
+        active = false;
+        metrics.watchStops++;
+        watches.delete(stop);
+        unsubscribe();
+      };
+      watches.add(stop);
+      return stop;
+    },
     prepare(sql) { if (!current) throw new Error('Firestore database is not loaded'); return current.prepare(sql); },
     exec(sql) { return current.exec(sql); },
-    close() { current?.close(); },
+    close() { for (const stop of watches) stop(); current?.close(); },
     async run(work) {
       const pending = queue.then(async () => {
         const started = performance.now();

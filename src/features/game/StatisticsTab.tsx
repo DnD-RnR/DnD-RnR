@@ -1,4 +1,5 @@
 import { formatDice } from '../../lib/dice';
+import { watchLive } from '../../lib/live-sync';
 import { TraitSelection } from './TraitSelection';
 import { characterTraits } from '../../../shared/character-traits.mjs';
 import { rageProfile, dangerSenseDescription } from '../../../shared/barbarian.mjs';
@@ -21,8 +22,8 @@ export function StatisticsTab({ character }: { character: Character }) {
   const path = `/characters/${character.id}/statistics`;
   useEffect(() => {
     let active = true;
-    api<{ statistics: CharacterStatistics }>(path).then(data => { if (active) setStatistics(data.statistics); }).catch(e => { if (active) setError(e.message); });
-    return () => { active = false; };
+    const stop = watchLive(() => api<{ statistics: CharacterStatistics }>(path).then(data => { if (active) setStatistics(data.statistics); }).catch(e => { if (active) setError(e.message); }));
+    return () => { active = false; stop(); };
   }, [path]);
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

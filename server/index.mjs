@@ -48,7 +48,9 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         status: res.statusCode, durationMs: Math.round(performance.now() - started),
         database: db.metrics?.(),
       }));
-      if (req.method === 'POST' && res.statusCode >= 200 && res.statusCode < 300) gameEvents.publish();
+      // Firestore notifies every instance after commit, including scripts.
+      // SQLite-only stores use this local signal instead.
+      if (!db.watchChanges && req.method === 'POST' && res.statusCode >= 200 && res.statusCode < 300) gameEvents.publish();
     });
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -114,6 +116,12 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         return send(200, { user: publicUser(found) });
       }
       if (!user) return send(401, { error: 'Zaloguj się, aby kontynuować.' });
+      if (path === '/api/sync/events' && req.method === 'GET') {
+        const session = db.prepare('SELECT expires FROM sessions WHERE token = ?').get(digest(token));
+        const client = { userId: user.id, token: digest(token), expiresAt: session.expires };
+        respond = () => gameEvents.subscribe(req, res, client);
+        return;
+      }
       const snapshotRoute = path.match(/^\/api\/games\/([1-9]\d*)\/snapshot$/);
       if (snapshotRoute && req.method === 'GET') {
         let status, snapshot, items, armors;

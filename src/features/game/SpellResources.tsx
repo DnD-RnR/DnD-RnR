@@ -1,5 +1,5 @@
 import { WarlockResources } from './WarlockResources';
-import { poll } from '../../lib/poll';
+import { watchLive } from '../../lib/live-sync';
 import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import type { SpellcastingState } from '../games/battle-types';
@@ -13,7 +13,7 @@ export function SpellResources({ characterId }: { characterId: number }) {
       try { const data = await api<{ spellcasting: SpellcastingState }>(`/characters/${characterId}/spell-resources`); if (alive) { setState(data.spellcasting); setError(''); } }
       catch (e) { if (alive) setError(e instanceof Error ? e.message : 'Błąd odczytu miejsc na czary.'); }
     };
-    const stop = poll(load, 10000);
+    const stop = watchLive(load);
     return () => { alive = false; stop(); };
   }, [characterId]);
   if (error) return <p role="alert" className="form-error">{error}</p>;

@@ -1,5 +1,5 @@
 import { formatDice } from '../../lib/dice';
-import { poll } from '../../lib/poll';
+import { watchLive } from '../../lib/live-sync';
 import { StatisticsTab } from './StatisticsTab';
 import { CharacterGameInfo } from '../characters/CharacterGameInfo';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -29,7 +29,7 @@ export function GamePage({ character: initialCharacter, onBack }: { character: C
   useEffect(() => {
     let alive = true;
     const refresh = () => api<{ characters: Character[] }>('/characters').then(data => { const next = data.characters.find(c => c.id === initialCharacter.id); if (alive && next) updateCharacter(next); }).catch(() => {});
-    const stop = poll(refresh, 20000);
+    const stop = watchLive(refresh);
     return () => { alive = false; stop(); };
   }, [initialCharacter.id, updateCharacter]);
   async function load() {
@@ -38,7 +38,15 @@ export function GamePage({ character: initialCharacter, onBack }: { character: C
   }
   useEffect(() => {
     heading.current?.focus();
-    load().catch(e => setError(e.message)).finally(() => setLoading(false));
+    let alive = true;
+    const stop = watchLive(async () => {
+      try {
+        const data = await api<{ items: InventoryItem[] }>(inventoryPath);
+        if (alive) setItems(data.items);
+      } catch (e) { if (alive) setError(e instanceof Error ? e.message : 'Błąd odczytu ekwipunku.'); }
+      finally { if (alive) setLoading(false); }
+    });
+    return () => { alive = false; stop(); };
   }, [character.id]);
   async function mutate(path: string, body: unknown, success: string) {
     if (pending) return;
