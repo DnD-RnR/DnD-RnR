@@ -18,7 +18,7 @@ export function spellcastingProfile(character, selection = emptySpellSelection()
   const chosen = selection?.selections ?? {};
   const choices = selection?.choices ?? {};
   const automatic = new Map();
-  const grant = (ids, reason) => { for (const id of ids) { const spell = spellById.get(id); if (!spell) throw new Error(`Unknown granted spell: ${id}`); automatic.set(id, { ...spell, reason }); } };
+  const grant = (ids, reason) => { for (const id of ids) { const spell = spellById.get(id); if (!spell) throw new Error(`Unknown granted spell: ${id}`); automatic.set(id, { ...spell, ...automatic.get(id), reason }); } };
   for (const entry of originSpellGrants(selectedOriginFeats(character, traits), traits)) grant([entry.id], entry.reason);
   if (character.species === 'Gnom (Gnome)' && traits.gnomeLineage?.[0] === 'rock') {
     grant(['mending', 'prestidigitation'], 'Gnomish Lineage (Rock Gnome)');
@@ -32,7 +32,10 @@ export function spellcastingProfile(character, selection = emptySpellSelection()
     grant(['thaumaturgy', legacy.spells[0]], 'Fiendish Legacy — poziom 1');
     if (level >= 3) grant([legacy.spells[1]], 'Fiendish Legacy — poziom 3');
     if (level >= 5) grant([legacy.spells[2]], 'Fiendish Legacy — poziom 5');
-    profile.ability = traits.tieflingSpellAbility?.[0] ?? profile.ability;
+    for (const id of ['thaumaturgy', ...legacy.spells]) {
+      if (automatic.has(id)) automatic.set(id, { ...automatic.get(id), spellcastingAbility: traits.tieflingSpellAbility?.[0] ?? '' });
+    }
+    if (!profile.ability) profile.ability = traits.tieflingSpellAbility?.[0] ?? '';
   }
   const choice = (id, label, options) => profile.choices.push({ id, label, options });
   const maxLevel = row ? caster === 'warlock' ? row.slotLevel : row.slots.reduce((max, count, index) => count ? index + 1 : max, 0) : 0;

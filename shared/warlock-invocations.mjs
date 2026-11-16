@@ -70,5 +70,5 @@ export function tomeOptions(character, stats) {
   const prepared = new Set(Object.values(stats.spells?.selections ?? {}).flat());
   for (const row of subclassSpells[character.subclass]?.variants?.[0] ?? []) if (character.level >= row.level) row.spells.forEach(id => prepared.add(id));
   if (character.level >= 9) prepared.add('contact-other-plane');
-  return catalog.spells.filter(s => !prepared.has(s.id) && (s.level === 0 || s.level === 1 && s.castingTime.endsWith('or R')));
+  return catalog.spells.filter(s => !prepared.has(s.id) && (s.level === 0 || s.level === 1 && /or (?:R|Ritual)$/i.test(s.castingTime)));
 }

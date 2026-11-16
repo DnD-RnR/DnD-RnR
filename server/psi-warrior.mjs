@@ -1,4 +1,5 @@
 import { resourceState, saveResources } from './spell-resources.mjs';
+import { enfeeblementReduction } from './spell-conditions.mjs';
 const check = (ok, message) => { if (!ok) throw new Error(message); };
 import { psiResources } from '../shared/psi-warrior.mjs';
 export { psiResources, restPsi } from '../shared/psi-warrior.mjs';
@@ -16,7 +17,7 @@ export function psionicStrike(db, b, actor, body, amount, damage, target, log) {
     && body.psiConfirmed === true && actor.psiInt !== null, 'Psionic Strike wymaga obrażeń bronią w swojej turze i celu w 30 stopach.');
   spendPsi(db, actor, body.psiRoll);
   actor.psiStrikeUsed = true;
-  const extra = Math.max(0, body.psiRoll + actor.psiInt);
+  const extra = Math.max(0, body.psiRoll + actor.psiInt - enfeeblementReduction(actor, body.psiEnfeeblementRoll));
   damage(db, target, extra, false, 'moc');
   log(b, `${actor.name}: Psionic Strike → ${target.name}: ${extra} obrażeń mocy.`);
 }

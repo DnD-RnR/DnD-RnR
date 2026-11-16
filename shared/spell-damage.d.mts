@@ -1,0 +1,1 @@
+export function spellDamageDice(spec: { dice: number; sides: number; type?: string; components?: Array<{ dice: number; sides: number; type: string }> }, critical?: boolean): Array<{ sides: number; type?: string }>;

@@ -1,3 +1,4 @@
+import { conditionSpeedZero } from '../shared/conditions.mjs';
 import { createHash } from 'node:crypto';
 import { paladinChoiceUpdate } from './paladin.mjs';
 import { druidChoiceUpdate } from './druid.mjs';
@@ -11,6 +12,14 @@ import { weaponMasteryChoicesValid } from '../shared/weapon-mastery.mjs';
 import { fightingStyleChoicesValid, wizardCantrips } from '../shared/fighting-style.mjs';
 import { fastCraftingOptions } from '../shared/crafter.mjs';
 import { pactMagicUpdate, invocationUpdate } from './warlock.mjs';
+import { characterTimedEffects } from './timed-effects.mjs';
+import { timedAc, timedHpBonus, timedSpeedBonus } from '../shared/timed-effects.mjs';
+
+function effectiveSnapshot(character, stats, equipment, timedEffects, conditionState) {
+  const traits = characterTraits(character, stats);
+  const speed = stats.values.speed ?? traits.baseSpeed, maxHp = stats.values.maxHp ?? traits.firstLevelMaxHp;
+  return { hp: stats.values.hp, maxHp: maxHp == null ? null : maxHp + timedHpBonus(timedEffects), speed: conditionSpeedZero({ hp: stats.values.hp, timedEffects, manualConditions: conditionState.manualConditions }) ? 0 : speed == null ? null : speed + timedSpeedBonus({ timedEffects }), ac: timedAc({ ac: stats.values.ac, timedEffects, dexModifier: stats.values.dex == null ? null : Math.floor((stats.values.dex - 10) / 2), wearingArmor: equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'), equipmentShieldBonus: stats.untrainedShield ? 0 : Number.parseInt(equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0 }) };
+}
 
 const emptyArcaneWarrior = () => ({ cantrips: [], ability: '' });
 const validArcaneWarrior = value => value && typeof value === 'object' && !Array.isArray(value)
@@ -64,6 +73,7 @@ export function handleStatistics(db, user, path, method, body, send) {
   if (!character) {
     send(404, { error: 'Nie znaleziono postaci.' }); return true;
   }
+  const activeEffects = match[2] === 'statistics' ? characterTimedEffects(db, characterId) : [];
   if (match[2] === 'choices') {
     if (method === 'GET') {
       const stored = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(characterId);
@@ -147,7 +157,7 @@ export function handleStatistics(db, user, path, method, body, send) {
     statistics.values.speed = speedFromEquipment(statistics, equipment, statistics.values.speed);
     if (hasStealthDisadvantage(equipment)) statistics.stealthDisadvantage = true;
     Object.entries(trainingEffects).forEach(([key, value]) => { if (value) statistics[key] = true; });
-    send(200, { statistics, revision: statisticsRevision(db, character) });
+    send(200, { statistics, effective: effectiveSnapshot(character, statistics, equipment, activeEffects, resourceState(db, characterId)), revision: statisticsRevision(db, character) });
   } else if (method === 'POST') {
     if (!validStatistics(body)) { send(400, { error: 'Sprawdź statystyki: cechy 1–30, zakresy liczb i długość notatek (do 1500 znaków).' }); return true; }
     if (typeof body.expectedRevision !== 'string' || !/^[a-f0-9]{64}$/.test(body.expectedRevision)) {
@@ -228,7 +238,7 @@ export function handleStatistics(db, user, path, method, body, send) {
     stats.values.speed = speedFromEquipment(stats, outputEquipment, stats.values.speed);
     if (hasStealthDisadvantage(outputEquipment)) stats.stealthDisadvantage = true;
     Object.entries(outputEffects).forEach(([key, value]) => { if (value) stats[key] = true; });
-    send(200, { statistics: stats, revision: statisticsRevision(db, character) });
+    send(200, { statistics: stats, effective: effectiveSnapshot(character, stats, outputEquipment, activeEffects, resourceState(db, characterId)), revision: statisticsRevision(db, character) });
   } else send(405, { error: 'Niedozwolona metoda.' });
   return true;
 }

@@ -293,7 +293,7 @@ test('Persistent Rage recovers on initiative once per long rest, survives incapa
     assert.equal(call('act', { kind: 'rage-recover', actorId: id }, player).status, 409);
     call('act', { kind: 'rage' }, player);
     assert.ok(call('act', { kind: 'condition', actorId: id, condition: 'incapacitated', enabled: true }).battle.fighters[0].rage);
-    assert.equal(call('act', { kind: 'move', feet: 1 }, player).status, 409);
+    assert.equal(call('act', { kind: 'move', feet: 1 }, player).status, 200); // SRD: Incapacitated alone does not prevent movement.
     assert.equal(call('act', { kind: 'condition', actorId: id, condition: 'unconscious', enabled: true }).battle.fighters[0].rage, null);
   } finally { db.close(); }
 });

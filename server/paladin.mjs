@@ -1,3 +1,5 @@
+import { healingBlocked } from './spell-conditions.mjs';
+import { endCondition } from './conditions.mjs';
 import { resourceState, saveResources } from './spell-resources.mjs';
 import { spellcastingProfile } from '../shared/spellcasting.mjs';
 
@@ -123,7 +125,9 @@ export function handlePaladin({ db, b, body, canControl, activeMember, persistVi
   check(poison || body.mode === 'heal', 'Wybierz heal albo poison.');
   const cost = poison ? 5 : body.amount;
   check(Number.isInteger(cost) && cost > 0 && cost <= profile.layOnHandsRemaining, 'Brak punktów Lay on Hands lub niepoprawna liczba.');
+  if (poison) { endCondition(db, target, 'poisoned'); Object.assign(state, resourceState(db, actor.characterId)); }
   if (!poison) {
+    check(!healingBlocked(target), 'Cel nie może odzyskiwać PW.');
     check(Number.isFinite(target.maxHp), 'Uzupełnij maksymalne PW celu.');
     target.hp = Math.min(target.maxHp, target.hp + cost);
     if (target.hp > 0) { target.deathSuccesses = 0; target.deathFailures = 0; target.unconscious = false; }

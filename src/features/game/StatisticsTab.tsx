@@ -11,7 +11,7 @@ import definitions from '../../../shared/statistics.json' with { type: 'json' };
 
 const signed = (value: number | null) => value === null ? '—' : value >= 0 ? `+${value}` : String(value);
 const display = (value: number | null) => value ?? '—';
-type StatisticsSnapshot = { statistics: CharacterStatistics; revision: string };
+type StatisticsSnapshot = { statistics: CharacterStatistics; revision: string; effective?: { hp: number | null; maxHp: number | null; speed: number | null; ac: number | null } };
 type StatisticsDraft = CharacterStatistics & { expectedRevision: string };
 
 export function StatisticsTab({ character }: { character: Character }) {
@@ -107,11 +107,11 @@ export function StatisticsTab({ character }: { character: Character }) {
       <p className="statistics-help">Kreska oznacza brak danych. Modyfikatory i premie wynikają z zapisanych cech, poziomu i zaznaczonych biegłości.</p>
       <div className="ability-grid">{definitions.abilities.map(ability => <section className="ability-card" key={ability.id} aria-label={ability.label}><span>{ability.label}</span><strong>{signed(modifier(ability.id))}</strong><small>{ability.short} <b>{display(stats.values[ability.id])}</b></small></section>)}</div>
       <section className="card statistics-combat"><h3>Walka i przetrwanie</h3><dl className="statistics-metrics">
-        <div><dt>Punkty wytrzymałości</dt><dd>{display(stats.values.hp)} / {display(stats.values.maxHp ?? traits.firstLevelMaxHp)}</dd></div>
+        <div><dt>Punkty wytrzymałości</dt><dd>{display(snapshot?.effective?.hp ?? stats.values.hp)} / {display(snapshot?.effective?.maxHp ?? stats.values.maxHp ?? traits.firstLevelMaxHp)}</dd></div>
         <div><dt>Tymczasowe PW</dt><dd>{display(stats.values.tempHp)}</dd></div>
-        <div><dt>Klasa pancerza</dt><dd>{display(stats.values.ac)}</dd></div>
+        <div><dt>Klasa pancerza</dt><dd>{display(snapshot?.effective?.ac ?? stats.values.ac)}</dd></div>
         <div><dt>Inicjatywa</dt><dd>{signed(dex === null ? null : dex + traits.initiativeBonus)}</dd></div>
-        <div><dt>Szybkość</dt><dd>{display(stats.values.speed ?? traits.baseSpeed)} stóp</dd></div>
+        <div><dt>Szybkość</dt><dd>{display(snapshot?.effective?.speed ?? stats.values.speed ?? traits.baseSpeed)} stóp</dd></div>
         <div><dt>Premia z biegłości</dt><dd>{signed(proficiency)}</dd></div>
         <div><dt>Pasywna Percepcja</dt><dd>{perception === null ? '—' : 10 + perception}</dd></div>
         <div><dt>Kości wytrzymałości — pozostałe / łącznie</dt><dd>{stats.values.hitDice === null ? '—' : `${stats.values.hitDice}k${traits.hitDie ?? '?'}`} / {traits.hitDie ? `${character.level}k${traits.hitDie}` : '—'}</dd></div>

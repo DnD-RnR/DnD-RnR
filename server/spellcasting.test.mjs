@@ -2,6 +2,38 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { emptySpellSelection, spellcastingProfile, validateSpellSelection } from '../shared/spellcasting.mjs';
 import classes from '../shared/character-options.json' with { type: 'json' };
+import catalog from '../shared/spell-catalog.json' with { type: 'json' };
+import index from '../shared/spell-index.json' with { type: 'json' };
+import { parseSpell, parseIndex } from '../scripts/sync-spell-catalog.mjs';
+import { spellEffects, spellAction } from '../shared/combat-spells.mjs';
+
+test('catalog exactly covers the saved reference index with complete clean spell data', () => {
+  assert.equal(catalog.spells.length, index.spells.length);
+  assert.equal(new Set(catalog.spells.map(s => s.id)).size, catalog.spells.length);
+  assert.ok(catalog.spells.length >= 525);
+  assert.deepEqual(catalog.spells.map(s => s.id).sort(), index.spells.map(s => s.id).sort());
+  for (const spell of catalog.spells) {
+    assert.equal(spell.level, index.spells.find(s => s.id === spell.id).level, spell.id);
+    for (const key of ['source', 'description', 'school', 'components', 'range', 'duration', 'castingTime']) assert.ok(spell[key], `${spell.id}: ${key}`);
+    assert.ok(!/\$j\(|nitroAds|<script/i.test(spell.description), spell.id);
+  }
+  for (const id of Object.keys(spellEffects)) assert.ok(catalog.spells.some(s => s.id === id), id);
+  assert.equal(spellAction({ castingTime: 'Action or Ritual' }), 'action');
+  assert.equal(spellAction({ castingTime: '1 Action' }), 'action');
+  assert.equal(spellAction({ castingTime: '1 minute or Ritual' }), null);
+});
+
+test('spell importer preserves named effects and nested tables while excluding scripts and footer content', () => {
+  const html = '<div id="page-content"><p>Source: Example</p><p><strong>Casting Time:</strong> Action<br/><strong>Range:</strong> Touch<br/><strong>Component:</strong> V<br/><strong>Duration:</strong> Instantaneous</p><p><strong>Named Effect.</strong> Actual rule.</p><div><table><tr><td>Threshold</td><td>10</td></tr></table></div><script>evil()</script><p><strong>Using a Higher-Level Spell Slot.</strong> One more die.</p></div><p>Footer must be excluded</p>';
+  const spell = parseSpell(html);
+  assert.match(spell.description, /Named Effect\. Actual rule/);
+  assert.match(spell.description, /Threshold 10/);
+  assert.doesNotMatch(spell.description, /evil|Footer|One more die/);
+  assert.equal(spell.components, 'V');
+  assert.equal(spell.upgrade, 'One more die.');
+  assert.throws(() => parseSpell('<div id="page-content"><p>truncated'));
+  assert.throws(() => parseIndex('<table></table>'));
+});
 
 const character = (className, level, subclass = '') => ({ class: className, level, subclass });
 const selection = (selections, choices = {}) => ({ choices, selections });
@@ -94,6 +126,19 @@ test('Tiefling Fiendish Legacy grants the selected spells and spellcasting abili
   assert.equal(profile.ability, 'cha');
   assert.deepEqual(profile.automatic.map(spell => spell.id).sort(), ['darkness', 'fire-bolt', 'hellish-rebuke', 'thaumaturgy'].sort());
   assert.ok(!group(profile, 'cantrips').options.some(spell => spell.id === 'fire-bolt'));
+});
+
+test('Tiefling spell abilities belong to racial spells and preserve class and subclass abilities', () => {
+  for (const ability of ['int', 'wis', 'cha']) {
+    const traits = { tieflingLegacy: ['infernal'], tieflingSpellAbility: [ability] };
+    for (const [className, subclass, expected] of [['Czarodziej (Wizard)', '', 'int'], ['Kleryk (Cleric)', '', 'wis'], ['Wojownik (Fighter)', '', ability], ['Mnich (Monk)', 'Warrior of Shadow', 'wis']]) {
+      const profile = spellcastingProfile({ ...character(className, 5, subclass), species: 'Diabelstwo (Tiefling)' }, emptySpellSelection(), traits);
+      assert.equal(profile.ability, expected);
+      for (const id of ['thaumaturgy', 'fire-bolt', 'hellish-rebuke', 'darkness']) {
+        assert.equal(profile.automatic.find(spell => spell.id === id).spellcastingAbility, ability, `${className}: ${id}`);
+      }
+    }
+  }
 });
 
 test('Wizard spellbook can grow by copying while prepared spells must belong to it', () => {

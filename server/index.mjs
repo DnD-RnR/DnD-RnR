@@ -1,6 +1,7 @@
 import { handleGames } from './games.mjs';
 import { handleAdvancement } from './advancement.mjs';
 import { handleSpellResources } from './spell-resources.mjs';
+import { characterTimedEffects } from './timed-effects.mjs';
 import { handleBattles } from './battles.mjs';
 import { handleMonsters } from './monsters.mjs';
 import { createGameEvents } from './game-events.mjs';
@@ -255,6 +256,7 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
               try {
                 db.prepare("UPDATE character_items SET equipped = 0, slot = 'backpack' WHERE character_id = ? AND slot = ?").run(characterId, targetSlot);
                 db.prepare('UPDATE character_items SET equipped = 1, slot = ? WHERE id = ? AND character_id = ?').run(targetSlot, itemId, characterId);
+                if (armor.category !== 'shield') characterTimedEffects(db, characterId);
                 db.exec('COMMIT');
               } catch (error) { db.exec('ROLLBACK'); throw error; }
               return send(200, { ok: true });

@@ -1,3 +1,8 @@
+import { SpellZoneControls } from './SpellZoneControls';
+import { ConditionControls } from './ConditionControls';
+import { conditionAttackModifiers, hasCondition } from '../../../shared/conditions.mjs';
+import { TimedEffectControls, TimedRollInputs } from './TimedEffectControls';
+import { DelayedSpellControls, SpellConditionControls } from './CombatSpellForms';
 import { LuckInput } from './LuckInput';
 import { watchLive } from '../../lib/live-sync';
 import { WarlockControls } from './WarlockControls';
@@ -69,9 +74,9 @@ export function LiveBattle({ controller, onReturnToExploration }: { controller: 
     <header className="page-heading"><p className="eyebrow">WSPÓLNA WALKA</p><h1>Runda {battle.round}</h1><p role="status">Tura: <strong>{actor.name}</strong> · {controls ? 'Wybierz działanie lub zakończ turę.' : 'Czekasz na działanie uczestnika.'}</p></header>
     {error && <p role="alert" className="form-error">{error}</p>}
     {battle.fighters.filter(f => f.concentrationDC && response.controlledIds.includes(f.id)).map(f => <Card key={`${f.id}-${f.concentrationChecks?.length}`} title="Sprawdzenie koncentracji"><ConcentrationForm actor={f} controller={controller} /></Card>)}
-    {response.gm && !battle.fighters.some(f => !f.characterId) && <EndBattlePrompt key={`${battle.sessionId}-${battle.startedAt ?? 0}`} controller={controller} />}
+    {response.gm && !battle.delayedSpellDamage?.length && !battle.fighters.some(f => !f.characterId) && <EndBattlePrompt key={`${battle.sessionId}-${battle.startedAt ?? 0}`} controller={controller} />}
     <div className="battle-toolbar">
-      {(response.gm || controls) && <button className="primary-button" disabled={pending || Boolean(battle.pending && !response.gm)} onClick={() => { if (!battle.pending || window.confirm('Pominąć nierozstrzygnięte działanie i przejść dalej?')) void mutate('next'); }}>{response.gm ? 'Następna tura' : 'Zakończ turę'}</button>}
+      {(response.gm || controls) && <button className="primary-button" disabled={pending || Boolean(battle.pending && (!response.gm || battle.pending.kind === 'spell' && (battle.pending.delayedDamageId || battle.pending.zoneId)))} onClick={() => { if (!battle.pending || window.confirm('Pominąć nierozstrzygnięte działanie i przejść dalej?')) void mutate('next'); }}>{response.gm ? 'Następna tura' : 'Zakończ turę'}</button>}
       {response.gm && <button className="text-button danger-button" disabled={pending} onClick={() => { if (window.confirm('Zakończyć walkę? Zapisane obrażenia pozostaną na kartach postaci.')) void mutate('end'); }}>Zakończ walkę</button>}
     </div>
     {battle.pending?.kind === 'damage' && <Card title={battle.pending.critical ? 'Trafienie krytyczne — obrażenia' : 'Trafienie — obrażenia'}>
@@ -80,6 +85,8 @@ export function LiveBattle({ controller, onReturnToExploration }: { controller: 
     {battle.pending?.kind === 'waiting' && <p role="status">GM rozstrzyga działanie potwora.</p>}
     {battle.pending?.kind === 'spell' && <Card title="Rozliczenie czaru"><SpellResolution key={`${battle.pending.actorId}-${battle.pending.spellName}-${battle.pending.stage}-${battle.pending.targets.filter(t => t.saved !== undefined).length}`} controller={controller} /></Card>}
     {battle.pending?.kind === 'spell' && response.gm && <SpellDefenses controller={controller} />}
+    <SpellZoneControls controller={controller} />
+    <DelayedSpellControls controller={controller} />
     <PsiWarriorControls controller={controller} />
     <BarbarianControls controller={controller} /><WarlockControls controller={controller} />
     <SpellReactions controller={controller} />
@@ -90,6 +97,8 @@ export function LiveBattle({ controller, onReturnToExploration }: { controller: 
     {response.gm && !battle.pending && <details><summary>Rozstrzygnięcie GM: obrażenia lub leczenie</summary><ResolveForm controller={controller} /></details>}
     <div className="session-characters gm-character-row">{battle.fighters.map((f, index) => <div key={f.id} className={index === battle.turn ? 'battle-current' : ''}><Card title={`${index + 1}. ${f.name}`} eyebrow={f.hidden ? 'POTWÓR' : `${f.characterId ? 'POSTAĆ' : 'POTWÓR'} · INICJATYWA ${f.initiative}`}>
       {f.hidden ? <dl className="gm-vitals"><div><dt>Otrzymane obrażenia</dt><dd>{f.damageTaken ?? 0}</dd></div></dl> : <>
+      <ConditionControls controller={controller} actor={f} /><SpellConditionControls controller={controller} actor={f} /><TimedEffectControls controller={controller} actor={f} />
+      {f.creatureType && <p>Typ stworzenia: {f.creatureType}</p>}
       <dl className="gm-vitals">{[['PW', `${f.hp} / ${f.maxHp}`], ...(f.ac === null ? [] : [['KP', f.ac]]), ['Tymczasowe PW', f.tempHp], ['Ruch', `${f.moved} / ${f.speed + f.extraMove}`]].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
       <dl className="gm-secondary"><div><dt>Akcja</dt><dd>{f.action || 'Dostępna'}</dd></div><div><dt>Bonusowa</dt><dd>{f.bonus || 'Dostępna'}</dd></div><div><dt>Reakcja</dt><dd>{f.reaction || 'Dostępna'}</dd></div>{f.characterId && f.hp === 0 && <div><dt>Rzuty przeciw śmierci</dt><dd>{f.deathSuccesses} sukcesy / {f.deathFailures} porażki</dd></div>}</dl>
       <dl className="gm-secondary gm-exploration">{definitions.abilities.map(a => <div key={a.id}><dt>Rzut obronny: {a.short}</dt><dd>{f.saves[a.id] == null ? '—' : signed(f.saves[a.id]!)}</dd></div>)}</dl>
@@ -144,6 +153,8 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
   const [manualDisadvantage, setManualDisadvantage] = useState(false);
   const [description, setDescription] = useState('');
   const [feet, setFeet] = useState('');
+  const [within5Feet, setWithin5Feet] = useState(false);
+  const [timedRolls, setTimedRolls] = useState<Record<string, number>>({});
   const [monsterAttack, setMonsterAttack] = useState<Attack>({ id: 'monster', name: 'Atak potwora', bonus: 0, dice: 1, sides: 6, damageBonus: 0, type: '', light: false });
   const attack = actor.characterId ? availableAttacks.find(a => a.id === attackId) : monsterAttack;
   const target = b.fighters.find(f => f.id === targetId);
@@ -151,8 +162,9 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
   const selectedReckless = canReckless && reckless;
   const effectiveAbility = useStrength && attack?.finesse ? 'str' : attack?.ability;
   const automaticAdvantage = barbarianAttackAdvantage({ ...actor, recklessActive: actor.recklessActive || selectedReckless }, target, effectiveAbility);
-  const effectiveAdvantage = advantage || automaticAdvantage || bondAdvantage(actor, target);
-  const disadvantage = Boolean(attack?.disadvantage || bondAdvantage(target, actor) || target?.dodge || target?.attackDisadvantage || manualDisadvantage || actor.mockery);
+  const conditionModifiers = conditionAttackModifiers(actor, target, { within5Feet });
+  const effectiveAdvantage = conditionModifiers.advantage || target?.spellConditions?.some(e => ['paralyzed', 'guiding-bolt'].includes(e.kind)) || advantage || automaticAdvantage || bondAdvantage(actor, target);
+  const disadvantage = Boolean(conditionModifiers.disadvantage || actor.spellConditions?.some(e => ['poisoned', 'enfeebled-miss'].includes(e.kind) || e.kind === 'enfeebled' && effectiveAbility === 'str') || attack?.disadvantage || bondAdvantage(target, actor) || target?.dodge || target?.attackDisadvantage || manualDisadvantage || actor.mockery);
   const steps = [{ id: 'action', label: 'Akcja' }, { id: 'bonus', label: 'Akcja dodatkowa' }, { id: 'reaction', label: 'Reakcja' }] as const;
   const choices = [
     ...(canAttack ? [{ id: 'attack', label: 'Atak' }] : []),
@@ -172,10 +184,12 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
     <div className="battle-action-choices" role="group" aria-label="Wybierz działanie">{choices.map(choice => <button type="button" className={kind === choice.id ? 'primary-button' : 'text-button'} aria-pressed={kind === choice.id} disabled={pending || (slot === 'action' && actor.action === 'Atak' && choice.id !== 'attack')} key={choice.id} onClick={() => setKind(choice.id)}>{choice.label}</button>)}</div>
     {kind === 'spell' ? <><SpellCastForm controller={controller} actor={actor} slot={slot} /><button className="text-button" disabled={pending} onClick={() => void mutate('act', { kind: 'skip', slot })}>Pomiń ten krok</button></> : kind === 'protection' ? <ProtectionReactionForm controller={controller} actorId={actor.id} inline /> : <form className="stack-form" onSubmit={async e => {
     e.preventDefault();
-    const ok = await mutate('act', { kind, slot, attackId, reckless: kind === 'attack' && selectedReckless, ...(useStrength && attack?.finesse ? { ability: 'str' } : {}), targetId, roll: roll ? Number(roll) : null, roll2: roll2 ? Number(roll2) : null, advantage, disadvantage: manualDisadvantage, description, feet: Number(feet), ...(!actor.characterId ? { attack: monsterAttack } : {}) });
+    const ok = await mutate('act', { kind, slot, attackId, reckless: kind === 'attack' && selectedReckless, ...(useStrength && attack?.finesse ? { ability: 'str' } : {}), targetId, within5Feet, ...timedRolls, roll: roll ? Number(roll) : null, roll2: roll2 ? Number(roll2) : null, advantage, disadvantage: manualDisadvantage, description, feet: Number(feet), ...(!actor.characterId ? { attack: monsterAttack } : {}) });
     if (ok) { setRoll(''); setRoll2(''); setDescription(''); setFeet(''); }
   }}>
     {kind === 'attack' && <>
+      <TimedRollInputs actor={actor} values={timedRolls} onChange={setTimedRolls} />
+      {target && ['prone', 'paralyzed', 'unconscious'].some(c => hasCondition(target, c)) && <label><input type="checkbox" checked={within5Feet} onChange={e => setWithin5Feet(e.target.checked)} />MG: atak z odległości do 5 stóp (Prone / trafienie w bezbronnego).</label>}
       {canReckless && <label className="battle-check"><input type="checkbox" checked={reckless} onChange={e => setReckless(e.target.checked)} />Reckless Attack — wybór przy pierwszym rzucie na atak. Ataki z Siły i ataki przeciwko tobie mają ułatwienie do początku twojej następnej tury.</label>}
       {automaticAdvantage && <p>Reckless Attack: automatyczne ułatwienie tego ataku.</p>}
       {!actor.characterId && <label>Typ obrażeń<select value={monsterAttack.type} onChange={e => setMonsterAttack({ ...monsterAttack, type: e.target.value })}><option value="">Według opisu (rozstrzyga GM)</option>{['obuchowe', 'kłute', 'cięte', 'ogień', 'zimno', 'kwas', 'błyskawice', 'trucizna', 'nekrotyczne', 'promieniste', 'psychiczne', 'moc', 'grom'].map(type => <option key={type}>{type}</option>)}</select></label>}
@@ -201,6 +215,8 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
   </form>}</Card>;
 }
 function DamageForm({ controller }: { controller: Controller }) {
+  const [enfeeblementRoll, setEnfeeblementRoll] = useState('');
+  const [hexEnfeeblementRoll, setHexEnfeeblementRoll] = useState(''), [psiEnfeeblementRoll, setPsiEnfeeblementRoll] = useState('');
   const [hexRolls, setHexRolls] = useState<string[]>([]);
   const p = controller.response!.battle!.pending!;
   const [rolls, setRolls] = useState<string[]>([]);
@@ -209,10 +225,15 @@ function DamageForm({ controller }: { controller: Controller }) {
   const b = controller.response!.battle!, actor = b.fighters[b.turn];
   if (p.kind !== 'damage') return null;
   const count = p.attack.dice * (p.critical ? 2 : 1);
-  return <form className="stack-form" onSubmit={e => { e.preventDefault(); void controller.mutate('act', { kind: 'damage', hexRolls: hexRolls.map(Number), ...(psiRoll ? { psiRoll: Number(psiRoll), psiConfirmed } : {}), rolls: Array.from({ length: count }, (_, i) => Number(rolls[i])) }); }}>
+  return <form className="stack-form" onSubmit={e => { e.preventDefault(); void controller.mutate('act', { kind: 'damage', hexEnfeeblementRoll: Number(hexEnfeeblementRoll), psiEnfeeblementRoll: Number(psiEnfeeblementRoll), enfeeblementRoll: Number(enfeeblementRoll), hexRolls: hexRolls.map(Number), ...(psiRoll ? { psiRoll: Number(psiRoll), psiConfirmed } : {}), rolls: Array.from({ length: count }, (_, i) => Number(rolls[i])) }); }}>
+    {actor.spellConditions?.some(e => e.kind === 'enfeebled') && <>
+    {hexActive(actor, b.fighters.find(f => f.id === p.targetId)!) && <label>Redukcja obrażeń Hex: k8<input required type="number" min={1} max={8} value={hexEnfeeblementRoll} onChange={e => setHexEnfeeblementRoll(e.target.value)} /></label>}
+    {psiRoll && <label>Redukcja Psionic Strike: k8<input required type="number" min={1} max={8} value={psiEnfeeblementRoll} onChange={e => setPsiEnfeeblementRoll(e.target.value)} /></label>}
+    </>}
     <p>{p.attack.name}: {count ? `${count}k${p.attack.sides}` : 'Stałe obrażenia'} {signed(p.attack.damageBonus)}. Podaj same wyniki kości; premia zostanie dodana automatycznie.</p>
     {!!actor.psiMax && !actor.psiStrikeUsed && !!actor.psiUses && p.attack.id !== 'unarmed' && <fieldset><legend>Psionic Strike (opcjonalnie)</legend><p>Raz na twoją turę: dodatkowe k{actor.psiSides} + INT obrażeń mocy.</p><label>Wynik kości<input type="number" min={1} max={actor.psiSides} value={psiRoll} onChange={e => setPsiRoll(e.target.value)} /></label>{psiRoll && <label><input required type="checkbox" checked={psiConfirmed} onChange={e => setPsiConfirmed(e.target.checked)} />Cel jest w 30 stopach, a broń zadaje mu obrażenia.</label>}</fieldset>}
     {hexActive(actor, controller.response!.battle!.fighters.find(f => f.id === p.targetId)!) && <div>{Array.from({ length: p.critical ? 2 : 1 }, (_, i) => <label key={i}>Hex k6<input required type="number" min={1} max={6} value={hexRolls[i] ?? ''} onChange={e => setHexRolls(prev => { const next = [...prev]; next[i] = e.target.value; return next; })} /></label>)}</div>}
+    {actor.spellConditions?.some(e => e.kind === 'enfeebled') && <label>Ray of Enfeeblement: odejmij k8<input required type="number" min={1} max={8} value={enfeeblementRoll} onChange={e => setEnfeeblementRoll(e.target.value)} /></label>}
     <div className="battle-fields">{Array.from({ length: count }, (_, i) => <label key={i}>Kość {i + 1} (k{p.attack.sides})<input required type="number" min={1} max={p.attack.sides} value={rolls[i] ?? ''} onChange={e => setRolls(previous => { const next = [...previous]; next[i] = e.target.value; return next; })} /></label>)}</div>
     <button className="primary-button" disabled={controller.pending}>Zastosuj obrażenia</button>
   </form>;

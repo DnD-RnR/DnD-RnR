@@ -1,0 +1,12 @@
+import type { TimedEffect } from './timed-effects.mjs';
+export type ConditionSubject = { hp?: number; relentlessRagePending?: { dc: number } | null; visibleConditions?: string[]; manualConditions?: string[]; spellConditions?: { kind: string }[]; timedEffects?: TimedEffect[]; incapacitated?: boolean; unconscious?: boolean; prone?: boolean };
+export const conditionDefinitions: Record<string, { label: string; description: string }>;
+export function conditionsOf(fighter?: ConditionSubject): Set<string>;
+export function hasCondition(fighter: ConditionSubject | undefined, kind: string): boolean;
+export function isIncapacitated(fighter: ConditionSubject): boolean;
+export function conditionSpeedZero(fighter: ConditionSubject): boolean;
+export function automaticSaveFailure(fighter: ConditionSubject, ability: string): boolean;
+export function conditionSaveDisadvantage(fighter: ConditionSubject, ability: string): boolean;
+export function automaticCheckFailure(fighter: ConditionSubject, context?: { requiresSight?: boolean; requiresHearing?: boolean }): boolean;
+export function conditionCheckDisadvantage(fighter: ConditionSubject): boolean;
+export function conditionAttackModifiers(attacker?: ConditionSubject, target?: ConditionSubject, context?: { within5Feet?: boolean }): { advantage: boolean; disadvantage: boolean; criticalOnHit: boolean };

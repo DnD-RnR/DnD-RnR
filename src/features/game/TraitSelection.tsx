@@ -29,6 +29,7 @@ export function TraitSelection({ character, statistics, onChange }: Props) {
       <div><dt>Atuty pochodzenia</dt><dd>{profile.feats.join(', ') || 'Nie wybrano'}</dd></div>
       {Object.entries(profile.originFeatDescriptions).filter(([name]) => !profile.originFeatEntries.some(entry => entry.name === name)).map(([name, description]) => <div key={name}><dt>{name}</dt><dd>{description}</dd></div>)}
       <div><dt>Rozmiar</dt><dd>{profile.size ?? '—'}</dd></div>
+      {profile.creatureType && <div><dt>Typ stworzenia</dt><dd>{profile.creatureType}</dd></div>}
       <div><dt>Podstawowa szybkość gatunku</dt><dd>{profile.baseSpeed ?? '—'} stóp</dd></div>
       <div><dt>Zmysły</dt><dd>{profile.senses.join('; ') || 'Brak dodatkowych zmysłów'}</dd></div>
       <div><dt>Odporności i ułatwienia</dt><dd>{profile.defenses.join(' ') || 'Brak stałych wpisów'}</dd></div>

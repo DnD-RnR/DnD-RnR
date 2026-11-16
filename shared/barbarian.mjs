@@ -1,3 +1,5 @@
+import { isIncapacitated } from './conditions.mjs';
+
 export function rageProfile(character) {
   const level = character?.class?.includes('Barbarian') ? character.level : 0;
   return {
@@ -12,7 +14,7 @@ export function rageProfile(character) {
 }
 export function barbarianSaveAdvantage(fighter, ability) {
   return Boolean(ability === 'str' && fighter.rage || ability === 'dex' && fighter.rageProfile?.dangerSense
-    && !fighter.incapacitated && !fighter.unconscious && fighter.hp > 0);
+    && !isIncapacitated(fighter) && fighter.hp > 0);
 }
 export function barbarianAttackAdvantage(actor, target, ability) {
   return Boolean(target?.recklessActive || actor.recklessActive && ability === 'str');

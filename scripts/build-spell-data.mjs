@@ -2,6 +2,7 @@
 // English spell descriptions and upgrade text are included in the generated catalog.
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import characterOptions from '../shared/character-options.json' with { type: 'json' };
+import { parseSpell } from './sync-spell-catalog.mjs';
 
 const origin = 'https://dnd2024.wikidot.com';
 const cache = new URL('../.local-preview/spell-sources/', import.meta.url);
@@ -114,9 +115,10 @@ await mapLimited([...catalog.values()], async spell => {
   if (!spell.phb && warlockIds.has(spell.id)) spell.source = source.trim();
   spell.range = metadata(html, 'Range', polishRange);
   spell.duration = metadata(html, 'Duration', polishDuration);
-  Object.assign(spell, spellText(html, !spell.phb && warlockIds.has(spell.id)));
+  const details = parseSpell(html);
+  Object.assign(spell, details, { range: polishRange(details.range), duration: polishDuration(details.duration) });
 });
-const spells = [...catalog.values()].filter(spell => spell.phb || warlockIds.has(spell.id)).map(({ phb, ...spell }) => spell).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+const spells = [...catalog.values()].map(({ phb, ...spell }) => spell).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
 if (spells.length < 380) throw new Error(`Incomplete PHB catalog: ${spells.length}`);
 const classes = {};
 const subclasses = {};
@@ -154,7 +156,7 @@ for (const entry of characterOptions.classes) {
     }
   }
 }
-writeFileSync(new URL('../shared/spell-catalog.json', import.meta.url), JSON.stringify({ source: origin, edition: 'Player’s Handbook 2024 + Warlock supplements', spells }, null, 2) + '\n');
+writeFileSync(new URL('../shared/spell-catalog.json', import.meta.url), JSON.stringify({ source: origin, edition: 'All spells listed at spell:all (PHB 2024 and supplements)', spells }, null, 2) + '\n');
 writeFileSync(new URL('../shared/spell-progression.json', import.meta.url), JSON.stringify(classes, null, 2) + '\n');
 writeFileSync(new URL('../shared/subclass-spells.json', import.meta.url), JSON.stringify(subclasses, null, 2) + '\n');
 console.log(`${spells.length} spells (PHB + Warlock supplements); ${Object.keys(classes).length} class progressions`);

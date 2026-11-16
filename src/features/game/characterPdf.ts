@@ -80,7 +80,7 @@ export async function createCharacterPdf(character: Character, stats: CharacterS
     check(`Pole wyboru ${62 + index}`, index < (stats.values.deathFailures ?? 0));
   }
   text('pozost biegl', lines(traits.languages.map(language => language.label).join(', '), [...traits.armor, ...traits.weapons, ...traits.tools].join(', '), stats.notes.languages, stats.notes.proficiencies));
-  text('korzysci i zdolnosci', lines(character.subclass, traits.features.map(feature => feature.name).join('\n'), traits.feats.join(', '), stats.notes.features));
+  text('korzysci i zdolnosci', lines(character.subclass, traits.creatureType ? `Typ stworzenia: ${traits.creatureType}` : '', traits.features.map(feature => feature.name).join('\n'), traits.feats.join(', '), stats.notes.features));
   text('pozost korz', lines([...traits.senses, ...traits.defenses].join('\n'), traits.resources.map(resource => `${resource.name}: ${resource.value}`).join('\n'), stats.notes.defenses, stats.notes.senses, stats.notes.conditions, stats.notes.resources, stats.values.exhaustion == null ? '' : `Wyczerpanie: ${stats.values.exhaustion}`));
   text('ataki i magia', stats.notes.attacks);
   text('wyposazenie.0.0', items.map(item => `${item.name} ×${item.quantity}${item.equipped ? ' (założone)' : ''}`).join('\n'));

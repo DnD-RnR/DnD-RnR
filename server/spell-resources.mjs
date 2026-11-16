@@ -1,3 +1,4 @@
+import { conditionsOf, conditionSpeedZero, isIncapacitated } from '../shared/conditions.mjs';
 import { restWarlock, useWarlockFeature } from './warlock-features.mjs';
 import { psiResources, restPsi } from './psi-warrior.mjs';
 import { paladinResources, restPaladin } from './paladin.mjs';
@@ -10,6 +11,10 @@ import { spellEffects, spellAction } from '../shared/combat-spells.mjs';
 import { statisticsSummary } from './statistics-summary.mjs';
 import { emptyStatistics } from './statistics.mjs';
 import { characterTraits, dragonbornAncestryProfile, goliathAncestryProfile, tieflingLegacyProfile } from '../shared/character-traits.mjs';
+import { advanceEffectTime, characterTimedEffects, applyTimedEffect, dismissTimedEffect } from './timed-effects.mjs';
+import { timedAc, timedHpBonus, timedSpeedBonus, timedSpellDefinitions } from '../shared/timed-effects.mjs';
+import { endConcentration, startConcentration } from './concentration.mjs';
+import { randomUUID } from 'node:crypto';
 
 export const resourceState = (db, id) => {
   const row = db.prepare('SELECT data FROM character_spell_resources WHERE character_id = ?').get(id);
@@ -64,6 +69,7 @@ export function saveResources(db, id, state) {
     ON CONFLICT(character_id) DO UPDATE SET data = excluded.data`).run(id, JSON.stringify(state));
 }
 export function casterData(db, id) {
+  characterTimedEffects(db, id);
   const character = db.prepare('SELECT * FROM characters WHERE id = ?').get(id);
   const row = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(id);
   const stats = row ? JSON.parse(row.data) : emptyStatistics();
@@ -71,30 +77,45 @@ export function casterData(db, id) {
   const error = validateSpellSelection(character, stats.spells);
   const ids = new Set(profile.automatic.map(s => s.id));
   for (const group of profile.groups.filter(g => g.id !== 'book')) for (const id of stats.spells.selections[group.id] ?? []) if (group.options.some(s => s.id === id)) ids.add(id);
+  const bookRituals = new Set();
+  for (const id of stats.spells.selections.book ?? []) {
+    if (!ids.has(id) && profile.groups.find(g => g.id === 'book')?.options.some(s => s.id === id && /\bor Ritual\b/i.test(s.castingTime))) { bookRituals.add(id); ids.add(id); }
+  }
   const equipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.armor_class AS armorClass, a.strength, a.stealth_disadvantage AS stealthDisadvantage FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(id);
   const state = resourceState(db, id), s = statisticsSummary(character, stats, equipment);
   const slots = profile.pactSlotLevel ? [] : profile.slots.map((total, i) => ({ level: i + 1, total, remaining: Math.max(0, total - (state.spent[i] ?? 0)), source: 'slot' })).filter(s => s.total);
   if (profile.pactSlotLevel) slots.push({ level: profile.pactSlotLevel, total: profile.slots[0], remaining: Math.max(0, profile.slots[0] - state.pactSpent), source: 'pact' });
   const originGrants = originSpellGrants(selectedOriginFeats(character, stats.traits), stats.traits);
+  const species = speciesResourceState(db, id, character);
   const spells = [...ids].map(id => spellById.get(id)).filter(Boolean).map(spell => {
     const arcanum = profile.groups.find(g => g.id.startsWith('arcanum') && stats.spells.selections[g.id]?.includes(spell.id));
     const origin = originGrants.find(g => g.id === spell.id);
-    return { ...spell, ritualOnly: profile.automatic.find(s => s.id === spell.id)?.ritualOnly === true, originAbility: origin?.ability, originFreeCast: originGrants.some(g => g.id === spell.id && g.freeCast && !state.originSpellUses?.[g.reason]), action: spellAction(spell), effect: spellEffects[spell.id] ?? null, arcanum: Boolean(arcanum), arcanumRemaining: arcanum ? !state.arcanum[spell.id] : false };
+    const automatic = profile.automatic.find(s => s.id === spell.id);
+    const spellcastingAbility = automatic?.spellcastingAbility ?? origin?.ability ?? profile.ability;
+    const modifier = s.abilities[spellcastingAbility]?.modifier ?? null;
+    return { ...spell, legacySpell: Object.hasOwn(species.tieflingLegacyUses, spell.id), legacyFreeCast: species.tieflingLegacyUses[spell.id] === true, spellcastingAbility, ability: modifier, attack: modifier === null ? null : modifier + proficiencyBonus(character.level) + (stats.values.spellBonus ?? 0), dc: modifier === null ? null : 8 + modifier + proficiencyBonus(character.level) + (stats.values.spellDcBonus ?? 0), ritualOnly: automatic?.ritualOnly === true || bookRituals.has(spell.id), originAbility: origin?.ability, originFreeCast: originGrants.some(g => g.id === spell.id && g.freeCast && !state.originSpellUses?.[g.reason]), action: spellAction(spell), effect: spellEffects[spell.id] ?? null, arcanum: Boolean(arcanum), arcanumRemaining: arcanum ? !state.arcanum[spell.id] : false };
   });
-  const species = speciesResourceState(db, id, character);
-  return { character, stats, profile, state, blocked: s.spellcastingBlocked, ability: s.abilities[profile.ability]?.modifier ?? null, attack: s.spellAttack, dc: s.spellDc, slots, spells, species, error };
+  return { character, stats, profile, state, equipment, blocked: s.spellcastingBlocked, ability: s.abilities[profile.ability]?.modifier ?? null, attack: s.spellAttack, dc: s.spellDc, slots, spells, species, error };
 }
 export function publicCaster(db, id) {
   const c = casterData(db, id);
-  return { warlock: warlockProfile(c.character, c.stats.values.cha, c.state), psiWarrior: psiResources(c.character, c.state), paladin: { ...paladinResources(c.character, c.state), channelDivinityDc: c.dc }, druid: { ...druidProfile(c.character), uses: Math.min(druidProfile(c.character).max, c.state.wildShapeUses ?? druidProfile(c.character).max), forms: c.stats.traits?.druidForms ?? [], wildShape: c.state.wildShape?.expiresAt > Date.now() ? c.state.wildShape : null, companion: c.state.wildCompanion ?? null }, slots: c.slots, spells: c.spells, ability: c.ability, attack: c.attack, dc: c.dc, error: c.error, species: c.species, barbarian: { ...rageProfile(c.character), uses: Math.min(rageProfile(c.character).max, c.state.rageUses ?? rageProfile(c.character).max), relentlessDC: c.state.relentlessRageDC ?? 10, recoveryAvailable: c.state.persistentRageAvailable !== false }, resourceVersion: c.state.version };
+  const summary = statisticsSummary(c.character, c.stats, c.equipment);
+  const timedEffects = c.state.activeEffects ?? [];
+  const conditionSubject = { hp: summary.hp, manualConditions: c.state.manualConditions, timedEffects, prone: c.state.prone };
+  const conditions = [...conditionsOf(conditionSubject)];
+  const effectiveStats = { hp: summary.hp, maxHp: summary.maxHp == null ? null : summary.maxHp + timedHpBonus(timedEffects), ac: timedAc({ ac: summary.ac, timedEffects, dexModifier: summary.abilities.dex.modifier, wearingArmor: c.equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'), equipmentShieldBonus: summary.untrainedShield ? 0 : Number.parseInt(c.equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0 }), speed: conditionSpeedZero(conditionSubject) ? 0 : summary.speed == null ? null : summary.speed + timedSpeedBonus({ timedEffects }) };
+
+  return { conditions, effectiveStats, activeEffects: c.state.activeEffects ?? [], concentration: c.state.concentration ?? null, warlock: warlockProfile(c.character, c.stats.values.cha, c.state), psiWarrior: psiResources(c.character, c.state), paladin: { ...paladinResources(c.character, c.state), channelDivinityDc: c.dc }, druid: { ...druidProfile(c.character), uses: Math.min(druidProfile(c.character).max, c.state.wildShapeUses ?? druidProfile(c.character).max), forms: c.stats.traits?.druidForms ?? [], wildShape: c.state.wildShape?.expiresAt > Date.now() ? c.state.wildShape : null, companion: c.state.wildCompanion ?? null }, slots: c.slots, spells: c.spells, ability: c.ability, attack: c.attack, dc: c.dc, error: c.error, species: c.species, barbarian: { ...rageProfile(c.character), uses: Math.min(rageProfile(c.character).max, c.state.rageUses ?? rageProfile(c.character).max), relentlessDC: c.state.relentlessRageDC ?? 10, recoveryAvailable: c.state.persistentRageAvailable !== false }, resourceVersion: c.state.version };
 }
-export function spendSpell(db, id, spellId, level, source) {
+export function spendSpell(db, id, spellId, level, source, options = {}) {
   const c = casterData(db, id), spell = c.spells.find(s => s.id === spellId);
   if (c.error || !spell) throw new Error(c.error || 'Ten czar nie jest przygotowany ani dostępny dla postaci.');
-  if (spell.ritualOnly) throw new Error('Animal Speaker: this spell can only be cast as a ritual outside combat.');
-  if (!spell.action) throw new Error('Ten czar wymaga dłuższego czasu rzucania; rozstrzyga go GM.');
-  const free = c.species?.tieflingLegacyUses?.[spellId] === true;
-  if (free) {
+  if (spell.ritualOnly && !options.ritual) throw new Error('Ten czar jest dostępny wyłącznie jako rytuał poza walką.');
+  if (!spell.action && !options.outsideCombat) throw new Error('Ten czar wymaga dłuższego czasu rzucania; rozstrzyga go GM.');
+  if (source === 'ritual') {
+    if (!options.outsideCombat || !options.ritual || !(spell.ritualOnly || /\bor Ritual\b/i.test(spell.castingTime)) || level !== spell.level) throw new Error('Rytuał jest niedostępny albo ma niepoprawny krąg.');
+  } else if (source === 'legacy') {
+    if (!spell.legacyFreeCast || level !== spell.level) throw new Error('Fiendish Legacy: brak bezpłatnego użycia lub niepoprawny krąg czaru.');
     c.state.tieflingLegacyUses ??= {};
     c.state.tieflingLegacyUses[spellId] = true;
     saveResources(db, id, c.state);
@@ -118,9 +139,7 @@ export function spendSpell(db, id, spellId, level, source) {
     if (source === 'pact') c.state.pactSpent++; else c.state.spent[level - 1] = (c.state.spent[level - 1] ?? 0) + 1;
     saveResources(db, id, c.state);
   }
-  const originMod = ['int', 'wis', 'cha'].includes(spell.originAbility) ? c.stats.values?.[spell.originAbility] : null;
-  const modifier = originMod == null ? null : Math.floor((originMod - 10) / 2);
-  return { ...c, ...(modifier === null ? {} : { ability: modifier, attack: modifier + proficiencyBonus(c.character.level) + (c.stats.values.spellBonus ?? 0), dc: 8 + modifier + proficiencyBonus(c.character.level) + (c.stats.values.spellDcBonus ?? 0) }), spell };
+  return { ...c, ability: spell.ability, attack: spell.attack, dc: spell.dc, spell };
 }
 export function handleSpellResources(db, user, path, method, body, send) {
   const own = path.match(/^\/api\/characters\/([1-9]\d*)\/spell-resources$/);
@@ -130,6 +149,53 @@ export function handleSpellResources(db, user, path, method, body, send) {
   if (own) {
     const id = Number(own[1]);
     if (!db.prepare('SELECT 1 FROM characters WHERE id = ? AND user_id = ?').get(id, user.id)) return reply(404, { error: 'Nie znaleziono postaci.' });
+    if (method === 'POST' && ['end-concentration', 'dismiss-effect'].includes(body.kind)) {
+      const state = resourceState(db, id);
+      if (body.version !== state.version) return reply(409, { error: 'Zasoby zmieniły się. Odśwież kartę.' });
+      const battles = db.prepare('SELECT data FROM session_battles').all();
+      if (battles.some(row => { const b = JSON.parse(row.data); return b.active && b.fighters.some(f => f.characterId === id); })) return reply(409, { error: 'W trakcie walki użyj jej kontrolek efektów.' });
+      const source = { characterId: id };
+      if (body.kind === 'end-concentration') endConcentration(db, source);
+      else {
+        if (typeof body.castingId !== 'string') return reply(400, { error: 'Wybierz aktywny czar.' });
+        const caster = casterData(db, id), stats = caster.stats;
+        if (!(stats.values.hp > 0) || isIncapacitated({ hp: stats.values.hp, manualConditions: caster.state.manualConditions, timedEffects: caster.state.activeEffects })) return reply(409, { error: 'Incapacitated uniemożliwia zakończenie tego czaru.' });
+        if (dismissTimedEffect(db, { fighters: [] }, source, body.castingId) === false) return reply(409, { error: 'Tego skutku nie można dobrowolnie odwołać.' });
+      }
+      return reply(200, { spellcasting: publicCaster(db, id) });
+    }
+    if (method === 'POST' && body.kind === 'cast-outside-combat') {
+      const state = resourceState(db, id);
+      if (body.version !== state.version) return reply(409, { error: 'Zasoby zmieniły się. Odśwież kartę postaci.' });
+      if (body.confirmed !== true) return reply(409, { error: 'Potwierdź z MG czas rzucania, komponenty, cel i wyzwalacz reakcji.' });
+      const battles = db.prepare('SELECT data FROM session_battles').all();
+      if (battles.some(row => { const b = JSON.parse(row.data); return b.active && b.fighters.some(f => f.characterId === id); })) return reply(409, { error: 'W trakcie walki użyj formularza walki.' });
+      db.exec('SAVEPOINT outside_spell');
+      try {
+        const caster = casterData(db, id);
+        if (caster.blocked || !(caster.stats.values.hp > 0) || isIncapacitated({ hp: caster.stats.values.hp, manualConditions: caster.state.manualConditions, timedEffects: caster.state.activeEffects })) throw new Error('Pancerz lub stan postaci blokuje czarowanie.');
+        if (body.targetIds?.some(targetId => targetId !== id)) throw new Error('Poza walką automatyczne efekty dotyczą własnej postaci; inne cele rozstrzyga MG.');
+        const cast = spendSpell(db, id, body.spellId, body.level, body.source, { outsideCombat: true, ritual: body.source === 'ritual' });
+        const source = { id: `character:${id}`, characterId: id, initiative: 0 };
+        if (/Koncentracja|Concentration/i.test(cast.spell.duration)) startConcentration(db, source, cast.spell);
+        else if (!cast.spell.action || body.source === 'ritual') endConcentration(db, source);
+        const latest = resourceState(db, id);
+        const record = { spellId: cast.spell.id, name: cast.spell.name, level: body.level, source: body.source, castAt: Date.now(), ritual: body.source === 'ritual', resolution: 'Efekty poza walką rozstrzyga MG na podstawie opisu czaru.' };
+        latest.castHistory = [...(latest.castHistory ?? []), record].slice(-50);
+        saveResources(db, id, latest);
+        const definition = timedSpellDefinitions[cast.spell.id];
+        if (definition && !definition.save && !definition.hostile) {
+          if (definition.mageArmor && (cast.stats.values.dex == null || cast.equipment.some(item => item.equipped && item.armorCategory && item.armorCategory !== 'shield'))) throw new Error('Mage Armor wymaga celu bez pancerza i znanego DEX.');
+          applyTimedEffect(db, { round: 0, sessionId: null, startedAt: null }, source, source, cast.spell, body.level, randomUUID());
+          record.resolution = 'Aktywny efekt zastosowany do własnej postaci.';
+        }
+        db.exec('RELEASE outside_spell');
+        return reply(200, { spellcasting: publicCaster(db, id), cast: record });
+      } catch (error) {
+        db.exec('ROLLBACK TO outside_spell; RELEASE outside_spell');
+        return reply(409, { error: error.message });
+      }
+    }
     if (method === 'POST' && ['dark-ones-own-luck', 'magical-cunning', 'contact-patron', 'fiendish-resilience', 'clairvoyant-recover', 'awakened-mind'].includes(body.kind)) {
       const state = resourceState(db, id);
       if (body.version !== state.version) return reply(409, { error: 'Zasoby zmieniły się. Odśwież kartę postaci.' });
@@ -155,12 +221,18 @@ export function handleSpellResources(db, user, path, method, body, send) {
   const gameId = Number(rest[1]);
   if (user.role !== 'gm' || !db.prepare('SELECT 1 FROM games WHERE id = ? AND gm_id = ?').get(gameId, user.id)) return reply(404, { error: 'Nie znaleziono gry.' });
   if (method !== 'POST') return reply(405, { error: 'Niedozwolona metoda.' });
-  if (!['long', 'short'].includes(body.rest)) return reply(400, { error: 'Wybierz rodzaj odpoczynku.' });
+  if (!['long', 'short', 'time'].includes(body.rest)) return reply(400, { error: 'Wybierz rodzaj odpoczynku.' });
   const fights = db.prepare(`SELECT b.data FROM session_battles b JOIN game_sessions s ON s.id = b.session_id WHERE s.game_id = ? AND s.ended_at IS NULL`).all(gameId);
   if (fights.some(row => JSON.parse(row.data).active)) return reply(409, { error: 'Odpoczynek nie jest dostępny w trakcie walki.' });
   const characters = db.prepare(`SELECT m.character_id FROM game_members m JOIN session_participants p ON p.member_id = m.id JOIN game_sessions s ON s.id = p.session_id
     WHERE m.game_id = ? AND m.status = 'accepted' AND s.ended_at IS NULL`).all(gameId);
   if (!characters.length) return reply(409, { error: 'Brak postaci w bieżącej sesji.' });
+  if (body.rest === 'time') {
+    if (!Number.isInteger(body.seconds) || body.seconds < 1 || body.seconds > 31536000) return reply(400, { error: 'Podaj poprawny czas w sekundach.' });
+    advanceEffectTime(db, characters.map(c => c.character_id), body.seconds);
+    return reply(200, { advanced: characters.length });
+  }
+  advanceEffectTime(db, characters.map(c => c.character_id), body.rest === 'long' ? 28800 : 3600);
   for (const { character_id: id } of characters) {
     const character = db.prepare('SELECT class, subclass, level, species FROM characters WHERE id = ?').get(id);
     const state = resourceState(db, id);

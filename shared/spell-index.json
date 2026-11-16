@@ -1,0 +1,3156 @@
+{
+  "source": "https://dnd2024.wikidot.com/spell:all",
+  "checkedAt": "2026-11-16T15:42:59.073Z",
+  "spells": [
+    {
+      "id": "acid-splash",
+      "name": "Acid Splash",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:acid-splash"
+    },
+    {
+      "id": "arcane-pulse",
+      "name": "Arcane Pulse",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:arcane-pulse"
+    },
+    {
+      "id": "blade-ward",
+      "name": "Blade Ward",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:blade-ward"
+    },
+    {
+      "id": "chill-touch",
+      "name": "Chill Touch",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:chill-touch"
+    },
+    {
+      "id": "dancing-lights",
+      "name": "Dancing Lights",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:dancing-lights"
+    },
+    {
+      "id": "druidcraft",
+      "name": "Druidcraft",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:druidcraft"
+    },
+    {
+      "id": "eldritch-blast",
+      "name": "Eldritch Blast",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:eldritch-blast"
+    },
+    {
+      "id": "elementalism",
+      "name": "Elementalism",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:elementalism"
+    },
+    {
+      "id": "fire-bolt",
+      "name": "Fire Bolt",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:fire-bolt"
+    },
+    {
+      "id": "friends",
+      "name": "Friends",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:friends"
+    },
+    {
+      "id": "guidance",
+      "name": "Guidance",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:guidance"
+    },
+    {
+      "id": "light",
+      "name": "Light",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:light"
+    },
+    {
+      "id": "mage-hand",
+      "name": "Mage Hand",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:mage-hand"
+    },
+    {
+      "id": "mending",
+      "name": "Mending",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:mending"
+    },
+    {
+      "id": "message",
+      "name": "Message",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:message"
+    },
+    {
+      "id": "mind-sliver",
+      "name": "Mind Sliver",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:mind-sliver"
+    },
+    {
+      "id": "minor-illusion",
+      "name": "Minor Illusion",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:minor-illusion"
+    },
+    {
+      "id": "poison-spray",
+      "name": "Poison Spray",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:poison-spray"
+    },
+    {
+      "id": "prestidigitation",
+      "name": "Prestidigitation",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:prestidigitation"
+    },
+    {
+      "id": "produce-flame",
+      "name": "Produce Flame",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:produce-flame"
+    },
+    {
+      "id": "ray-of-frost",
+      "name": "Ray of Frost",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:ray-of-frost"
+    },
+    {
+      "id": "resistance",
+      "name": "Resistance",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:resistance"
+    },
+    {
+      "id": "sacred-flame",
+      "name": "Sacred Flame",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:sacred-flame"
+    },
+    {
+      "id": "shillelagh",
+      "name": "Shillelagh",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:shillelagh"
+    },
+    {
+      "id": "shocking-grasp",
+      "name": "Shocking Grasp",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:shocking-grasp"
+    },
+    {
+      "id": "sorcerous-burst",
+      "name": "Sorcerous Burst",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:sorcerous-burst"
+    },
+    {
+      "id": "spare-the-dying",
+      "name": "Spare the Dying",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:spare-the-dying"
+    },
+    {
+      "id": "starry-wisp",
+      "name": "Starry Wisp",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:starry-wisp"
+    },
+    {
+      "id": "thaumaturgy",
+      "name": "Thaumaturgy",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:thaumaturgy"
+    },
+    {
+      "id": "thorn-whip",
+      "name": "Thorn Whip",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:thorn-whip"
+    },
+    {
+      "id": "thunderclap",
+      "name": "Thunderclap",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:thunderclap"
+    },
+    {
+      "id": "toll-the-dead",
+      "name": "Toll the Dead",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:toll-the-dead"
+    },
+    {
+      "id": "true-strike",
+      "name": "True Strike",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:true-strike"
+    },
+    {
+      "id": "vicious-mockery",
+      "name": "Vicious Mockery",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:vicious-mockery"
+    },
+    {
+      "id": "word-of-radiance",
+      "name": "Word of Radiance",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:word-of-radiance"
+    },
+    {
+      "id": "wrath",
+      "name": "Wrath",
+      "level": 0,
+      "url": "https://dnd2024.wikidot.com/spell:wrath"
+    },
+    {
+      "id": "alarm",
+      "name": "Alarm",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:alarm"
+    },
+    {
+      "id": "animal-friendship",
+      "name": "Animal Friendship",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:animal-friendship"
+    },
+    {
+      "id": "armor-of-agathys",
+      "name": "Armor of Agathys",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:armor-of-agathys"
+    },
+    {
+      "id": "arms-of-hadar",
+      "name": "Arms of Hadar",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:arms-of-hadar"
+    },
+    {
+      "id": "azure-strike",
+      "name": "Azure Strike",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:azure-strike"
+    },
+    {
+      "id": "bane",
+      "name": "Bane",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:bane"
+    },
+    {
+      "id": "bless",
+      "name": "Bless",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:bless"
+    },
+    {
+      "id": "burning-hands",
+      "name": "Burning Hands",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:burning-hands"
+    },
+    {
+      "id": "buzzing-bee",
+      "name": "Buzzing Bee",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:buzzing-bee"
+    },
+    {
+      "id": "chains-of-ice",
+      "name": "Chains of Ice",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:chains-of-ice"
+    },
+    {
+      "id": "charm-person",
+      "name": "Charm Person",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:charm-person"
+    },
+    {
+      "id": "chromatic-orb",
+      "name": "Chromatic Orb",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:chromatic-orb"
+    },
+    {
+      "id": "color-spray",
+      "name": "Color Spray",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:color-spray"
+    },
+    {
+      "id": "command",
+      "name": "Command",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:command"
+    },
+    {
+      "id": "compelled-duel",
+      "name": "Compelled Duel",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:compelled-duel"
+    },
+    {
+      "id": "comprehend-languages",
+      "name": "Comprehend Languages",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:comprehend-languages"
+    },
+    {
+      "id": "consume-soul",
+      "name": "Consume Soul",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:consume-soul"
+    },
+    {
+      "id": "create-or-destroy-water",
+      "name": "Create or Destroy Water",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:create-or-destroy-water"
+    },
+    {
+      "id": "cure-wounds",
+      "name": "Cure Wounds",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:cure-wounds"
+    },
+    {
+      "id": "death-grip",
+      "name": "Death Grip",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:death-grip"
+    },
+    {
+      "id": "detect-evil-and-good",
+      "name": "Detect Evil and Good",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:detect-evil-and-good"
+    },
+    {
+      "id": "detect-magic",
+      "name": "Detect Magic",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:detect-magic"
+    },
+    {
+      "id": "detect-poison-and-disease",
+      "name": "Detect Poison and Disease",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:detect-poison-and-disease"
+    },
+    {
+      "id": "disguise-self",
+      "name": "Disguise Self",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:disguise-self"
+    },
+    {
+      "id": "dissonant-whispers",
+      "name": "Dissonant Whispers",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:dissonant-whispers"
+    },
+    {
+      "id": "divine-favor",
+      "name": "Divine Favor",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:divine-favor"
+    },
+    {
+      "id": "divine-smite",
+      "name": "Divine Smite",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:divine-smite"
+    },
+    {
+      "id": "ebon-might",
+      "name": "Ebon Might",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:ebon-might"
+    },
+    {
+      "id": "ensnaring-strike",
+      "name": "Ensnaring Strike",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:ensnaring-strike"
+    },
+    {
+      "id": "entangle",
+      "name": "Entangle",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:entangle"
+    },
+    {
+      "id": "entropic-embrace",
+      "name": "Entropic Embrace",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:entropic-embrace"
+    },
+    {
+      "id": "expeditious-retreat",
+      "name": "Expeditious Retreat",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:expeditious-retreat"
+    },
+    {
+      "id": "faerie-fire",
+      "name": "Faerie Fire",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:faerie-fire"
+    },
+    {
+      "id": "false-life",
+      "name": "False Life",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:false-life"
+    },
+    {
+      "id": "feather-fall",
+      "name": "Feather Fall",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:feather-fall"
+    },
+    {
+      "id": "feign-interest",
+      "name": "Feign Interest",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:feign-interest"
+    },
+    {
+      "id": "fel-rush",
+      "name": "Fel Rush",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:fel-rush"
+    },
+    {
+      "id": "find-familiar",
+      "name": "Find Familiar",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:find-familiar"
+    },
+    {
+      "id": "fog-cloud",
+      "name": "Fog Cloud",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:fog-cloud"
+    },
+    {
+      "id": "freezing-trap",
+      "name": "Freezing Trap",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:freezing-trap"
+    },
+    {
+      "id": "frost-nova",
+      "name": "Frost Nova",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:frost-nova"
+    },
+    {
+      "id": "goodberry",
+      "name": "Goodberry",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:goodberry"
+    },
+    {
+      "id": "grease",
+      "name": "Grease",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:grease"
+    },
+    {
+      "id": "guiding-bolt",
+      "name": "Guiding Bolt",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:guiding-bolt"
+    },
+    {
+      "id": "hail-of-thorns",
+      "name": "Hail of Thorns",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:hail-of-thorns"
+    },
+    {
+      "id": "healing-word",
+      "name": "Healing Word",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:healing-word"
+    },
+    {
+      "id": "hellish-rebuke",
+      "name": "Hellish Rebuke",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:hellish-rebuke"
+    },
+    {
+      "id": "heroism",
+      "name": "Heroism",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:heroism"
+    },
+    {
+      "id": "hex",
+      "name": "Hex",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:hex"
+    },
+    {
+      "id": "hunter-s-mark",
+      "name": "Hunter's Mark",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:hunter-s-mark"
+    },
+    {
+      "id": "ice-knife",
+      "name": "Ice Knife",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:ice-knife"
+    },
+    {
+      "id": "identify",
+      "name": "Identify",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:identify"
+    },
+    {
+      "id": "illusory-script",
+      "name": "Illusory Script",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:illusory-script"
+    },
+    {
+      "id": "infernal-strike",
+      "name": "Infernal Strike",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:infernal-strike"
+    },
+    {
+      "id": "inflict-wounds",
+      "name": "Inflict Wounds",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:inflict-wounds"
+    },
+    {
+      "id": "insidious-rhythm",
+      "name": "Insidious Rhythm",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:insidious-rhythm"
+    },
+    {
+      "id": "jump",
+      "name": "Jump",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:jump"
+    },
+    {
+      "id": "living-flame",
+      "name": "Living Flame",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:living-flame"
+    },
+    {
+      "id": "longstrider",
+      "name": "Longstrider",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:longstrider"
+    },
+    {
+      "id": "mage-armor",
+      "name": "Mage Armor",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:mage-armor"
+    },
+    {
+      "id": "magic-missile",
+      "name": "Magic Missile",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:magic-missile"
+    },
+    {
+      "id": "moonfire",
+      "name": "Moonfire",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:moonfire"
+    },
+    {
+      "id": "protection-from-evil-and-good",
+      "name": "Protection from Evil and Good",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:protection-from-evil-and-good"
+    },
+    {
+      "id": "purify-food-and-drink",
+      "name": "Purify Food and Drink",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:purify-food-and-drink"
+    },
+    {
+      "id": "quick-clothier",
+      "name": "Quick Clothier",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:quick-clothier"
+    },
+    {
+      "id": "ray-of-sickness",
+      "name": "Ray of Sickness",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:ray-of-sickness"
+    },
+    {
+      "id": "rune-strike",
+      "name": "Rune Strike",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:rune-strike"
+    },
+    {
+      "id": "sanctuary",
+      "name": "Sanctuary",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:sanctuary"
+    },
+    {
+      "id": "scourge-strike",
+      "name": "Scourge Strike",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:scourge-strike"
+    },
+    {
+      "id": "searing-smite",
+      "name": "Searing Smite",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:searing-smite"
+    },
+    {
+      "id": "shadow-word-pain",
+      "name": "Shadow Word: Pain",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:shadow-word-pain"
+    },
+    {
+      "id": "shield",
+      "name": "Shield",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:shield"
+    },
+    {
+      "id": "shield-of-faith",
+      "name": "Shield of Faith",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:shield-of-faith"
+    },
+    {
+      "id": "silent-image",
+      "name": "Silent Image",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:silent-image"
+    },
+    {
+      "id": "sleep",
+      "name": "Sleep",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:sleep"
+    },
+    {
+      "id": "speak-with-animals",
+      "name": "Speak with Animals",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:speak-with-animals"
+    },
+    {
+      "id": "spellfire-flare",
+      "name": "Spellfire Flare",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:spellfire-flare"
+    },
+    {
+      "id": "tasha-s-hideous-laughter",
+      "name": "Tasha's Hideous Laughter",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:tasha-s-hideous-laughter"
+    },
+    {
+      "id": "tenser-s-floating-disk",
+      "name": "Tenser's Floating Disk",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:tenser-s-floating-disk"
+    },
+    {
+      "id": "throw-glaive",
+      "name": "Throw Glaive",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:throw-glaive"
+    },
+    {
+      "id": "thunderous-smite",
+      "name": "Thunderous Smite",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:thunderous-smite"
+    },
+    {
+      "id": "thunderwave",
+      "name": "Thunderwave",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:thunderwave"
+    },
+    {
+      "id": "unseen-servant",
+      "name": "Unseen Servant",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:unseen-servant"
+    },
+    {
+      "id": "vampiric-blood",
+      "name": "Vampiric Blood",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:vampiric-blood"
+    },
+    {
+      "id": "wardaway",
+      "name": "Wardaway",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:wardaway"
+    },
+    {
+      "id": "witch-bolt",
+      "name": "Witch Bolt",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:witch-bolt"
+    },
+    {
+      "id": "wrathful-smite",
+      "name": "Wrathful Smite",
+      "level": 1,
+      "url": "https://dnd2024.wikidot.com/spell:wrathful-smite"
+    },
+    {
+      "id": "aid",
+      "name": "Aid",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:aid"
+    },
+    {
+      "id": "alter-self",
+      "name": "Alter Self",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:alter-self"
+    },
+    {
+      "id": "animal-messenger",
+      "name": "Animal Messenger",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:animal-messenger"
+    },
+    {
+      "id": "arcane-lock",
+      "name": "Arcane Lock",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:arcane-lock"
+    },
+    {
+      "id": "arcane-vigor",
+      "name": "Arcane Vigor",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:arcane-vigor"
+    },
+    {
+      "id": "augury",
+      "name": "Augury",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:augury"
+    },
+    {
+      "id": "barkskin",
+      "name": "Barkskin",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:barkskin"
+    },
+    {
+      "id": "battle-familiar",
+      "name": "Battle Familiar",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:battle-familiar"
+    },
+    {
+      "id": "beast-sense",
+      "name": "Beast Sense",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:beast-sense"
+    },
+    {
+      "id": "blindness-deafness",
+      "name": "Blindness/Deafness",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:blindness-deafness"
+    },
+    {
+      "id": "blur",
+      "name": "Blur",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:blur"
+    },
+    {
+      "id": "calm-emotions",
+      "name": "Calm Emotions",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:calm-emotions"
+    },
+    {
+      "id": "cloud-of-daggers",
+      "name": "Cloud Of Daggers",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:cloud-of-daggers"
+    },
+    {
+      "id": "conjure-tools",
+      "name": "Conjure Tools",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:conjure-tools"
+    },
+    {
+      "id": "consecration",
+      "name": "Consecration",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:consecration"
+    },
+    {
+      "id": "continual-flame",
+      "name": "Continual Flame",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:continual-flame"
+    },
+    {
+      "id": "cordon-of-arrows",
+      "name": "Cordon Of Arrows",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:cordon-of-arrows"
+    },
+    {
+      "id": "crown-of-madness",
+      "name": "Crown Of Madness",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:crown-of-madness"
+    },
+    {
+      "id": "curse-of-agony",
+      "name": "Curse of Agony",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:curse-of-agony"
+    },
+    {
+      "id": "darkness",
+      "name": "Darkness",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:darkness"
+    },
+    {
+      "id": "darkvision",
+      "name": "Darkvision",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:darkvision"
+    },
+    {
+      "id": "death-and-decay",
+      "name": "Death and Decay",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:death-and-decay"
+    },
+    {
+      "id": "death-armor",
+      "name": "Death Armor",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:death-armor"
+    },
+    {
+      "id": "deryan-s-helpful-homunculi",
+      "name": "Deryan's Helpful Homunculi",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:deryan-s-helpful-homunculi"
+    },
+    {
+      "id": "detect-thoughts",
+      "name": "Detect Thoughts",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:detect-thoughts"
+    },
+    {
+      "id": "disruptive-tune",
+      "name": "Disruptive Tune",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:disruptive-tune"
+    },
+    {
+      "id": "dragon-s-breath",
+      "name": "Dragon's Breath",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:dragon-s-breath"
+    },
+    {
+      "id": "dream-breath",
+      "name": "Dream Breath",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:dream-breath"
+    },
+    {
+      "id": "dueling-ground",
+      "name": "Dueling Ground",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:dueling-ground"
+    },
+    {
+      "id": "elminster-s-elusion",
+      "name": "Elminster's Elusion",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:elminster-s-elusion"
+    },
+    {
+      "id": "enhance-ability",
+      "name": "Enhance Ability",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:enhance-ability"
+    },
+    {
+      "id": "enlarge-reduce",
+      "name": "Enlarge/Reduce",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:enlarge-reduce"
+    },
+    {
+      "id": "enthrall",
+      "name": "Enthrall",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:enthrall"
+    },
+    {
+      "id": "eruption",
+      "name": "Eruption",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:eruption"
+    },
+    {
+      "id": "eye-beam",
+      "name": "Eye Beam",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:eye-beam"
+    },
+    {
+      "id": "feral-prowl",
+      "name": "Feral Prowl",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:feral-prowl"
+    },
+    {
+      "id": "fiery-brand",
+      "name": "Fiery Brand",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:fiery-brand"
+    },
+    {
+      "id": "find-steed",
+      "name": "Find Steed",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:find-steed"
+    },
+    {
+      "id": "find-traps",
+      "name": "Find Traps",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:find-traps"
+    },
+    {
+      "id": "flame-blade",
+      "name": "Flame Blade",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:flame-blade"
+    },
+    {
+      "id": "flaming-sphere",
+      "name": "Flaming Sphere",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:flaming-sphere"
+    },
+    {
+      "id": "frostscythe",
+      "name": "Frostscythe",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:frostscythe"
+    },
+    {
+      "id": "gentle-repose",
+      "name": "Gentle Repose",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:gentle-repose"
+    },
+    {
+      "id": "gust-of-wind",
+      "name": "Gust of Wind",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:gust-of-wind"
+    },
+    {
+      "id": "heat-metal",
+      "name": "Heat Metal",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:heat-metal"
+    },
+    {
+      "id": "hold-person",
+      "name": "Hold Person",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:hold-person"
+    },
+    {
+      "id": "homunculus-servant",
+      "name": "Homunculus Servant",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:homunculus-servant"
+    },
+    {
+      "id": "invisibility",
+      "name": "Invisibility",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:invisibility"
+    },
+    {
+      "id": "knock",
+      "name": "Knock",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:knock"
+    },
+    {
+      "id": "lesser-restoration",
+      "name": "Lesser Restoration",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:lesser-restoration"
+    },
+    {
+      "id": "levitate",
+      "name": "Levitate",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:levitate"
+    },
+    {
+      "id": "locate-animals-or-plants",
+      "name": "Locate Animals or Plants",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:locate-animals-or-plants"
+    },
+    {
+      "id": "locate-object",
+      "name": "Locate Object",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:locate-object"
+    },
+    {
+      "id": "magic-mouth",
+      "name": "Magic Mouth",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:magic-mouth"
+    },
+    {
+      "id": "magic-weapon",
+      "name": "Magic Weapon",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:magic-weapon"
+    },
+    {
+      "id": "melfs-acid-arrow",
+      "name": "Melf's Acid Arrow",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:melfs-acid-arrow"
+    },
+    {
+      "id": "mind-spike",
+      "name": "Mind Spike",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:mind-spike"
+    },
+    {
+      "id": "mirror-image",
+      "name": "Mirror Image",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:mirror-image"
+    },
+    {
+      "id": "misty-step",
+      "name": "Misty Step",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:misty-step"
+    },
+    {
+      "id": "moonbeam",
+      "name": "Moonbeam",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:moonbeam"
+    },
+    {
+      "id": "nystul-s-magic-aura",
+      "name": "Nystul's Magic Aura",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:nystul-s-magic-aura"
+    },
+    {
+      "id": "pass-without-trace",
+      "name": "Pass without Trace",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:pass-without-trace"
+    },
+    {
+      "id": "phantasmal-force",
+      "name": "Phantasmal Force",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:phantasmal-force"
+    },
+    {
+      "id": "pinky-swear",
+      "name": "Pinky Swear",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:pinky-swear"
+    },
+    {
+      "id": "prayer-of-healing",
+      "name": "Prayer of Healing",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:prayer-of-healing"
+    },
+    {
+      "id": "protection-from-poison",
+      "name": "Protection from Poison",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:protection-from-poison"
+    },
+    {
+      "id": "ray-of-enfeeblement",
+      "name": "Ray of Enfeeblement",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:ray-of-enfeeblement"
+    },
+    {
+      "id": "roar-of-ursoc",
+      "name": "Roar of Ursoc",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:roar-of-ursoc"
+    },
+    {
+      "id": "rope-trick",
+      "name": "Rope Trick",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:rope-trick"
+    },
+    {
+      "id": "scorching-ray",
+      "name": "Scorching Ray",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:scorching-ray"
+    },
+    {
+      "id": "searing-orb",
+      "name": "Searing Orb",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:searing-orb"
+    },
+    {
+      "id": "see-invisibility",
+      "name": "See Invisibility",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:see-invisibility"
+    },
+    {
+      "id": "shatter",
+      "name": "Shatter",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:shatter"
+    },
+    {
+      "id": "shining-smite",
+      "name": "Shining Smite",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:shining-smite"
+    },
+    {
+      "id": "sigil-of-flame",
+      "name": "Sigil of Flame",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:sigil-of-flame"
+    },
+    {
+      "id": "silence",
+      "name": "Silence",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:silence"
+    },
+    {
+      "id": "spider-climb",
+      "name": "Spider Climb",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:spider-climb"
+    },
+    {
+      "id": "spike-growth",
+      "name": "Spike Growth",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:spike-growth"
+    },
+    {
+      "id": "spiritual-weapon",
+      "name": "Spiritual Weapon",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:spiritual-weapon"
+    },
+    {
+      "id": "suggestion",
+      "name": "Suggestion",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:suggestion"
+    },
+    {
+      "id": "summon-beast",
+      "name": "Summon Beast",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:summon-beast"
+    },
+    {
+      "id": "tortoise-shell",
+      "name": "Tortoise Shell",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:tortoise-shell"
+    },
+    {
+      "id": "uncertain-footing",
+      "name": "Uncertain Footing",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:uncertain-footing"
+    },
+    {
+      "id": "warding-bond",
+      "name": "Warding Bond",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:warding-bond"
+    },
+    {
+      "id": "web",
+      "name": "Web",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:web"
+    },
+    {
+      "id": "wither-and-bloom",
+      "name": "Wither and Bloom",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:wither-and-bloom"
+    },
+    {
+      "id": "zone-of-truth",
+      "name": "Zone of Truth",
+      "level": 2,
+      "url": "https://dnd2024.wikidot.com/spell:zone-of-truth"
+    },
+    {
+      "id": "animate-dead",
+      "name": "Animate Dead",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:animate-dead"
+    },
+    {
+      "id": "astral-flood",
+      "name": "Astral Flood",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:astral-flood"
+    },
+    {
+      "id": "aura-of-vitality",
+      "name": "Aura of Vitality",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:aura-of-vitality"
+    },
+    {
+      "id": "beacon-of-hope",
+      "name": "Beacon of Hope",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:beacon-of-hope"
+    },
+    {
+      "id": "bestow-curse",
+      "name": "Bestow Curse",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:bestow-curse"
+    },
+    {
+      "id": "blinding-smite",
+      "name": "Blinding Smite",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:blinding-smite"
+    },
+    {
+      "id": "blink",
+      "name": "Blink",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:blink"
+    },
+    {
+      "id": "blistering-scales",
+      "name": "Blistering Scales",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:blistering-scales"
+    },
+    {
+      "id": "cacophonic-shield",
+      "name": "Cacophonic Shield",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:cacophonic-shield"
+    },
+    {
+      "id": "call-lightning",
+      "name": "Call Lightning",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:call-lightning"
+    },
+    {
+      "id": "catnap",
+      "name": "Catnap",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:catnap"
+    },
+    {
+      "id": "clairvoyance",
+      "name": "Clairvoyance",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:clairvoyance"
+    },
+    {
+      "id": "conjure-animals",
+      "name": "Conjure Animals",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:conjure-animals"
+    },
+    {
+      "id": "conjure-barrage",
+      "name": "Conjure Barrage",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:conjure-barrage"
+    },
+    {
+      "id": "conjure-constructs",
+      "name": "Conjure Constructs",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:conjure-constructs"
+    },
+    {
+      "id": "counterspell",
+      "name": "Counterspell",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:counterspell"
+    },
+    {
+      "id": "create-food-and-water",
+      "name": "Create Food And Water",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:create-food-and-water"
+    },
+    {
+      "id": "crusader-s-mantle",
+      "name": "Crusader's Mantle",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:crusader-s-mantle"
+    },
+    {
+      "id": "daylight",
+      "name": "Daylight",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:daylight"
+    },
+    {
+      "id": "demon-spikes",
+      "name": "Demon Spikes",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:demon-spikes"
+    },
+    {
+      "id": "dispel-magic",
+      "name": "Dispel Magic",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:dispel-magic"
+    },
+    {
+      "id": "elemental-weapon",
+      "name": "Elemental Weapon",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:elemental-weapon"
+    },
+    {
+      "id": "emerald-blossom",
+      "name": "Emerald Blossom",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:emerald-blossom"
+    },
+    {
+      "id": "fear",
+      "name": "Fear",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:fear"
+    },
+    {
+      "id": "feign-death",
+      "name": "Feign Death",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:feign-death"
+    },
+    {
+      "id": "fireball",
+      "name": "Fireball",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:fireball"
+    },
+    {
+      "id": "flurry",
+      "name": "Flurry",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:flurry"
+    },
+    {
+      "id": "fly",
+      "name": "Fly",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:fly"
+    },
+    {
+      "id": "gaseous-form",
+      "name": "Gaseous Form",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:gaseous-form"
+    },
+    {
+      "id": "glyph-of-warding",
+      "name": "Glyph of Warding",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:glyph-of-warding"
+    },
+    {
+      "id": "guided-prayer",
+      "name": "Guided Prayer",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:guided-prayer"
+    },
+    {
+      "id": "hand-of-guldan",
+      "name": "Hand of Gul'dan",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:hand-of-guldan"
+    },
+    {
+      "id": "haste",
+      "name": "Haste",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:haste"
+    },
+    {
+      "id": "hunger-of-hadar",
+      "name": "Hunger of Hadar",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:hunger-of-hadar"
+    },
+    {
+      "id": "hypnotic-pattern",
+      "name": "Hypnotic Pattern",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:hypnotic-pattern"
+    },
+    {
+      "id": "inflict-doubt",
+      "name": "Inflict Doubt",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:inflict-doubt"
+    },
+    {
+      "id": "laeral-s-silver-lance",
+      "name": "Laeral's Silver Lance",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:laeral-s-silver-lance"
+    },
+    {
+      "id": "leeching-strike",
+      "name": "Leeching Strike",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:leeching-strike"
+    },
+    {
+      "id": "leomund-s-tiny-hut",
+      "name": "Leomund's Tiny Hut",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:leomund-s-tiny-hut"
+    },
+    {
+      "id": "lightning-arrow",
+      "name": "Lightning Arrow",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:lightning-arrow"
+    },
+    {
+      "id": "lightning-bolt",
+      "name": "Lightning Bolt",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:lightning-bolt"
+    },
+    {
+      "id": "magic-circle",
+      "name": "Magic Circle",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:magic-circle"
+    },
+    {
+      "id": "major-image",
+      "name": "Major Image",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:major-image"
+    },
+    {
+      "id": "mass-healing-word",
+      "name": "Mass Healing Word",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:mass-healing-word"
+    },
+    {
+      "id": "meld-into-stone",
+      "name": "Meld into Stone",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:meld-into-stone"
+    },
+    {
+      "id": "metamorphosis",
+      "name": "Metamorphosis",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:metamorphosis"
+    },
+    {
+      "id": "nondetection",
+      "name": "Nondetection",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:nondetection"
+    },
+    {
+      "id": "phantom-steed",
+      "name": "Phantom Steed",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:phantom-steed"
+    },
+    {
+      "id": "plant-growth",
+      "name": "Plant Growth",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:plant-growth"
+    },
+    {
+      "id": "prayer-of-mending",
+      "name": "Prayer of Mending",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:prayer-of-mending"
+    },
+    {
+      "id": "protection-from-energy",
+      "name": "Protection from Energy",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:protection-from-energy"
+    },
+    {
+      "id": "rain-of-fire",
+      "name": "Rain of Fire",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:rain-of-fire"
+    },
+    {
+      "id": "regrowth",
+      "name": "Regrowth",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:regrowth"
+    },
+    {
+      "id": "remorseless-winter",
+      "name": "Remorseless Winter",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:remorseless-winter"
+    },
+    {
+      "id": "remove-curse",
+      "name": "Remove Curse",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:remove-curse"
+    },
+    {
+      "id": "revivify",
+      "name": "Revivify",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:revivify"
+    },
+    {
+      "id": "sending",
+      "name": "Sending",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:sending"
+    },
+    {
+      "id": "serpent-sting",
+      "name": "Serpent Sting",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:serpent-sting"
+    },
+    {
+      "id": "sleet-storm",
+      "name": "Sleet Storm",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:sleet-storm"
+    },
+    {
+      "id": "slow",
+      "name": "Slow",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:slow"
+    },
+    {
+      "id": "soul-reap",
+      "name": "Soul Reap",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:soul-reap"
+    },
+    {
+      "id": "speak-with-dead",
+      "name": "Speak with Dead",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:speak-with-dead"
+    },
+    {
+      "id": "speak-with-plants",
+      "name": "Speak with Plants",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:speak-with-plants"
+    },
+    {
+      "id": "spirit-guardians",
+      "name": "Spirit Guardians",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:spirit-guardians"
+    },
+    {
+      "id": "stinking-cloud",
+      "name": "Stinking Cloud",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:stinking-cloud"
+    },
+    {
+      "id": "summon-fey",
+      "name": "Summon Fey",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:summon-fey"
+    },
+    {
+      "id": "summon-undead",
+      "name": "Summon Undead",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:summon-undead"
+    },
+    {
+      "id": "sylune-s-viper",
+      "name": "Sylune's Viper",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:sylune-s-viper"
+    },
+    {
+      "id": "tongues",
+      "name": "Tongues",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:tongues"
+    },
+    {
+      "id": "vampiric-touch",
+      "name": "Vampiric Touch",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:vampiric-touch"
+    },
+    {
+      "id": "water-breathing",
+      "name": "Water Breathing",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:water-breathing"
+    },
+    {
+      "id": "water-walk",
+      "name": "Water Walk",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:water-walk"
+    },
+    {
+      "id": "wind-wall",
+      "name": "Wind Wall",
+      "level": 3,
+      "url": "https://dnd2024.wikidot.com/spell:wind-wall"
+    },
+    {
+      "id": "arcane-eye",
+      "name": "Arcane Eye",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:arcane-eye"
+    },
+    {
+      "id": "aura-of-life",
+      "name": "Aura of Life",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:aura-of-life"
+    },
+    {
+      "id": "aura-of-purity",
+      "name": "Aura of Purity",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:aura-of-purity"
+    },
+    {
+      "id": "backlash",
+      "name": "Backlash",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:backlash"
+    },
+    {
+      "id": "banishment",
+      "name": "Banishment",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:banishment"
+    },
+    {
+      "id": "blight",
+      "name": "Blight",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:blight"
+    },
+    {
+      "id": "breath-of-eons",
+      "name": "Breath of Eons",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:breath-of-eons"
+    },
+    {
+      "id": "chaos-nova",
+      "name": "Chaos Nova",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:chaos-nova"
+    },
+    {
+      "id": "charm-monster",
+      "name": "Charm Monster",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:charm-monster"
+    },
+    {
+      "id": "collapsing-star",
+      "name": "Collapsing Star",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:collapsing-star"
+    },
+    {
+      "id": "compulsion",
+      "name": "Compulsion",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:compulsion"
+    },
+    {
+      "id": "confusion",
+      "name": "Confusion",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:confusion"
+    },
+    {
+      "id": "conjure-minor-elementals",
+      "name": "Conjure Minor Elementals",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:conjure-minor-elementals"
+    },
+    {
+      "id": "conjure-woodland-beings",
+      "name": "Conjure Woodland Beings",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:conjure-woodland-beings"
+    },
+    {
+      "id": "control-water",
+      "name": "Control Water",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:control-water"
+    },
+    {
+      "id": "death-ward",
+      "name": "Death Ward",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:death-ward"
+    },
+    {
+      "id": "dimension-door",
+      "name": "Dimension Door",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:dimension-door"
+    },
+    {
+      "id": "distorted-distance",
+      "name": "Distorted Distance",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:distorted-distance"
+    },
+    {
+      "id": "divination",
+      "name": "Divination",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:divination"
+    },
+    {
+      "id": "divine-shield",
+      "name": "Divine Shield",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:divine-shield"
+    },
+    {
+      "id": "dominate-beast",
+      "name": "Dominate Beast",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:dominate-beast"
+    },
+    {
+      "id": "doomtide",
+      "name": "Doomtide",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:doomtide"
+    },
+    {
+      "id": "emberstorm",
+      "name": "Emberstorm",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:emberstorm"
+    },
+    {
+      "id": "evard-s-black-tentacles",
+      "name": "Evard's Black Tentacles",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:evard-s-black-tentacles"
+    },
+    {
+      "id": "fabricate",
+      "name": "Fabricate",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:fabricate"
+    },
+    {
+      "id": "festering-blast",
+      "name": "Festering Blast",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:festering-blast"
+    },
+    {
+      "id": "fire-shield",
+      "name": "Fire Shield",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:fire-shield"
+    },
+    {
+      "id": "fount-of-moonlight",
+      "name": "Fount of Moonlight",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:fount-of-moonlight"
+    },
+    {
+      "id": "freedom-of-movement",
+      "name": "Freedom of Movement",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:freedom-of-movement"
+    },
+    {
+      "id": "giant-insect",
+      "name": "Giant Insect",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:giant-insect"
+    },
+    {
+      "id": "grasping-vine",
+      "name": "Grasping Vine",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:grasping-vine"
+    },
+    {
+      "id": "greater-invisibility",
+      "name": "Greater Invisibility",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:greater-invisibility"
+    },
+    {
+      "id": "guardian-of-faith",
+      "name": "Guardian of Faith",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:guardian-of-faith"
+    },
+    {
+      "id": "hallucinatory-terrain",
+      "name": "Hallucinatory Terrain",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:hallucinatory-terrain"
+    },
+    {
+      "id": "holy-nova",
+      "name": "Holy Nova",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:holy-nova"
+    },
+    {
+      "id": "ice-storm",
+      "name": "Ice Storm",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:ice-storm"
+    },
+    {
+      "id": "leomunds-secret-chest",
+      "name": "Leomund's Secret Chest",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:leomunds-secret-chest"
+    },
+    {
+      "id": "locate-creature",
+      "name": "Locate Creature",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:locate-creature"
+    },
+    {
+      "id": "mordenkainen-s-faithful-hound",
+      "name": "Mordenkainen's Faithful Hound",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:mordenkainen-s-faithful-hound"
+    },
+    {
+      "id": "mordenkainen-s-private-sanctum",
+      "name": "Mordenkainen's Private Sanctum",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:mordenkainen-s-private-sanctum"
+    },
+    {
+      "id": "otilukes-resilient-sphere",
+      "name": "Otiluke's Resilient Sphere",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:otilukes-resilient-sphere"
+    },
+    {
+      "id": "phantasmal-killer",
+      "name": "Phantasmal Killer",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:phantasmal-killer"
+    },
+    {
+      "id": "polymorph",
+      "name": "Polymorph",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:polymorph"
+    },
+    {
+      "id": "psychic-horror",
+      "name": "Psychic Horror",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:psychic-horror"
+    },
+    {
+      "id": "spellfire-storm",
+      "name": "Spellfire Storm",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:spellfire-storm"
+    },
+    {
+      "id": "staggering-smite",
+      "name": "Staggering Smite",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:staggering-smite"
+    },
+    {
+      "id": "starfall",
+      "name": "Starfall",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:starfall"
+    },
+    {
+      "id": "sticks-to-snakes",
+      "name": "Sticks to Snakes",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:sticks-to-snakes"
+    },
+    {
+      "id": "stone-shape",
+      "name": "Stone Shape",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:stone-shape"
+    },
+    {
+      "id": "stoneskin",
+      "name": "Stoneskin",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:stoneskin"
+    },
+    {
+      "id": "summon-aberration",
+      "name": "Summon Aberration",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:summon-aberration"
+    },
+    {
+      "id": "summon-construct",
+      "name": "Summon Construct",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:summon-construct"
+    },
+    {
+      "id": "summon-elemental",
+      "name": "Summon Elemental",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:summon-elemental"
+    },
+    {
+      "id": "time-dilation",
+      "name": "Time Dilation",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:time-dilation"
+    },
+    {
+      "id": "upheaval",
+      "name": "Upheaval",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:upheaval"
+    },
+    {
+      "id": "vitriolic-sphere",
+      "name": "Vitriolic Sphere",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:vitriolic-sphere"
+    },
+    {
+      "id": "wall-of-fire",
+      "name": "Wall of Fire",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:wall-of-fire"
+    },
+    {
+      "id": "zone-of-amicability",
+      "name": "Zone of Amicability",
+      "level": 4,
+      "url": "https://dnd2024.wikidot.com/spell:zone-of-amicability"
+    },
+    {
+      "id": "alustriel-s-mooncloak",
+      "name": "Alustriel's Mooncloak",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:alustriel-s-mooncloak"
+    },
+    {
+      "id": "animate-objects",
+      "name": "Animate Objects",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:animate-objects"
+    },
+    {
+      "id": "antilife-shell",
+      "name": "Antilife Shell",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:antilife-shell"
+    },
+    {
+      "id": "awaken",
+      "name": "Awaken",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:awaken"
+    },
+    {
+      "id": "banishing-smite",
+      "name": "Banishing Smite",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:banishing-smite"
+    },
+    {
+      "id": "bigby-s-hand",
+      "name": "Bigby's Hand",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:bigby-s-hand"
+    },
+    {
+      "id": "bonestorm",
+      "name": "Bonestorm",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:bonestorm"
+    },
+    {
+      "id": "circle-of-power",
+      "name": "Circle Of Power",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:circle-of-power"
+    },
+    {
+      "id": "cloudkill",
+      "name": "Cloudkill",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:cloudkill"
+    },
+    {
+      "id": "commune",
+      "name": "Commune",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:commune"
+    },
+    {
+      "id": "commune-with-nature",
+      "name": "Commune With Nature",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:commune-with-nature"
+    },
+    {
+      "id": "cone-of-cold",
+      "name": "Cone Of Cold",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:cone-of-cold"
+    },
+    {
+      "id": "conjure-elemental",
+      "name": "Conjure Elemental",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:conjure-elemental"
+    },
+    {
+      "id": "conjure-volley",
+      "name": "Conjure Volley",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:conjure-volley"
+    },
+    {
+      "id": "contact-other-plane",
+      "name": "Contact Other Plane",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:contact-other-plane"
+    },
+    {
+      "id": "contagion",
+      "name": "Contagion",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:contagion"
+    },
+    {
+      "id": "creation",
+      "name": "Creation",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:creation"
+    },
+    {
+      "id": "destructive-wave",
+      "name": "Destructive Wave",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:destructive-wave"
+    },
+    {
+      "id": "dispel-evil-and-good",
+      "name": "Dispel Evil and Good",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:dispel-evil-and-good"
+    },
+    {
+      "id": "dominate-person",
+      "name": "Dominate Person",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:dominate-person"
+    },
+    {
+      "id": "dream",
+      "name": "Dream",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:dream"
+    },
+    {
+      "id": "dream-flight",
+      "name": "Dream Flight",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:dream-flight"
+    },
+    {
+      "id": "enervation",
+      "name": "Enervation",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:enervation"
+    },
+    {
+      "id": "explosive-trap",
+      "name": "Explosive Trap",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:explosive-trap"
+    },
+    {
+      "id": "flame-strike",
+      "name": "Flame Strike",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:flame-strike"
+    },
+    {
+      "id": "geas",
+      "name": "Geas",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:geas"
+    },
+    {
+      "id": "grave-ground",
+      "name": "Grave Ground",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:grave-ground"
+    },
+    {
+      "id": "greater-restoration",
+      "name": "Greater Restoration",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:greater-restoration"
+    },
+    {
+      "id": "hallow",
+      "name": "Hallow",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:hallow"
+    },
+    {
+      "id": "hold-monster",
+      "name": "Hold Monster",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:hold-monster"
+    },
+    {
+      "id": "innervate",
+      "name": "Innervate",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:innervate"
+    },
+    {
+      "id": "insect-plague",
+      "name": "Insect Plague",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:insect-plague"
+    },
+    {
+      "id": "jallarzi-s-storm-of-radiance",
+      "name": "Jallarzi's Storm of Radiance",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:jallarzi-s-storm-of-radiance"
+    },
+    {
+      "id": "legend-lore",
+      "name": "Legend Lore",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:legend-lore"
+    },
+    {
+      "id": "mass-cure-wounds",
+      "name": "Mass Cure Wounds",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:mass-cure-wounds"
+    },
+    {
+      "id": "mislead",
+      "name": "Mislead",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:mislead"
+    },
+    {
+      "id": "modify-memory",
+      "name": "Modify Memory",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:modify-memory"
+    },
+    {
+      "id": "mordenkainen-s-lucubration",
+      "name": "Mordenkainen's Lucubration",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:mordenkainen-s-lucubration"
+    },
+    {
+      "id": "negative-energy-flood",
+      "name": "Negative Energy Flood",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:negative-energy-flood"
+    },
+    {
+      "id": "passwall",
+      "name": "Passwall",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:passwall"
+    },
+    {
+      "id": "planar-binding",
+      "name": "Planar Binding",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:planar-binding"
+    },
+    {
+      "id": "raise-dead",
+      "name": "Raise Dead",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:raise-dead"
+    },
+    {
+      "id": "rary-s-telepathic-bond",
+      "name": "Rary's Telepathic Bond",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:rary-s-telepathic-bond"
+    },
+    {
+      "id": "reincarnate",
+      "name": "Reincarnate",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:reincarnate"
+    },
+    {
+      "id": "rescue",
+      "name": "Rescue",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:rescue"
+    },
+    {
+      "id": "scrying",
+      "name": "Scrying",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:scrying"
+    },
+    {
+      "id": "seeming",
+      "name": "Seeming",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:seeming"
+    },
+    {
+      "id": "shattering-star",
+      "name": "Shattering Star",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:shattering-star"
+    },
+    {
+      "id": "sigil-of-chains",
+      "name": "Sigil of Chains",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:sigil-of-chains"
+    },
+    {
+      "id": "songal-s-elemental-suffusion",
+      "name": "Songal's Elemental Suffusion",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:songal-s-elemental-suffusion"
+    },
+    {
+      "id": "spirit-lantern",
+      "name": "Spirit Lantern",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:spirit-lantern"
+    },
+    {
+      "id": "steel-wind-strike",
+      "name": "Steel Wind Strike",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:steel-wind-strike"
+    },
+    {
+      "id": "summon-celestial",
+      "name": "Summon Celestial",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:summon-celestial"
+    },
+    {
+      "id": "summon-dragon",
+      "name": "Summon Dragon",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:summon-dragon"
+    },
+    {
+      "id": "summon-plant",
+      "name": "Summon Plant",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:summon-plant"
+    },
+    {
+      "id": "swift-quiver",
+      "name": "Swift Quiver",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:swift-quiver"
+    },
+    {
+      "id": "synaptic-static",
+      "name": "Synaptic Static",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:synaptic-static"
+    },
+    {
+      "id": "telekinesis",
+      "name": "Telekinesis",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:telekinesis"
+    },
+    {
+      "id": "teleportation-circle",
+      "name": "Teleportation Circle",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:teleportation-circle"
+    },
+    {
+      "id": "tree-stride",
+      "name": "Tree Stride",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:tree-stride"
+    },
+    {
+      "id": "void-eruption",
+      "name": "Void Eruption",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:void-eruption"
+    },
+    {
+      "id": "wall-of-force",
+      "name": "Wall of Force",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:wall-of-force"
+    },
+    {
+      "id": "wall-of-stone",
+      "name": "Wall of Stone",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:wall-of-stone"
+    },
+    {
+      "id": "waves-of-exhaustion",
+      "name": "Waves of Exhaustion",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:waves-of-exhaustion"
+    },
+    {
+      "id": "yolande-s-regal-presence",
+      "name": "Yolande's Regal Presence",
+      "level": 5,
+      "url": "https://dnd2024.wikidot.com/spell:yolande-s-regal-presence"
+    },
+    {
+      "id": "arcane-gate",
+      "name": "Arcane Gate",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:arcane-gate"
+    },
+    {
+      "id": "azure-sweep",
+      "name": "Azure Sweep",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:azure-sweep"
+    },
+    {
+      "id": "blade-barrier",
+      "name": "Blade Barrier",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:blade-barrier"
+    },
+    {
+      "id": "chain-lightning",
+      "name": "Chain Lightning",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:chain-lightning"
+    },
+    {
+      "id": "circle-of-death",
+      "name": "Circle Of Death",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:circle-of-death"
+    },
+    {
+      "id": "combustion",
+      "name": "Combustion",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:combustion"
+    },
+    {
+      "id": "conjure-fey",
+      "name": "Conjure Fey",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:conjure-fey"
+    },
+    {
+      "id": "contingency",
+      "name": "Contingency",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:contingency"
+    },
+    {
+      "id": "create-undead",
+      "name": "Create Undead",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:create-undead"
+    },
+    {
+      "id": "dirge",
+      "name": "Dirge",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:dirge"
+    },
+    {
+      "id": "disintegrate",
+      "name": "Disintegrate",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:disintegrate"
+    },
+    {
+      "id": "drawmij-s-instant-summons",
+      "name": "Drawmij's Instant Summons",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:drawmij-s-instant-summons"
+    },
+    {
+      "id": "elminster-s-effulgent-spheres",
+      "name": "Elminster's Effulgent Spheres",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:elminster-s-effulgent-spheres"
+    },
+    {
+      "id": "eyebite",
+      "name": "Eyebite",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:eyebite"
+    },
+    {
+      "id": "find-the-path",
+      "name": "Find the Path",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:find-the-path"
+    },
+    {
+      "id": "flesh-to-stone",
+      "name": "Flesh to Stone",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:flesh-to-stone"
+    },
+    {
+      "id": "forbiddance",
+      "name": "Forbiddance",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:forbiddance"
+    },
+    {
+      "id": "globe-of-invulnerability",
+      "name": "Globe of Invulnerability",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:globe-of-invulnerability"
+    },
+    {
+      "id": "guards-and-wards",
+      "name": "Guards and Wards",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:guards-and-wards"
+    },
+    {
+      "id": "harm",
+      "name": "Harm",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:harm"
+    },
+    {
+      "id": "heal",
+      "name": "Heal",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:heal"
+    },
+    {
+      "id": "heroes-feast",
+      "name": "Heroes' Feast",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:heroes-feast"
+    },
+    {
+      "id": "leomund-s-lamentable-belaborment",
+      "name": "Leomund's Lamentable Belaborment",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:leomund-s-lamentable-belaborment"
+    },
+    {
+      "id": "magic-jar",
+      "name": "Magic Jar",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:magic-jar"
+    },
+    {
+      "id": "mass-suggestion",
+      "name": "Mass Suggestion",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:mass-suggestion"
+    },
+    {
+      "id": "move-earth",
+      "name": "Move Earth",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:move-earth"
+    },
+    {
+      "id": "otiluke-s-freezing-sphere",
+      "name": "Otiluke's Freezing Sphere",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:otiluke-s-freezing-sphere"
+    },
+    {
+      "id": "otto-s-irresistible-dance",
+      "name": "Otto's Irresistible Dance",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:otto-s-irresistible-dance"
+    },
+    {
+      "id": "planar-ally",
+      "name": "Planar Ally",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:planar-ally"
+    },
+    {
+      "id": "programmed-illusion",
+      "name": "Programmed Illusion",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:programmed-illusion"
+    },
+    {
+      "id": "summon-dinosaur",
+      "name": "Summon Dinosaur",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:summon-dinosaur"
+    },
+    {
+      "id": "summon-fiend",
+      "name": "Summon Fiend",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:summon-fiend"
+    },
+    {
+      "id": "sunbeam",
+      "name": "Sunbeam",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:sunbeam"
+    },
+    {
+      "id": "tasha-s-bubbling-cauldron",
+      "name": "Tasha's Bubbling Cauldron",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:tasha-s-bubbling-cauldron"
+    },
+    {
+      "id": "tranquility",
+      "name": "Tranquility",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:tranquility"
+    },
+    {
+      "id": "transport-via-plants",
+      "name": "Transport via Plants",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:transport-via-plants"
+    },
+    {
+      "id": "true-seeing",
+      "name": "True Seeing",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:true-seeing"
+    },
+    {
+      "id": "wall-of-ice",
+      "name": "Wall of Ice",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:wall-of-ice"
+    },
+    {
+      "id": "wall-of-thorns",
+      "name": "Wall of Thorns",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:wall-of-thorns"
+    },
+    {
+      "id": "wind-walk",
+      "name": "Wind Walk",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:wind-walk"
+    },
+    {
+      "id": "word-of-recall",
+      "name": "Word of Recall",
+      "level": 6,
+      "url": "https://dnd2024.wikidot.com/spell:word-of-recall"
+    },
+    {
+      "id": "aura-of-evasion",
+      "name": "Aura of Evasion",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:aura-of-evasion"
+    },
+    {
+      "id": "conjure-celestial",
+      "name": "Conjure Celestial",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:conjure-celestial"
+    },
+    {
+      "id": "delayed-blast-fireball",
+      "name": "Delayed Blast Fireball",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:delayed-blast-fireball"
+    },
+    {
+      "id": "divine-word",
+      "name": "Divine Word",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:divine-word"
+    },
+    {
+      "id": "etherealness",
+      "name": "Etherealness",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:etherealness"
+    },
+    {
+      "id": "finger-of-death",
+      "name": "Finger of Death",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:finger-of-death"
+    },
+    {
+      "id": "fire-storm",
+      "name": "Fire Storm",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:fire-storm"
+    },
+    {
+      "id": "forcecage",
+      "name": "Forcecage",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:forcecage"
+    },
+    {
+      "id": "fractured-awareness",
+      "name": "Fractured Awareness",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:fractured-awareness"
+    },
+    {
+      "id": "lay-waste",
+      "name": "Lay Waste",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:lay-waste"
+    },
+    {
+      "id": "mirage-arcane",
+      "name": "Mirage Arcane",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:mirage-arcane"
+    },
+    {
+      "id": "mordenkainen-s-magnificent-mansion",
+      "name": "Mordenkainen's Magnificent Mansion",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:mordenkainen-s-magnificent-mansion"
+    },
+    {
+      "id": "mordenkainen-s-sword",
+      "name": "Mordenkainen's Sword",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:mordenkainen-s-sword"
+    },
+    {
+      "id": "plane-shift",
+      "name": "Plane Shift",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:plane-shift"
+    },
+    {
+      "id": "power-word-fortify",
+      "name": "Power Word Fortify",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:power-word-fortify"
+    },
+    {
+      "id": "power-word-pain",
+      "name": "Power Word Pain",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:power-word-pain"
+    },
+    {
+      "id": "prismatic-spray",
+      "name": "Prismatic Spray",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:prismatic-spray"
+    },
+    {
+      "id": "project-image",
+      "name": "Project Image",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:project-image"
+    },
+    {
+      "id": "regenerate",
+      "name": "Regenerate",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:regenerate"
+    },
+    {
+      "id": "resurrection",
+      "name": "Resurrection",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:resurrection"
+    },
+    {
+      "id": "reverse-gravity",
+      "name": "Reverse Gravity",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:reverse-gravity"
+    },
+    {
+      "id": "reweave-fate",
+      "name": "Reweave Fate",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:reweave-fate"
+    },
+    {
+      "id": "sequester",
+      "name": "Sequester",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:sequester"
+    },
+    {
+      "id": "simbul-s-synostodweomer",
+      "name": "Simbul's Synostodweomer",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:simbul-s-synostodweomer"
+    },
+    {
+      "id": "simulacrum",
+      "name": "Simulacrum",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:simulacrum"
+    },
+    {
+      "id": "symbol",
+      "name": "Symbol",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:symbol"
+    },
+    {
+      "id": "teleport",
+      "name": "Teleport",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:teleport"
+    },
+    {
+      "id": "transfix",
+      "name": "Transfix",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:transfix"
+    },
+    {
+      "id": "void-star",
+      "name": "Void Star",
+      "level": 7,
+      "url": "https://dnd2024.wikidot.com/spell:void-star"
+    },
+    {
+      "id": "animal-shapes",
+      "name": "Animal Shapes",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:animal-shapes"
+    },
+    {
+      "id": "antimagic-field",
+      "name": "Antimagic Field",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:antimagic-field"
+    },
+    {
+      "id": "antipathy-sympathy",
+      "name": "Antipathy/Sympathy",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:antipathy-sympathy"
+    },
+    {
+      "id": "befuddlement",
+      "name": "Befuddlement",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:befuddlement"
+    },
+    {
+      "id": "clone",
+      "name": "Clone",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:clone"
+    },
+    {
+      "id": "control-weather",
+      "name": "Control Weather",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:control-weather"
+    },
+    {
+      "id": "demiplane",
+      "name": "Demiplane",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:demiplane"
+    },
+    {
+      "id": "dominate-monster",
+      "name": "Dominate Monster",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:dominate-monster"
+    },
+    {
+      "id": "earthquake",
+      "name": "Earthquake",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:earthquake"
+    },
+    {
+      "id": "entrancing-mirrors",
+      "name": "Entrancing Mirrors",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:entrancing-mirrors"
+    },
+    {
+      "id": "glibness",
+      "name": "Glibness",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:glibness"
+    },
+    {
+      "id": "holy-aura",
+      "name": "Holy Aura",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:holy-aura"
+    },
+    {
+      "id": "holy-star-of-mystra",
+      "name": "Holy Star of Mystra",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:holy-star-of-mystra"
+    },
+    {
+      "id": "illusory-dragon",
+      "name": "Illusory Dragon",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:illusory-dragon"
+    },
+    {
+      "id": "incendiary-cloud",
+      "name": "Incendiary Cloud",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:incendiary-cloud"
+    },
+    {
+      "id": "iron-body",
+      "name": "Iron Body",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:iron-body"
+    },
+    {
+      "id": "lightning-ring",
+      "name": "Lightning Ring",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:lightning-ring"
+    },
+    {
+      "id": "maze",
+      "name": "Maze",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:maze"
+    },
+    {
+      "id": "mind-blank",
+      "name": "Mind Blank",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:mind-blank"
+    },
+    {
+      "id": "moment-of-prescience",
+      "name": "Moment of Prescience",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:moment-of-prescience"
+    },
+    {
+      "id": "power-word-stun",
+      "name": "Power Word Stun",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:power-word-stun"
+    },
+    {
+      "id": "sunburst",
+      "name": "Sunburst",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:sunburst"
+    },
+    {
+      "id": "telepathy",
+      "name": "Telepathy",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:telepathy"
+    },
+    {
+      "id": "tree-of-life",
+      "name": "Tree of Life",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:tree-of-life"
+    },
+    {
+      "id": "tsunami",
+      "name": "Tsunami",
+      "level": 8,
+      "url": "https://dnd2024.wikidot.com/spell:tsunami"
+    },
+    {
+      "id": "apotheosis",
+      "name": "Apotheosis",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:apotheosis"
+    },
+    {
+      "id": "astral-projection",
+      "name": "Astral Projection",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:astral-projection"
+    },
+    {
+      "id": "blade-of-disaster",
+      "name": "Blade of Disaster",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:blade-of-disaster"
+    },
+    {
+      "id": "detonate",
+      "name": "Detonate",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:detonate"
+    },
+    {
+      "id": "foresight",
+      "name": "Foresight",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:foresight"
+    },
+    {
+      "id": "gate",
+      "name": "Gate",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:gate"
+    },
+    {
+      "id": "hindsight",
+      "name": "Hindsight",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:hindsight"
+    },
+    {
+      "id": "imprisonment",
+      "name": "Imprisonment",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:imprisonment"
+    },
+    {
+      "id": "invulnerability",
+      "name": "Invulnerability",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:invulnerability"
+    },
+    {
+      "id": "mass-heal",
+      "name": "Mass Heal",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:mass-heal"
+    },
+    {
+      "id": "mass-polymorph",
+      "name": "Mass Polymorph",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:mass-polymorph"
+    },
+    {
+      "id": "meteor-swarm",
+      "name": "Meteor Swarm",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:meteor-swarm"
+    },
+    {
+      "id": "power-word-heal",
+      "name": "Power Word Heal",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:power-word-heal"
+    },
+    {
+      "id": "power-word-kill",
+      "name": "Power Word Kill",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:power-word-kill"
+    },
+    {
+      "id": "prismatic-wall",
+      "name": "Prismatic Wall",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:prismatic-wall"
+    },
+    {
+      "id": "shapechange",
+      "name": "Shapechange",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:shapechange"
+    },
+    {
+      "id": "storm-of-vengeance",
+      "name": "Storm of Vengeance",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:storm-of-vengeance"
+    },
+    {
+      "id": "time-stop",
+      "name": "Time Stop",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:time-stop"
+    },
+    {
+      "id": "true-polymorph",
+      "name": "True Polymorph",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:true-polymorph"
+    },
+    {
+      "id": "true-resurrection",
+      "name": "True Resurrection",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:true-resurrection"
+    },
+    {
+      "id": "vision-of-elapsing-eons",
+      "name": "Vision of Elapsing Eons",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:vision-of-elapsing-eons"
+    },
+    {
+      "id": "wail-of-the-banshee",
+      "name": "Wail of the Banshee",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:wail-of-the-banshee"
+    },
+    {
+      "id": "weird",
+      "name": "Weird",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:weird"
+    },
+    {
+      "id": "wish",
+      "name": "Wish",
+      "level": 9,
+      "url": "https://dnd2024.wikidot.com/spell:wish"
+    }
+  ]
+}

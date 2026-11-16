@@ -289,6 +289,7 @@ export function characterTraits(character, stats) {
     skillSources: sourceLabels, skillBonuses, languages: options.languages.filter(language => languages.has(language.id)),
     tools: [...tools], armor: armor.filter(Boolean), weapons: weapons.filter(Boolean), feats: [...feats], originFeatDescriptions, features,
     hitDie: die, hitDiceTotal: level,
+    creatureType: species === 'Diabelstwo (Tiefling)' ? 'Humanoid' : null,
     size: ['Diabelstwo (Tiefling)', 'Człowiek (Human)'].includes(species)
       ? (chosen[species === 'Człowiek (Human)' ? 'humanSize' : 'tieflingSize']?.[0] === 'small' ? 'Small' : 'Medium')
       : ['Gnom (Gnome)', 'Niziołek (Halfling)'].includes(species) ? 'Small' : species ? 'Medium' : null,

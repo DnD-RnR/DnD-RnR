@@ -1,3 +1,8 @@
+import { automaticCheckFailure, automaticSaveFailure, conditionCheckDisadvantage, conditionDefinitions, conditionSaveDisadvantage, hasCondition, isIncapacitated } from '../shared/conditions.mjs';
+import { persistConditionState } from './conditions.mjs';
+import { endConcentration } from './concentration.mjs';
+import { timedRollModifier } from '../shared/timed-effects.mjs';
+import { consumeSavePenalty, hasSpellCondition } from './spell-conditions.mjs';
 import { luckBonus } from './warlock-features.mjs';
 import { hexDisadvantage } from '../shared/warlock.mjs';
 import { primalSkills, barbarianSaveAdvantage, wildHeartAnimals } from '../shared/barbarian.mjs';
@@ -42,12 +47,15 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
   };
   if (body.kind === 'condition') {
     check(!b.pending, 'Najpierw rozstrzygnij rozpoczęte działanie.');
-    check(gm && ['incapacitated', 'unconscious'].includes(body.condition) && typeof body.enabled === 'boolean', 'Stan nakłada GM.');
+    check(gm && Object.hasOwn(conditionDefinitions, body.condition) && typeof body.enabled === 'boolean', 'Stan nakłada GM.');
+    check(!(body.enabled && body.condition === 'poisoned' && hasCondition(f, 'petrified')), 'Petrified daje niewrażliwość na Poisoned.');
+    f.manualConditions = (f.manualConditions ?? []).filter(c => c !== body.condition);
+    if (body.enabled) f.manualConditions.push(body.condition);
     f[body.condition] = body.enabled;
-    if (body.enabled && (body.condition === 'unconscious' || !p?.persistent)) endRage(f);
-    if (body.enabled) {
-      f.concentration = null; f.concentrationDC = null; f.concentrationChecks = [];
-      if (state) { state.concentration = null; saveResources(db, f.characterId, state); }
+    persistConditionState(db, f);
+    if (isIncapacitated(f) && (hasCondition(f, 'unconscious') || !p?.persistent)) endRage(f);
+    if (isIncapacitated(f)) {
+      endConcentration(db, f);
     }
     log(b, `${f.name}: ${body.condition} — ${body.enabled ? 'aktywny' : 'usunięty'}.`);
     return true;
@@ -66,6 +74,11 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
   }
   check(!b.fighters.some(a => a.relentlessRagePending || a.concentrationDC), 'Najpierw rozstrzygnij oczekujące rzuty.');
   if (['ability-check', 'saving-throw'].includes(body.kind)) {
+    if (body.kind === 'saving-throw' && automaticSaveFailure(f, body.ability)) {
+      log(b, `${f.name}: automatyczna porażka rzutu obronnego wynikająca ze stanu.`);
+      return true;
+    }
+    if (body.kind === 'ability-check' && automaticCheckFailure(f, body)) { f.lastAbilityCheck = null; log(b, `${f.name}: automatyczna porażka testu wymagającego wzroku lub słuchu.`); return true; }
     check(body.kind === 'saving-throw' || f.hp > 0 && !f.incapacitated && !f.unconscious, 'Ta postać nie może teraz działać.');
     check(f.characterId && (!b.pending || b.pending.kind === 'request'), 'Najpierw rozstrzygnij działanie.');
     const c = db.prepare('SELECT * FROM characters WHERE id = ?').get(f.characterId);
@@ -85,8 +98,8 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
     }
     check(bonus != null, 'Uzupełnij cechę postaci.');
     const automaticAdvantage = body.kind === 'saving-throw' ? barbarianSaveAdvantage(f, ability) : Boolean(f.rage && ability === 'str');
-    body = { ...body, hexDisadvantage: hexDisadvantage(b, f, ability, body.kind === 'saving-throw') };
-    const total = d20(automaticAdvantage) + bonus + luckBonus(db, f.characterId, body.luckRoll);
+    body = { ...body, hexDisadvantage: hexDisadvantage(b, f, ability, body.kind === 'saving-throw') || hasSpellCondition(f, 'enfeebled') && ability === 'str' || body.kind === 'ability-check' && conditionCheckDisadvantage(f) || body.kind === 'saving-throw' && conditionSaveDisadvantage(f, ability) };
+    const total = d20(automaticAdvantage) + bonus + luckBonus(db, f.characterId, body.luckRoll) + (body.kind === 'saving-throw' ? timedRollModifier(f, body) : 0) - (body.kind === 'saving-throw' ? consumeSavePenalty(f, body.mindSliverRoll) : 0);
     if (body.kind === 'ability-check') {
       check(body.dc == null || Number.isInteger(body.dc) && body.dc >= 1 && body.dc <= 100, 'Podaj poprawne ST testu.');
       f.lastAbilityCheck = body.dc == null ? null : { total, dc: body.dc, attempted: false };

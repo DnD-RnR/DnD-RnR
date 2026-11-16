@@ -128,6 +128,7 @@ test('Tiefling requires legacy, spellcasting ability, and size choices', () => {
   stats.traits = { tieflingLegacy: ['infernal'], tieflingSpellAbility: ['cha'], tieflingSize: ['small'] };
   const profile = characterTraits(tiefling, stats);
   assert.equal(profile.size, 'Small');
+  assert.equal(profile.creatureType, 'Humanoid');
   assert.equal(profile.fiendishLegacy.damageType, 'ogień');
   assert.ok(profile.defenses.includes('Odporność na obrażenia: ogień.'));
   assert.ok(profile.features.some(feature => feature.name.includes('Otherworldly Presence')));
