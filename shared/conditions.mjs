@@ -2,6 +2,11 @@ import { strongestEffects } from './timed-effects.mjs';
 
 // SRD 5.2, Rules Glossary. Spatial and sensory exceptions are confirmed by the GM.
 export const conditionDefinitions = {
+  charmed: { label: 'Charmed — Zauroczony', description: 'Nie może atakować sprawcy ani obejmować go szkodliwymi zdolnościami i magią. Sprawca ma ułatwienie społecznych testów wobec celu.' },
+  frightened: { label: 'Frightened — Przerażony', description: 'Utrudnienie ataków i testów cech, gdy źródło strachu jest w linii widzenia. Nie może dobrowolnie się do niego zbliżyć.' },
+  grappled: { label: 'Grappled — Pochwycony', description: 'Szybkość 0. Utrudnienie ataków na cele inne niż chwytający. Ucieczka akcją: Athletics lub Acrobatics przeciw ST chwytu. MG ustala zasięg i przeciąganie.' },
+  invisible: { label: 'Invisible — Niewidzialny', description: 'Ułatwienie inicjatywy. Ułatwienie własnych ataków, utrudnienie ataków przeciw niemu oraz ochrona przed efektami wymagającymi widzenia; wyjątki dla stworzeń, które go widzą.' },
+  exhaustion: { label: 'Exhaustion — Wyczerpanie', description: 'Za poziom: −2 do testów d20 i −5 stóp szybkości. Poziom 6 oznacza śmierć. Długi odpoczynek usuwa jeden poziom.' },
   blinded: { label: 'Blinded — Oślepiony', description: 'Brak widzenia. Utrudnienie ataków, ułatwienie ataków przeciw celowi; test wymagający widzenia automatycznie nieudany.' },
   deafened: { label: 'Deafened — Ogłuchły', description: 'Brak słuchu; test wymagający słyszenia automatycznie nieudany.' },
   incapacitated: { label: 'Incapacitated — Obezwładniony', description: 'Brak akcji, akcji bonusowych, reakcji, mowy i koncentracji. Sam ten stan nie zeruje szybkości.' },
@@ -17,6 +22,9 @@ export function conditionsOf(fighter) {
   if (!fighter) return new Set();
   const result = new Set(fighter.manualConditions ?? []);
   for (const id of fighter.visibleConditions ?? []) result.add(id);
+  for (const e of fighter.conditionSources ?? []) result.add(e.kind);
+  for (const e of fighter.zoneConditions ?? []) result.add(e.kind);
+  if (fighter.exhaustion > 0) result.add('exhaustion');
   for (const name of Object.keys(conditionDefinitions)) if (fighter[name] === true) result.add(name);
   for (const e of fighter.spellConditions ?? []) if (conditionDefinitions[e.kind]) result.add(e.kind);
   for (const e of strongestEffects(fighter.timedEffects)) if (e.modifiers.condition) result.add(e.modifiers.condition);
@@ -28,16 +36,26 @@ export function conditionsOf(fighter) {
 }
 export const hasCondition = (fighter, kind) => conditionsOf(fighter).has(kind);
 export const isIncapacitated = fighter => hasCondition(fighter, 'incapacitated');
-export const conditionSpeedZero = fighter => ['paralyzed', 'petrified', 'unconscious', 'restrained'].some(c => hasCondition(fighter, c)) || strongestEffects(fighter.timedEffects).some(e => e.modifiers.speedZero);
+export const conditionSpeedZero = fighter => ['paralyzed', 'petrified', 'unconscious', 'restrained', 'grappled'].some(c => hasCondition(fighter, c)) || strongestEffects(fighter.timedEffects).some(e => e.modifiers.speedZero);
+export const exhaustionPenalty = fighter => 2 * Math.min(6, Math.max(0, fighter?.exhaustion ?? 0));
+export function conditionSourcesOf(fighter, kind) {
+  return [...(fighter?.conditionSources ?? []).filter(e => e.kind === kind), ...strongestEffects(fighter?.timedEffects).filter(e => e.modifiers.condition === kind).map(e => ({ kind, sourceId: e.sourceFighterId, visible: true }))];
+}
+export const cannotHarm = (actor, target) => conditionSourcesOf(actor, 'charmed').some(e => e.sourceId === target?.id);
+export const socialAdvantage = (actor, target) => conditionSourcesOf(target, 'charmed').some(e => e.sourceId === actor?.id);
+export const invisibleBenefits = fighter => hasCondition(fighter, 'invisible') && !fighter?.spellConditions?.some(e => e.kind === 'starry-wisp');
+export const canSeeConditionTarget = (viewer, target) => viewer?.seenInvisibleIds?.includes(target?.id) || !hasCondition(viewer, 'blinded') && !invisibleBenefits(target);
 export const automaticSaveFailure = (fighter, ability) => ['str', 'dex'].includes(ability) && ['paralyzed', 'petrified', 'stunned', 'unconscious'].some(c => hasCondition(fighter, c));
-export const conditionSaveDisadvantage = (fighter, ability) => ability === 'dex' && hasCondition(fighter, 'restrained');
+export const conditionSaveDisadvantage = (fighter, ability) => ability === 'dex' && hasCondition(fighter, 'restrained') || ability === 'str' && strongestEffects(fighter?.timedEffects).some(e => e.modifiers.strDisadvantage);
+export const conditionSaveAdvantage = (fighter, ability) => ability === 'dex' && strongestEffects(fighter?.timedEffects).some(e => e.modifiers.dexAdvantage) || ability === 'str' && strongestEffects(fighter?.timedEffects).some(e => e.modifiers.strAdvantage);
+export const conditionCheckAdvantage = (fighter, ability) => ability === 'str' && strongestEffects(fighter?.timedEffects).some(e => e.modifiers.strAdvantage);
 export const automaticCheckFailure = (fighter, context = {}) => Boolean(context.requiresSight && hasCondition(fighter, 'blinded') || context.requiresHearing && hasCondition(fighter, 'deafened'));
-export const conditionCheckDisadvantage = fighter => hasCondition(fighter, 'poisoned');
+export const conditionCheckDisadvantage = (fighter, ability) => Boolean(hasCondition(fighter, 'poisoned') || ability === 'str' && strongestEffects(fighter?.timedEffects).some(e => e.modifiers.strDisadvantage) || conditionSourcesOf(fighter, 'frightened').some(e => e.visible !== false) || fighter?.spellConditions?.some(e => e.kind === 'heated-metal'));
 export function conditionAttackModifiers(attacker, target, context = {}) {
   const attacking = conditionsOf(attacker), defending = conditionsOf(target);
   return {
-    advantage: ['blinded', 'paralyzed', 'petrified', 'restrained', 'stunned', 'unconscious'].some(c => defending.has(c)) || defending.has('prone') && context.within5Feet === true,
-    disadvantage: ['blinded', 'poisoned', 'prone', 'restrained'].some(c => attacking.has(c)) || defending.has('prone') && context.within5Feet !== true,
+    advantage: ['blinded', 'paralyzed', 'petrified', 'restrained', 'stunned', 'unconscious'].some(c => defending.has(c)) || defending.has('prone') && context.within5Feet === true || invisibleBenefits(attacker) && !canSeeConditionTarget(target, attacker),
+    disadvantage: ['blinded', 'poisoned', 'prone', 'restrained'].some(c => attacking.has(c)) || conditionSourcesOf(attacker, 'frightened').some(e => e.visible !== false) || conditionSourcesOf(attacker, 'grappled').some(e => e.sourceId !== target?.id) || invisibleBenefits(target) && !canSeeConditionTarget(attacker, target) || attacker?.spellConditions?.some(e => e.kind === 'heated-metal') || defending.has('prone') && context.within5Feet !== true,
     criticalOnHit: context.within5Feet === true && (defending.has('paralyzed') || defending.has('unconscious')),
   };
 }

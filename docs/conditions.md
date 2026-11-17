@@ -32,6 +32,6 @@ Powtórne rzuty są wymagane przed przejściem do następnej tury. Ich wykonanie
 
 ## Granice
 
-Ten etap nie implementuje jeszcze Charmed, Frightened, Grappled, Invisible ani pełnego Exhaustion. Pozycje, szczególne zmysły (np. Blindsight), upuszczanie i podnoszenie przedmiotów, zmiana wagi i starzenie przy Petrified pozostają rozstrzygnięciem MG. Nie modelujemy ich jako ukończonej automatyzacji.
+Charmed, Frightened, Grappled, Invisible i Exhaustion 2024 są opisane w [uzupełnieniu stanów](source-conditions.md), razem z zależnościami od źródeł i granicami automatyzacji. Pozycje, szczególne zmysły (np. Blindsight), upuszczanie i podnoszenie przedmiotów, zmiana wagi i starzenie przy Petrified pozostają rozstrzygnięciem MG. Nie modelujemy ich jako ukończonej automatyzacji.
 
 Obsługiwane są typowe ataki, testy, rzuty obronne i ruch w silniku walki; szczególne zdolności i ich własne wyjątki nadal wymagają osobnych definicji. Wrogie efekty poza walką rozstrzyga MG. Ręczne operacje MG służą również odtworzeniu skutków źródeł, których aplikacja jeszcze nie obsługuje.

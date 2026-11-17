@@ -1,3 +1,4 @@
+import { exhaustionPenalty } from '../shared/conditions.mjs';
 import { warlockProfile, resilienceTypes, hexDisadvantage, damageTypeName } from '../shared/warlock.mjs';
 import { statisticsSummary } from './statistics-summary.mjs';
 import { resourceState, saveResources } from './spell-resources.mjs';
@@ -63,7 +64,7 @@ export function handleWarlock({ db, b, body, gm, canControl, activeMember, log }
     check(Number.isInteger(body.roll) && body.roll >= 1 && body.roll <= 20 && (adv === dis || Number.isInteger(body.roll2) && body.roll2 >= 1 && body.roll2 <= 20), 'Podaj k20 i ewentualny drugi k20.');
     const roll = adv === dis ? body.roll : adv ? Math.max(body.roll, body.roll2) : Math.min(body.roll, body.roll2);
     check(Number.isFinite(target.saves?.wis), 'Uzupełnij rzut obronny WIS celu.');
-    const total = roll + target.saves.wis + (target.characterId ? luckBonus(db, target.characterId, body.luckRoll) : 0);
+    const total = roll - exhaustionPenalty(target) + target.saves.wis + (target.characterId ? luckBonus(db, target.characterId, body.luckRoll) : 0);
     const failed = total < pending.dc;
     if (actor.warlockBond?.targetId === target.id && actor.warlockBond.expiresAt > Date.now()) {
       actor.warlockBond.combat = failed;

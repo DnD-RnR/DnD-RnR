@@ -1,5 +1,14 @@
 // SRD 5.2 pp. 106, 179: different spells combine; strongest/latest same spell wins.
 export const timedSpellDefinitions = {
+  'death-ward': { seconds: 28800, targets: 1, deathWard: true },
+  'feather-fall': { seconds: 60, targets: 5, fallProtection: true },
+  'armor-of-agathys': { seconds: 3600, self: true, targets: 1, armorOfAgathys: true },
+  'fire-shield': { seconds: 600, self: true, targets: 1, fireShield: true, effectOptions: ['warm', 'chill'] },
+  sanctuary: { seconds: 60, targets: 1, ward: true },
+  fly: { seconds: 600, concentration: true, targets: 1, targetsPerLevel: 1, flySpeed: 60, hover: true },
+  'enlarge-reduce': { seconds: 60, concentration: true, targets: 1, save: 'con', optionalSave: true, effectOptions: ['enlarge', 'reduce'], sizeChange: true, requiresSight: true },
+  haste: { seconds: 60, concentration: true, targets: 1, acBonus: 2, speedMultiplier: 2, haste: true, dexAdvantage: true },
+  slow: { seconds: 60, concentration: true, targets: 6, save: 'wis', repeatSave: 'wis', acBonus: -2, speedMultiplier: 0.5, slow: true },
   'color-spray': { seconds: 6, endPhase: 'end', dismissible: false, targets: 50, save: 'con', condition: 'blinded' },
   'blindness-deafness': { seconds: 60, targets: 1, targetsPerLevel: 1, save: 'con', conditionOptions: ['blinded', 'deafened'], repeatSave: 'con' },
   'hold-monster': { seconds: 60, concentration: true, targets: 1, targetsPerLevel: 1, save: 'wis', condition: 'paralyzed', repeatSave: 'wis' },
@@ -32,6 +41,16 @@ export function timedAc(fighter) {
   return Math.max(base, ...effects.map(e => e.modifiers.minimumAc ?? 0));
 }
 export const timedSpeedBonus = fighter => strongestEffects(fighter.timedEffects).reduce((n, e) => n + (e.modifiers.speedBonus ?? 0), 0);
+export const timedSpeedMultiplier = fighter => strongestEffects(fighter.timedEffects).reduce((n, e) => n * (e.modifiers.speedMultiplier ?? 1), 1);
+export const hasTimedModifier = (fighter, key) => strongestEffects(fighter?.timedEffects).some(e => e.modifiers[key]);
+export const timedSaveModifier = (fighter, ability) => ability === 'dex' && hasTimedModifier(fighter, 'slow') ? -2 : 0;
+export const timedFlySpeed = fighter => Math.max(fighter.flySpeed ?? 0, ...strongestEffects(fighter.timedEffects).map(e => e.modifiers.flySpeed ?? 0));
+export const weaponSizeModifier = fighter => strongestEffects(fighter?.timedEffects).find(e => e.modifiers.sizeDelta)?.modifiers.sizeDelta ?? 0;
+export function timedSize(fighter) {
+  const sizes = ['Tiny', 'Small', 'Medium', 'Large', 'Huge', 'Gargantuan'];
+  const index = sizes.indexOf(fighter.size);
+  return index < 0 ? null : sizes[Math.max(0, Math.min(5, index + weaponSizeModifier(fighter)))];
+}
 export const timedResistance = (fighter, type) => strongestEffects(fighter.timedEffects).some(e => e.modifiers.resistances?.includes(type));
 export function timedRollModifier(fighter, body) {
   let modifier = 0;

@@ -1,3 +1,5 @@
+import { characterZoneConditions } from './spell-zones.mjs';
+import { timedSpeedMultiplier } from '../shared/timed-effects.mjs';
 import { conditionSpeedZero } from '../shared/conditions.mjs';
 import { createHash } from 'node:crypto';
 import { paladinChoiceUpdate } from './paladin.mjs';
@@ -18,7 +20,7 @@ import { timedAc, timedHpBonus, timedSpeedBonus } from '../shared/timed-effects.
 function effectiveSnapshot(character, stats, equipment, timedEffects, conditionState) {
   const traits = characterTraits(character, stats);
   const speed = stats.values.speed ?? traits.baseSpeed, maxHp = stats.values.maxHp ?? traits.firstLevelMaxHp;
-  return { hp: stats.values.hp, maxHp: maxHp == null ? null : maxHp + timedHpBonus(timedEffects), speed: conditionSpeedZero({ hp: stats.values.hp, timedEffects, manualConditions: conditionState.manualConditions }) ? 0 : speed == null ? null : speed + timedSpeedBonus({ timedEffects }), ac: timedAc({ ac: stats.values.ac, timedEffects, dexModifier: stats.values.dex == null ? null : Math.floor((stats.values.dex - 10) / 2), wearingArmor: equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'), equipmentShieldBonus: stats.untrainedShield ? 0 : Number.parseInt(equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0 }) };
+  return { hp: stats.values.hp, maxHp: maxHp == null ? null : maxHp + timedHpBonus(timedEffects), speed: conditionSpeedZero({ hp: stats.values.hp, timedEffects, zoneConditions: conditionState.zoneConditions, conditionSources: conditionState.conditionSources, manualConditions: conditionState.manualConditions }) ? 0 : speed == null ? null : Math.floor(Math.max(0, speed + timedSpeedBonus({ timedEffects }) - 5 * (conditionState.exhaustion ?? 0)) * timedSpeedMultiplier({ timedEffects })), ac: timedAc({ ac: stats.values.ac, timedEffects, dexModifier: stats.values.dex == null ? null : Math.floor((stats.values.dex - 10) / 2), wearingArmor: equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'), equipmentShieldBonus: stats.untrainedShield ? 0 : Number.parseInt(equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0 }) };
 }
 
 const emptyArcaneWarrior = () => ({ cantrips: [], ability: '' });
@@ -157,7 +159,7 @@ export function handleStatistics(db, user, path, method, body, send) {
     statistics.values.speed = speedFromEquipment(statistics, equipment, statistics.values.speed);
     if (hasStealthDisadvantage(equipment)) statistics.stealthDisadvantage = true;
     Object.entries(trainingEffects).forEach(([key, value]) => { if (value) statistics[key] = true; });
-    send(200, { statistics, effective: effectiveSnapshot(character, statistics, equipment, activeEffects, resourceState(db, characterId)), revision: statisticsRevision(db, character) });
+    send(200, { statistics, effective: effectiveSnapshot(character, statistics, equipment, activeEffects, { ...resourceState(db, characterId), zoneConditions: characterZoneConditions(db, characterId) }), revision: statisticsRevision(db, character) });
   } else if (method === 'POST') {
     if (!validStatistics(body)) { send(400, { error: 'Sprawdź statystyki: cechy 1–30, zakresy liczb i długość notatek (do 1500 znaków).' }); return true; }
     if (typeof body.expectedRevision !== 'string' || !/^[a-f0-9]{64}$/.test(body.expectedRevision)) {
@@ -238,7 +240,7 @@ export function handleStatistics(db, user, path, method, body, send) {
     stats.values.speed = speedFromEquipment(stats, outputEquipment, stats.values.speed);
     if (hasStealthDisadvantage(outputEquipment)) stats.stealthDisadvantage = true;
     Object.entries(outputEffects).forEach(([key, value]) => { if (value) stats[key] = true; });
-    send(200, { statistics: stats, effective: effectiveSnapshot(character, stats, outputEquipment, activeEffects, resourceState(db, characterId)), revision: statisticsRevision(db, character) });
+    send(200, { statistics: stats, effective: effectiveSnapshot(character, stats, outputEquipment, activeEffects, { ...resourceState(db, characterId), zoneConditions: characterZoneConditions(db, characterId) }), revision: statisticsRevision(db, character) });
   } else send(405, { error: 'Niedozwolona metoda.' });
   return true;
 }

@@ -7,9 +7,9 @@
   "extra": [],
   "invalid": [],
   "counts": {
-    "engine": 65,
+    "engine": 86,
     "dedicated": 1,
-    "gm": 459
+    "gm": 438
   },
   "spells": [
     {
@@ -437,8 +437,8 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:armor-of-agathys",
       "combatAction": "bonus",
-      "resolution": "gm",
-      "mode": null,
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "timed",
       "gmNote": null
     },
     {
@@ -734,9 +734,9 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:entangle",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
-      "gmNote": null
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "timed-save",
+      "gmNote": "Kwadrat 20 stóp na podłożu. Początkowy STR dla wszystkich oprócz rzucającego. Uwolnienie akcją: STR (Athletics) przeciw ST czaru. Rośliny są trudnym terenem; SRD nie nadaje im PW."
     },
     {
       "id": "entropic-embrace",
@@ -789,8 +789,8 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:feather-fall",
       "combatAction": "reaction",
-      "resolution": "gm",
-      "mode": null,
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "timed",
       "gmNote": null
     },
     {
@@ -1152,8 +1152,8 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:sanctuary",
       "combatAction": "bonus",
-      "resolution": "gm",
-      "mode": null,
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "timed",
       "gmNote": null
     },
     {
@@ -1350,9 +1350,9 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:witch-bolt",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
-      "gmNote": null
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "attack",
+      "gmNote": "Późniejsza tura: akcja bonusowa, automatycznie 1k12 nawet po początkowym pudle. MG kończy czar, gdy cel kiedykolwiek oddali się ponad 60 stóp lub uzyska pełną osłonę."
     },
     {
       "id": "wrathful-smite",
@@ -1713,8 +1713,8 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:enlarge-reduce",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "timed-save",
       "gmNote": null
     },
     {
@@ -1812,9 +1812,9 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:flaming-sphere",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
-      "gmNote": null
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "save",
+      "gmNote": "Sfera o średnicy 5 stóp powstaje w wolnym miejscu. Obrażenia na koniec tury w 5 stopach; ruch do 30 stóp akcją bonusową. Zderzenie z jednym celem zatrzymuje sferę. MG rozlicza przeszkody do 5 stóp, skoki do 10 stóp, zapłon i światło 20 + 20 stóp."
     },
     {
       "id": "frostscythe",
@@ -1856,9 +1856,9 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:heat-metal",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
-      "gmNote": null
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "save",
+      "gmNote": "Wytworzony metalowy przedmiot w 60 stopach, widoczny przy rzucaniu. Obrażenia bez rzutu dla wszystkich w kontakcie. CON po obrażeniach dla trzymających/noszących; upuszczenie lub utrudnienie ataków i testów do początku następnej tury rzucającego. MG rozlicza fizyczne upuszczenie i ekwipunek."
     },
     {
       "id": "hold-person",
@@ -2021,9 +2021,9 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:moonbeam",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
-      "gmNote": null
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "save",
+      "gmNote": "Cylinder 5 × 40 stóp, przyćmione światło. Na późniejszych turach ruch do 60 stóp akcją Magic. Nieudany CON cofa przemianę i blokuje ją do opuszczenia cylindra. MG ustala pozycje i nieobsługiwane jeszcze formy."
     },
     {
       "id": "nystul-s-magic-aura",
@@ -2230,9 +2230,9 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:spiritual-weapon",
       "combatAction": "bonus",
-      "resolution": "gm",
-      "mode": null,
-      "gmNote": null
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "attack",
+      "gmNote": "Koncentracja. Początkowy atak opcjonalny. Później akcja bonusowa: ruch broni do 20 stóp i opcjonalny atak w 5 stopach od niej. MG ustala pozycje broni i odległość ataku od rzucającego."
     },
     {
       "id": "suggestion",
@@ -2296,9 +2296,9 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:web",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
-      "gmNote": null
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "timed-save",
+      "gmNote": "Sześcian 20 stóp; przy warstwie na powierzchni grubość 5 stóp. Trudny teren i lekkie przesłonięcie. DEX przy pierwszym wejściu na turę lub początku tury; ucieczka akcją Athletics. Niezakotwiczony Web znika na początku następnej tury rzucającego. Płonący fragment 5 stóp wypala się w rundę i zadaje 2k4 Fire na początku tury w ogniu."
     },
     {
       "id": "wither-and-bloom",
@@ -2494,8 +2494,8 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:counterspell",
       "combatAction": "reaction",
-      "resolution": "gm",
-      "mode": null,
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "counterspell",
       "gmNote": null
     },
     {
@@ -2549,9 +2549,9 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:dispel-magic",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
-      "gmNote": null
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "dispel",
+      "gmNote": "Jedno stworzenie lub magiczny efekt w 120 stopach. Trwające czary do kręgu slotu kończą się automatycznie; wyższe wymagają osobnego testu cechy czarowania ST 10 + krąg. Przedmioty i niezapisane efekty rozstrzyga MG."
     },
     {
       "id": "elemental-weapon",
@@ -2626,8 +2626,8 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:fly",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "timed",
       "gmNote": null
     },
     {
@@ -2681,8 +2681,8 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:haste",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "timed",
       "gmNote": null
     },
     {
@@ -2978,8 +2978,8 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:slow",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "timed-save",
       "gmNote": null
     },
     {
@@ -3022,9 +3022,9 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:spirit-guardians",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
-      "gmNote": null
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "save",
+      "gmNote": "Emanacja 15 stóp podąża za rzucającym. Wyłączone cele pozostają nieobjęte czarem. Pozostałe mają połowę szybkości wewnątrz. Radiant dla dobrego/neutralnego charakteru, Necrotic dla złego; MG potwierdza charakter i pozycje."
     },
     {
       "id": "stinking-cloud",
@@ -3418,8 +3418,8 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:fire-shield",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "timed",
       "gmNote": null
     },
     {
@@ -3748,9 +3748,9 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:wall-of-fire",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
-      "gmNote": null
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "save",
+      "gmNote": "Nieprzezroczysta ściana na podłożu: do 60 × 20 × 1 stóp lub pierścień średnicy do 20 stóp. Początkowo DEX na połowę. Później bez rzutu: pierwsze wejście w ścianę w turze oraz koniec tury w niej lub do 10 stóp od wybranej gorącej strony. MG ustala geometrię i widoczność."
     },
     {
       "id": "zone-of-amicability",
@@ -3858,9 +3858,9 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:cloudkill",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
-      "gmNote": null
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "save",
+      "gmNote": "Chmura: silne przesłonięcie; przesuwa się 10 stóp od rzucającego na początku jego tury. MG ustala pozycje, widoczność i rozproszenie silnym wiatrem."
     },
     {
       "id": "commune",
@@ -5409,9 +5409,9 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:incendiary-cloud",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
-      "gmNote": null
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "save",
+      "gmNote": "Chmura: silne przesłonięcie; na początku tury rzucającego przesuwa się 10 stóp od niego we wskazanym kierunku. MG ustala pozycje, widoczność i rozproszenie silnym wiatrem."
     },
     {
       "id": "iron-body",

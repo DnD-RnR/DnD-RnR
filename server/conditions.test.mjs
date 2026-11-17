@@ -3,6 +3,25 @@ import assert from 'node:assert/strict';
 import { automaticCheckFailure, automaticSaveFailure, conditionAttackModifiers, conditionSaveDisadvantage, conditionSpeedZero, conditionsOf, hasCondition, isIncapacitated } from '../shared/conditions.mjs';
 import { barbarianSaveAdvantage } from '../shared/barbarian.mjs';
 
+test('Invisible attack benefits disappear only against a creature that can see the invisible participant', () => {
+  const invisible = { id: 'a', hp: 10, manualConditions: ['invisible'] }, other = { id: 'b', hp: 10 };
+  assert.equal(conditionAttackModifiers(invisible, other).advantage, true);
+  assert.equal(conditionAttackModifiers(other, invisible).disadvantage, true);
+  const seeing = { ...other, seenInvisibleIds: ['a'] };
+  assert.equal(conditionAttackModifiers(invisible, seeing).advantage, false);
+  assert.equal(conditionAttackModifiers(seeing, invisible).disadvantage, false);
+  assert.equal(conditionAttackModifiers({ ...invisible, spellConditions: [{ kind: 'starry-wisp' }] }, other).advantage, false);
+});
+
+test('Grappled penalizes attacks against each non-grappler, with all sources kept independent', () => {
+  const f = { id: 'a', hp: 10, conditionSources: [{ kind: 'grappled', sourceId: 'b' }] };
+  assert.equal(conditionSpeedZero(f), true);
+  assert.equal(conditionAttackModifiers(f, { id: 'b' }).disadvantage, false);
+  assert.equal(conditionAttackModifiers(f, { id: 'c' }).disadvantage, true);
+  f.conditionSources.push({ kind: 'grappled', sourceId: 'c' });
+  assert.equal(conditionAttackModifiers(f, { id: 'b' }).disadvantage, true);
+});
+
 test('SRD condition implications preserve the distinction between incapacitation and speed zero', () => {
   for (const id of ['incapacitated', 'stunned']) {
     const f = { hp: 10, manualConditions: [id] };

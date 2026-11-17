@@ -1,3 +1,6 @@
+import { characterZoneConditions } from './spell-zones.mjs';
+import { endProtectiveSpell } from './protective-spells.mjs';
+import { timedSpeedMultiplier, timedFlySpeed, timedSize } from '../shared/timed-effects.mjs';
 import { conditionsOf, conditionSpeedZero, isIncapacitated } from '../shared/conditions.mjs';
 import { restWarlock, useWarlockFeature } from './warlock-features.mjs';
 import { psiResources, restPsi } from './psi-warrior.mjs';
@@ -101,10 +104,12 @@ export function publicCaster(db, id) {
   const c = casterData(db, id);
   const summary = statisticsSummary(c.character, c.stats, c.equipment);
   const timedEffects = c.state.activeEffects ?? [];
-  const conditionSubject = { hp: summary.hp, manualConditions: c.state.manualConditions, timedEffects, prone: c.state.prone };
+  const conditionSubject = { zoneConditions: characterZoneConditions(db, id), hp: summary.hp, conditionSources: c.state.conditionSources, exhaustion: c.state.exhaustion, manualConditions: c.state.manualConditions, timedEffects, prone: c.state.prone };
   const conditions = [...conditionsOf(conditionSubject)];
-  const effectiveStats = { hp: summary.hp, maxHp: summary.maxHp == null ? null : summary.maxHp + timedHpBonus(timedEffects), ac: timedAc({ ac: summary.ac, timedEffects, dexModifier: summary.abilities.dex.modifier, wearingArmor: c.equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'), equipmentShieldBonus: summary.untrainedShield ? 0 : Number.parseInt(c.equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0 }), speed: conditionSpeedZero(conditionSubject) ? 0 : summary.speed == null ? null : summary.speed + timedSpeedBonus({ timedEffects }) };
+  const effectiveStats = { hp: summary.hp, maxHp: summary.maxHp == null ? null : summary.maxHp + timedHpBonus(timedEffects), ac: timedAc({ ac: summary.ac, timedEffects, dexModifier: summary.abilities.dex.modifier, wearingArmor: c.equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'), equipmentShieldBonus: summary.untrainedShield ? 0 : Number.parseInt(c.equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0 }), speed: conditionSpeedZero(conditionSubject) ? 0 : summary.speed == null ? null : Math.floor(Math.max(0, summary.speed + timedSpeedBonus({ timedEffects }) - 5 * (c.state.exhaustion ?? 0)) * timedSpeedMultiplier({ timedEffects })) };
 
+  effectiveStats.flySpeed = conditionSpeedZero(conditionSubject) || !timedFlySpeed({ timedEffects }) ? 0 : Math.floor(Math.max(0, timedFlySpeed({ timedEffects }) + timedSpeedBonus({ timedEffects }) - 5 * (c.state.exhaustion ?? 0)) * timedSpeedMultiplier({ timedEffects }));
+  effectiveStats.size = timedSize({ size: characterTraits(c.character, c.stats).size, timedEffects });
   return { conditions, effectiveStats, activeEffects: c.state.activeEffects ?? [], concentration: c.state.concentration ?? null, warlock: warlockProfile(c.character, c.stats.values.cha, c.state), psiWarrior: psiResources(c.character, c.state), paladin: { ...paladinResources(c.character, c.state), channelDivinityDc: c.dc }, druid: { ...druidProfile(c.character), uses: Math.min(druidProfile(c.character).max, c.state.wildShapeUses ?? druidProfile(c.character).max), forms: c.stats.traits?.druidForms ?? [], wildShape: c.state.wildShape?.expiresAt > Date.now() ? c.state.wildShape : null, companion: c.state.wildCompanion ?? null }, slots: c.slots, spells: c.spells, ability: c.ability, attack: c.attack, dc: c.dc, error: c.error, species: c.species, barbarian: { ...rageProfile(c.character), uses: Math.min(rageProfile(c.character).max, c.state.rageUses ?? rageProfile(c.character).max), relentlessDC: c.state.relentlessRageDC ?? 10, recoveryAvailable: c.state.persistentRageAvailable !== false }, resourceVersion: c.state.version };
 }
 export function spendSpell(db, id, spellId, level, source, options = {}) {
@@ -176,6 +181,7 @@ export function handleSpellResources(db, user, path, method, body, send) {
         if (caster.blocked || !(caster.stats.values.hp > 0) || isIncapacitated({ hp: caster.stats.values.hp, manualConditions: caster.state.manualConditions, timedEffects: caster.state.activeEffects })) throw new Error('Pancerz lub stan postaci blokuje czarowanie.');
         if (body.targetIds?.some(targetId => targetId !== id)) throw new Error('Poza walką automatyczne efekty dotyczą własnej postaci; inne cele rozstrzyga MG.');
         const cast = spendSpell(db, id, body.spellId, body.level, body.source, { outsideCombat: true, ritual: body.source === 'ritual' });
+        endProtectiveSpell(db, { characterId: id, timedEffects: cast.state.activeEffects ?? [] }, 'sanctuary');
         const source = { id: `character:${id}`, characterId: id, initiative: 0 };
         if (/Koncentracja|Concentration/i.test(cast.spell.duration)) startConcentration(db, source, cast.spell);
         else if (!cast.spell.action || body.source === 'ritual') endConcentration(db, source);
@@ -185,8 +191,9 @@ export function handleSpellResources(db, user, path, method, body, send) {
         saveResources(db, id, latest);
         const definition = timedSpellDefinitions[cast.spell.id];
         if (definition && !definition.save && !definition.hostile) {
+          if (definition.ward && cast.dc == null) throw new Error('Uzupełnij ST Sanctuary.');
           if (definition.mageArmor && (cast.stats.values.dex == null || cast.equipment.some(item => item.equipped && item.armorCategory && item.armorCategory !== 'shield'))) throw new Error('Mage Armor wymaga celu bez pancerza i znanego DEX.');
-          applyTimedEffect(db, { round: 0, sessionId: null, startedAt: null }, source, source, cast.spell, body.level, randomUUID());
+          applyTimedEffect(db, { round: 0, sessionId: null, startedAt: null }, source, source, cast.spell, body.level, randomUUID(), { effectChoice: body.effectChoice, dc: cast.dc });
           record.resolution = 'Aktywny efekt zastosowany do własnej postaci.';
         }
         db.exec('RELEASE outside_spell');
@@ -243,7 +250,7 @@ export function handleSpellResources(db, user, path, method, body, send) {
     if (maxSecondWind && character.level >= 2) state.actionSurgeUses = 1;
     const druid = druidProfile(character);
     if (druid.max) state.wildShapeUses = body.rest === 'long' ? druid.max : Math.min(druid.max, (state.wildShapeUses ?? druid.max) + 1);
-    if (body.rest === 'long') { state.wildShape = null; state.wildCompanion = null; }
+    if (body.rest === 'long') { const vitals = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(id)?.data ?? '{}').values; if ((vitals?.deathFailures ?? 0) < 3) state.exhaustion = Math.max(0, (state.exhaustion ?? 0) - 1); state.wildShape = null; state.wildCompanion = null; }
     const rage = rageProfile(character);
     state.rageUses = body.rest === 'long' ? rage.max : Math.min(rage.max, (state.rageUses ?? rage.max) + 1);
     state.relentlessRageDC = 10;

@@ -1,6 +1,13 @@
+import { CastingControls, MonsterCastingControls } from './CastingControls';
+import { FallingControls } from './FallingControls';
+import { SanctuaryForm } from './SanctuaryForm';
+import { DispelMagicForm } from './DispelMagicForm';
+import { weaponSizeModifier } from '../../../shared/timed-effects.mjs';
+import { HasteActionForm } from './HasteActionForm';
+import { RepeatSpellControls, HeatMetalSaveForm } from './RepeatSpellControls';
 import { SpellZoneControls } from './SpellZoneControls';
 import { ConditionControls } from './ConditionControls';
-import { conditionAttackModifiers, hasCondition } from '../../../shared/conditions.mjs';
+import { conditionAttackModifiers } from '../../../shared/conditions.mjs';
 import { TimedEffectControls, TimedRollInputs } from './TimedEffectControls';
 import { DelayedSpellControls, SpellConditionControls } from './CombatSpellForms';
 import { LuckInput } from './LuckInput';
@@ -83,8 +90,15 @@ export function LiveBattle({ controller, onReturnToExploration }: { controller: 
       {controls ? <DamageForm key={`${battle.version}-damage`} controller={controller} /> : <p>Oczekiwanie na rzuty obrażeń atakującego.</p>}
     </Card>}
     {battle.pending?.kind === 'waiting' && <p role="status">GM rozstrzyga działanie potwora.</p>}
-    {battle.pending?.kind === 'spell' && <Card title="Rozliczenie czaru"><SpellResolution key={`${battle.pending.actorId}-${battle.pending.spellName}-${battle.pending.stage}-${battle.pending.targets.filter(t => t.saved !== undefined).length}`} controller={controller} /></Card>}
+    {battle.pending?.kind === 'spell' && <Card title="Rozliczenie czaru">{battle.pending.stage === 'heat-save' ? <HeatMetalSaveForm key={battle.pending.heatSaves?.filter(t => t.resolved).length} controller={controller} /> : <SpellResolution key={`${battle.pending.actorId}-${battle.pending.spellName}-${battle.pending.stage}-${battle.pending.targets.filter(t => t.saved !== undefined).length}`} controller={controller} />}</Card>}
     {battle.pending?.kind === 'spell' && response.gm && <SpellDefenses controller={controller} />}
+    <SanctuaryForm key={battle.pending?.kind === 'sanctuary' ? `${battle.pending.targetId}:${battle.pending.stage}` : 'none'} controller={controller} />
+    <DispelMagicForm key={battle.pending?.kind === 'dispel' ? battle.pending.effects[0]?.key : 'no-dispel'} controller={controller} />
+    <CastingControls key={battle.pending?.kind === 'casting' ? `${battle.pending.id}:${battle.pending.stage}` : 'no-casting'} controller={controller} />
+    <MonsterCastingControls controller={controller} />
+    <FallingControls controller={controller} />
+    <HasteActionForm controller={controller} />
+    <RepeatSpellControls controller={controller} />
     <SpellZoneControls controller={controller} />
     <DelayedSpellControls controller={controller} />
     <PsiWarriorControls controller={controller} />
@@ -153,7 +167,10 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
   const [manualDisadvantage, setManualDisadvantage] = useState(false);
   const [description, setDescription] = useState('');
   const [feet, setFeet] = useState('');
-  const [within5Feet, setWithin5Feet] = useState(false);
+  const [terrainFeet, setTerrainFeet] = useState('0');
+  const [movementMode, setMovementMode] = useState('walk'), [confirmedGrounded, setConfirmedGrounded] = useState(false), [sizeWeaponConfirmed, setSizeWeaponConfirmed] = useState(false);
+  const [confirmedFearSafe, setConfirmedFearSafe] = useState(false), [confirmedDragExempt, setConfirmedDragExempt] = useState(false), [draggedIds, setDraggedIds] = useState<string[]>([]);
+  const [within5Feet, setWithin5Feet] = useState(false), [attackRange, setAttackRange] = useState(actor.characterId ? 'auto' : '');
   const [timedRolls, setTimedRolls] = useState<Record<string, number>>({});
   const [monsterAttack, setMonsterAttack] = useState<Attack>({ id: 'monster', name: 'Atak potwora', bonus: 0, dice: 1, sides: 6, damageBonus: 0, type: '', light: false });
   const attack = actor.characterId ? availableAttacks.find(a => a.id === attackId) : monsterAttack;
@@ -184,12 +201,12 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
     <div className="battle-action-choices" role="group" aria-label="Wybierz działanie">{choices.map(choice => <button type="button" className={kind === choice.id ? 'primary-button' : 'text-button'} aria-pressed={kind === choice.id} disabled={pending || (slot === 'action' && actor.action === 'Atak' && choice.id !== 'attack')} key={choice.id} onClick={() => setKind(choice.id)}>{choice.label}</button>)}</div>
     {kind === 'spell' ? <><SpellCastForm controller={controller} actor={actor} slot={slot} /><button className="text-button" disabled={pending} onClick={() => void mutate('act', { kind: 'skip', slot })}>Pomiń ten krok</button></> : kind === 'protection' ? <ProtectionReactionForm controller={controller} actorId={actor.id} inline /> : <form className="stack-form" onSubmit={async e => {
     e.preventDefault();
-    const ok = await mutate('act', { kind, slot, attackId, reckless: kind === 'attack' && selectedReckless, ...(useStrength && attack?.finesse ? { ability: 'str' } : {}), targetId, within5Feet, ...timedRolls, roll: roll ? Number(roll) : null, roll2: roll2 ? Number(roll2) : null, advantage, disadvantage: manualDisadvantage, description, feet: Number(feet), ...(!actor.characterId ? { attack: monsterAttack } : {}) });
+    const ok = await mutate('act', { kind, slot, attackId, reckless: kind === 'attack' && selectedReckless, ...(useStrength && attack?.finesse ? { ability: 'str' } : {}), targetId, attackRange, within5Feet, ...timedRolls, roll: roll ? Number(roll) : null, roll2: roll2 ? Number(roll2) : null, advantage, disadvantage: manualDisadvantage, description, terrainFeet: Number(terrainFeet), movementMode, confirmedGrounded, sizeWeaponConfirmed, confirmedFearSafe, confirmedDragExempt, draggedIds, feet: Number(feet), ...(!actor.characterId ? { attack: monsterAttack } : {}) });
     if (ok) { setRoll(''); setRoll2(''); setDescription(''); setFeet(''); }
   }}>
     {kind === 'attack' && <>
       <TimedRollInputs actor={actor} values={timedRolls} onChange={setTimedRolls} />
-      {target && ['prone', 'paralyzed', 'unconscious'].some(c => hasCondition(target, c)) && <label><input type="checkbox" checked={within5Feet} onChange={e => setWithin5Feet(e.target.checked)} />MG: atak z odległości do 5 stóp (Prone / trafienie w bezbronnego).</label>}
+      {target && <label><input type="checkbox" checked={within5Feet} onChange={e => setWithin5Feet(e.target.checked)} />MG: atak z odległości do 5 stóp (Prone / trafienie w bezbronnego).</label>}
       {canReckless && <label className="battle-check"><input type="checkbox" checked={reckless} onChange={e => setReckless(e.target.checked)} />Reckless Attack — wybór przy pierwszym rzucie na atak. Ataki z Siły i ataki przeciwko tobie mają ułatwienie do początku twojej następnej tury.</label>}
       {automaticAdvantage && <p>Reckless Attack: automatyczne ułatwienie tego ataku.</p>}
       {!actor.characterId && <label>Typ obrażeń<select value={monsterAttack.type} onChange={e => setMonsterAttack({ ...monsterAttack, type: e.target.value })}><option value="">Według opisu (rozstrzyga GM)</option>{['obuchowe', 'kłute', 'cięte', 'ogień', 'zimno', 'kwas', 'błyskawice', 'trucizna', 'nekrotyczne', 'promieniste', 'psychiczne', 'moc', 'grom'].map(type => <option key={type}>{type}</option>)}</select></label>}
@@ -209,13 +226,14 @@ function TurnStepForm({ controller, slot }: { controller: Controller; slot: 'act
     {kind === 'adrenaline-rush' && <p>Wykonujesz Zryw i zyskujesz tymczasowe PW równe premii z biegłości. Pozostałe użycia: {actor.adrenalineRushUses ?? 0} / {actor.adrenalineRushMax}.</p>}
     {kind === 'breath-weapon' && <p>Obrażenia: {actor.breathWeaponDamage}k10 ({actor.breathWeaponType}), ST rzutu: {actor.breathWeaponDC ?? '—'}. Pozostałe użycia: {actor.breathWeaponUses ?? 0} / {actor.breathWeaponMax}. GM rozstrzygnie obszar i rzuty obronne.</p>}
     {kind === 'draconic-flight' && <p>Zyskujesz szybkość lotu {actor.speed} stóp na 10 minut. Możesz użyć tej cechy raz na długi odpoczynek.</p>}
-    {kind === 'request' && <><label>Opis czaru / zdolności, cel i oczekiwany efekt<textarea required maxLength={1000} value={description} onChange={e => setDescription(e.target.value)} /></label><label>Wynik k20 (jeśli GM wymaga rzutu)<input type="number" min={1} max={20} value={roll} onChange={e => setRoll(e.target.value)} /></label></>}
+    {kind === 'move' && <><label>Stopy ruchu w trudnym terenie (MG ustala przebieg drogi)<input required type="number" min={0} max={Number(feet) || 999} value={terrainFeet} onChange={e => setTerrainFeet(e.target.value)} /></label><label>Tryb ruchu<select value={movementMode} onChange={e => setMovementMode(e.target.value)}><option value="walk">Chód</option><option value="fly">Lot ({actor.flySpeed ?? 0} stóp)</option></select></label><label><input type="checkbox" checked={confirmedGrounded} onChange={e => setConfirmedGrounded(e.target.checked)} />MG potwierdza lądowanie przed przejściem do chodu.</label><label><input type="checkbox" checked={confirmedFearSafe} onChange={e => setConfirmedFearSafe(e.target.checked)} />MG potwierdza: ruch nie zbliża do żadnego źródła Frightened.</label>{b.fighters.filter(f => f.conditionSources?.some(e => e.kind === 'grappled' && e.sourceId === actor.id)).map(f => <label key={f.id}><input type="checkbox" checked={draggedIds.includes(f.id)} onChange={e => setDraggedIds(e.target.checked ? [...draggedIds, f.id] : draggedIds.filter(id => id !== f.id))} />Przeciągnij {f.name} (+1 stopa kosztu na stopę)</label>)}<label><input type="checkbox" checked={confirmedDragExempt} onChange={e => setConfirmedDragExempt(e.target.checked)} />MG potwierdza wyjątek kosztu przeciągania: Tiny lub co najmniej dwa rozmiary mniejszy.</label></>}{kind === 'attack' && <label>Typ ataku dla osłon<select required value={attackRange} onChange={e => setAttackRange(e.target.value)}><option value="">MG: wybierz typ</option>{actor.characterId && <option value="auto">Według broni</option>}<option value="melee">Atak wręcz (potwierdza MG)</option><option value="ranged">Atak dystansowy / rzut bronią</option></select></label>}{kind === 'attack' && weaponSizeModifier(actor) !== 0 && <label><input type="checkbox" checked={sizeWeaponConfirmed} onChange={e => setSizeWeaponConfirmed(e.target.checked)} />MG potwierdza powiększoną/pomniejszoną broń lub Unarmed Strike (dla bestii i potworów).</label>}{kind === 'request' && <><label>Opis czaru / zdolności, cel i oczekiwany efekt<textarea required maxLength={1000} value={description} onChange={e => setDescription(e.target.value)} /></label><label>Wynik k20 (jeśli GM wymaga rzutu)<input type="number" min={1} max={20} value={roll} onChange={e => setRoll(e.target.value)} /></label></>}
     {slot === 'bonus' && <p>Akcja bonusowa wymaga odpowiedniej zdolności. Atak inną lekką bronią jest dostępny po ataku lekką bronią w tej turze.</p>}
     <div className="battle-toolbar"><button className="primary-button" disabled={pending || (kind === 'attack' && !attack)}>Użyj wybranej opcji</button><button type="button" className="text-button" disabled={pending} onClick={() => void mutate('act', { kind: 'skip', slot })}>{slot === 'action' && actor.action === 'Atak' ? 'Pomiń pozostałe ataki' : 'Pomiń ten krok'}</button></div>
   </form>}</Card>;
 }
 function DamageForm({ controller }: { controller: Controller }) {
   const [enfeeblementRoll, setEnfeeblementRoll] = useState('');
+  const [sizeRolls, setSizeRolls] = useState<string[]>([]);
   const [hexEnfeeblementRoll, setHexEnfeeblementRoll] = useState(''), [psiEnfeeblementRoll, setPsiEnfeeblementRoll] = useState('');
   const [hexRolls, setHexRolls] = useState<string[]>([]);
   const p = controller.response!.battle!.pending!;
@@ -225,12 +243,13 @@ function DamageForm({ controller }: { controller: Controller }) {
   const b = controller.response!.battle!, actor = b.fighters[b.turn];
   if (p.kind !== 'damage') return null;
   const count = p.attack.dice * (p.critical ? 2 : 1);
-  return <form className="stack-form" onSubmit={e => { e.preventDefault(); void controller.mutate('act', { kind: 'damage', hexEnfeeblementRoll: Number(hexEnfeeblementRoll), psiEnfeeblementRoll: Number(psiEnfeeblementRoll), enfeeblementRoll: Number(enfeeblementRoll), hexRolls: hexRolls.map(Number), ...(psiRoll ? { psiRoll: Number(psiRoll), psiConfirmed } : {}), rolls: Array.from({ length: count }, (_, i) => Number(rolls[i])) }); }}>
+  return <form className="stack-form" onSubmit={e => { e.preventDefault(); void controller.mutate('act', { kind: 'damage', sizeRolls: sizeRolls.map(Number), hexEnfeeblementRoll: Number(hexEnfeeblementRoll), psiEnfeeblementRoll: Number(psiEnfeeblementRoll), enfeeblementRoll: Number(enfeeblementRoll), hexRolls: hexRolls.map(Number), ...(psiRoll ? { psiRoll: Number(psiRoll), psiConfirmed } : {}), rolls: Array.from({ length: count }, (_, i) => Number(rolls[i])) }); }}>
     {actor.spellConditions?.some(e => e.kind === 'enfeebled') && <>
     {hexActive(actor, b.fighters.find(f => f.id === p.targetId)!) && <label>Redukcja obrażeń Hex: k8<input required type="number" min={1} max={8} value={hexEnfeeblementRoll} onChange={e => setHexEnfeeblementRoll(e.target.value)} /></label>}
     {psiRoll && <label>Redukcja Psionic Strike: k8<input required type="number" min={1} max={8} value={psiEnfeeblementRoll} onChange={e => setPsiEnfeeblementRoll(e.target.value)} /></label>}
     </>}
     <p>{p.attack.name}: {count ? `${count}k${p.attack.sides}` : 'Stałe obrażenia'} {signed(p.attack.damageBonus)}. Podaj same wyniki kości; premia zostanie dodana automatycznie.</p>
+    {Boolean(p.sizeModifier) && <fieldset><legend>{p.sizeModifier! > 0 ? 'Enlarge: dodatkowe k4' : 'Reduce: odejmij k4 (minimum 1 przed odpornościami)'}</legend>{Array.from({ length: p.sizeModifier! > 0 && p.critical ? 2 : 1 }, (_, i) => <label key={i}>k4<input required type="number" min={1} max={4} value={sizeRolls[i] ?? ''} onChange={e => setSizeRolls(old => { const next = [...old]; next[i] = e.target.value; return next; })} /></label>)}</fieldset>}
     {!!actor.psiMax && !actor.psiStrikeUsed && !!actor.psiUses && p.attack.id !== 'unarmed' && <fieldset><legend>Psionic Strike (opcjonalnie)</legend><p>Raz na twoją turę: dodatkowe k{actor.psiSides} + INT obrażeń mocy.</p><label>Wynik kości<input type="number" min={1} max={actor.psiSides} value={psiRoll} onChange={e => setPsiRoll(e.target.value)} /></label>{psiRoll && <label><input required type="checkbox" checked={psiConfirmed} onChange={e => setPsiConfirmed(e.target.checked)} />Cel jest w 30 stopach, a broń zadaje mu obrażenia.</label>}</fieldset>}
     {hexActive(actor, controller.response!.battle!.fighters.find(f => f.id === p.targetId)!) && <div>{Array.from({ length: p.critical ? 2 : 1 }, (_, i) => <label key={i}>Hex k6<input required type="number" min={1} max={6} value={hexRolls[i] ?? ''} onChange={e => setHexRolls(prev => { const next = [...prev]; next[i] = e.target.value; return next; })} /></label>)}</div>}
     {actor.spellConditions?.some(e => e.kind === 'enfeebled') && <label>Ray of Enfeeblement: odejmij k8<input required type="number" min={1} max={8} value={enfeeblementRoll} onChange={e => setEnfeeblementRoll(e.target.value)} /></label>}
@@ -248,7 +267,7 @@ function ResolveForm({ controller }: { controller: Controller }) {
   return <form className="stack-form" onSubmit={async e => { e.preventDefault(); if (await controller.mutate('act', { kind: 'resolve', sourceId, note, targetId, effect, amount: Number(amount), damageType: effect === 'damage' ? damageType : '' })) { setNote(''); setAmount(''); setDamageType(''); } }}>
     <label>Rozstrzygnięcie (uwzględnij rzuty obronne, odporności i zdolności)<textarea required maxLength={1000} value={note} onChange={e => setNote(e.target.value)} /></label>
     <label>Cel zmiany PW<select value={targetId} onChange={e => setTargetId(e.target.value)}><option value="">Bez zmiany PW</option>{controller.response!.battle!.fighters.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></label>
-    {targetId && <><label>Efekt<select value={effect} onChange={e => setEffect(e.target.value)}><option value="damage">Obrażenia</option><option value="heal">Leczenie</option></select></label>{effect === 'damage' && <label>Typ obrażeń<select value={damageType} onChange={e => setDamageType(e.target.value)}><option value="">Nie określono</option>{['obuchowe', 'kłute', 'cięte', 'kwas', 'zimno', 'ogień', 'błyskawice', 'trucizna', 'nekrotyczne', 'promieniste', 'psychiczne', 'moc', 'grom'].map(type => <option key={type} value={type}>{type}</option>)}</select></label>}<label>Obrażenia przed odpornością (typ obrażeń pozwala zastosować ją automatycznie) / wartość leczenia<input required type="number" min={0} max={9999} value={amount} onChange={e => setAmount(e.target.value)} /></label></>}
+    {targetId && <><label>Efekt<select value={effect} onChange={e => setEffect(e.target.value)}><option value="damage">Obrażenia</option><option value="heal">Leczenie</option><option value="instant-death">Natychmiastowa śmierć bez obrażeń</option></select></label>{effect === 'damage' && <label>Typ obrażeń<select value={damageType} onChange={e => setDamageType(e.target.value)}><option value="">Nie określono</option>{['obuchowe', 'kłute', 'cięte', 'kwas', 'zimno', 'ogień', 'błyskawice', 'trucizna', 'nekrotyczne', 'promieniste', 'psychiczne', 'moc', 'grom'].map(type => <option key={type} value={type}>{type}</option>)}</select></label>}{effect !== 'instant-death' && <label>Obrażenia przed odpornością (typ obrażeń pozwala zastosować ją automatycznie) / wartość leczenia<input required type="number" min={0} max={9999} value={amount} onChange={e => setAmount(e.target.value)} /></label>}</>}
     {effect === 'damage' && damageType === 'psychiczne' && controller.response!.battle!.fighters.find(f => f.id === targetId)?.thoughtShield && <label>Sprawca obrażeń (Thought Shield)<select required value={sourceId} onChange={e => setSourceId(e.target.value)}><option value="">Wybierz sprawcę</option>{controller.response!.battle!.fighters.filter(f => f.id !== targetId).map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></label>}
     <button className="primary-button" disabled={controller.pending}>Zastosuj rozstrzygnięcie</button>
   </form>;
@@ -289,9 +308,9 @@ function ProtectionReactionForm({ controller, actorId: requestedActorId, exclude
 
 function SpellReactions({ controller }: { controller: Controller }) {
   const b = controller.response!.battle!;
-  const candidates = b.fighters.filter(f => controller.response!.controlledIds.includes(f.id) && f.hp > 0 && !f.rage && !f.incapacitated && !f.unconscious && !f.reaction && f.spellcasting?.spells.some(s => s.action === 'reaction'));
+  const candidates = b.fighters.filter(f => controller.response!.controlledIds.includes(f.id) && f.hp > 0 && !f.rage && !f.incapacitated && !f.unconscious && !f.reaction && f.spellcasting?.spells.some(s => s.action === 'reaction' && (b.pending?.kind === 'casting' ? b.pending.stage === 'window' && s.id === 'counterspell' && b.pending.responders.includes(f.id) && !b.pending.passed.includes(f.id) : s.id !== 'counterspell')));
   const [selected, setSelected] = useState('');
   const actor = candidates.find(f => f.id === selected) ?? candidates[0];
   if (!actor) return null;
-  return <details><summary>Czar jako reakcja — po spełnieniu wyzwalacza</summary><div className="stack-form"><label>Postać<select value={actor.id} onChange={e => setSelected(e.target.value)}>{candidates.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></label></div><SpellCastForm key={actor.id} controller={controller} actor={actor} slot="reaction" /></details>;
+  return <details><summary>Czar jako reakcja — po spełnieniu wyzwalacza</summary><div className="stack-form"><label>Postać<select value={actor.id} onChange={e => setSelected(e.target.value)}>{candidates.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></label></div><SpellCastForm key={`${actor.id}:${b.pending?.kind === 'casting' ? b.pending.id : 'reaction'}`} controller={controller} actor={actor} slot="reaction" /></details>;
 }

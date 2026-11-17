@@ -7,6 +7,8 @@ export function persistConditionState(db, fighter) {
   const state = resourceState(db, fighter.characterId);
   state.manualConditions = fighter.manualConditions ?? [];
   state.prone = fighter.prone === true;
+  state.conditionSources = fighter.conditionSources ?? [];
+  state.exhaustion = fighter.exhaustion ?? 0;
   saveResources(db, fighter.characterId, state);
 }
 export function syncConditionConsequences(db, b) {
@@ -20,6 +22,8 @@ export function syncConditionConsequences(db, b) {
 }
 export function endCondition(db, fighter, kind) {
   fighter[kind] = false;
+  fighter.conditionSources = (fighter.conditionSources ?? []).filter(e => e.kind !== kind);
+  if (kind === 'exhaustion') fighter.exhaustion = 0;
   fighter.manualConditions = (fighter.manualConditions ?? []).filter(c => c !== kind);
   fighter.spellConditions = (fighter.spellConditions ?? []).filter(c => c.kind !== kind);
   fighter.timedEffects = (fighter.timedEffects ?? []).filter(e => e.modifiers.condition !== kind);
@@ -27,7 +31,11 @@ export function endCondition(db, fighter, kind) {
     const state = resourceState(db, fighter.characterId);
     state.activeEffects = (state.activeEffects ?? []).filter(e => e.modifiers.condition !== kind);
     state.manualConditions = fighter.manualConditions;
+    state.conditionSources = fighter.conditionSources;
+    state.exhaustion = fighter.exhaustion ?? 0;
     state.prone = fighter.prone === true;
+  state.conditionSources = fighter.conditionSources ?? [];
+  state.exhaustion = fighter.exhaustion ?? 0;
     saveResources(db, fighter.characterId, state);
   }
 }

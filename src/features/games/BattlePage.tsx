@@ -58,7 +58,7 @@ export function BattlePage({ members, sessionId, gameId, userId }: { members: Ga
       <button className="text-button" onClick={() => stage('enemies')}>← Przeciwnicy</button><button className="primary-button" disabled={missing || !battle.fighters.some(f => f.memberId !== undefined)} onClick={() => stage('initiative')}>Dalej: inicjatywa</button>
     </div></Card>}
     {battle.stage === 'initiative' && <Card title="3. Inicjatywa"><form className="stack-form" onSubmit={async e => { e.preventDefault(); if (missing || battle.fighters.some(f => !f.initiative.trim() || !Number.isInteger(Number(f.initiative)))) return; if (await controller.mutate('start', { fighters: battle.fighters.map(f => ({ memberId: f.memberId, enemyId: f.enemy?.id, initiative: Number(f.initiative) })) })) setBattle(initial); }}>
-      <p>Wpisz końcowe wyniki rzutów z premiami. Przy remisie zachowana zostanie kolejność dodawania uczestników.</p>
+      <p>Wpisz końcowe wyniki rzutów z premiami, karą −2 za poziom Exhaustion i ułatwieniem inicjatywy przy Invisible. Przy remisie zachowana zostanie kolejność dodawania uczestników.</p>
       {battle.fighters.map((f, i) => <label key={f.id}>{f.name} · #{i + 1}<input required type="number" min={-99} max={99} value={f.initiative} onChange={e => update(f.id, { initiative: e.target.value })} /></label>)}
       <button type="button" className="text-button" onClick={() => stage('players')}>← Postacie</button><button className="primary-button" disabled={missing}>Rozpocznij bitwę</button>
     </form></Card>}

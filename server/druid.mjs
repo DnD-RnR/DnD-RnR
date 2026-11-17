@@ -76,6 +76,7 @@ export function handleDruid({ db, b, body, canControl, activeMember, persistVita
   check(profile.max, 'Ta zdolność wymaga 2. poziomu druida.');
   const state = resourceState(db, f.characterId);
   const uses = Math.min(profile.max, state.wildShapeUses ?? profile.max);
+  if (body.kind === 'wild-shape') check(!(b.spellZones ?? []).some(z => z.shapeLockedIds?.includes(f.id)), 'Moonbeam blokuje przemianę do opuszczenia cylindra.');
   if (body.kind === 'wild-companion') {
     check(!f.action && !f.wildShape && !f.rage, 'Wild Companion wymaga akcji Magic i możliwości rzucania czarów.');
     check(!casterData(db, f.characterId).blocked, 'Brak wyszkolenia w pancerzu blokuje rzucanie czarów.');

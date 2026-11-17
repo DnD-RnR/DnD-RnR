@@ -1,10 +1,19 @@
+import { handleFalling, syncFallingChecks } from './falling.mjs';
+import { consumeDeathWard, instantDeath } from './death-ward.mjs';
+import { castingProjection } from './counterspell.mjs';
+import { advanceRetaliations, endProtectiveSpell, interceptSanctuary, queueRetaliations } from './protective-spells.mjs';
+import { timedSize, timedFlySpeed, weaponSizeModifier } from '../shared/timed-effects.mjs';
+import { prepareHasteAction, finishHasteAction, temporalSnapshot, validateSlowActions } from './temporal-actions.mjs';
+import { hasTimedModifier } from '../shared/timed-effects.mjs';
+import { bindConditionSources, syncSourceConditions, handleSourceConditions } from './source-conditions.mjs';
+import { cannotHarm, conditionSourcesOf, exhaustionPenalty } from '../shared/conditions.mjs';
 import { conditionsOf, conditionAttackModifiers, conditionSpeedZero, hasCondition, isIncapacitated } from '../shared/conditions.mjs';
 import { persistConditionState, endCondition, syncConditionConsequences } from './conditions.mjs';
 import { strongestEffects } from '../shared/timed-effects.mjs';
 import { timedAc, timedHpBonus, timedResistance, timedRollModifier } from '../shared/timed-effects.mjs';
 import { bindTimedEffects, characterTimedEffects, releaseTimedEffects, syncTimedEffects } from './timed-effects.mjs';
 import { endConcentration } from './concentration.mjs';
-import { spellSpeed, enfeeblementReduction, consumeSpellAttack, endSpellTurn, startSpellTurn, syncSpellConditions, hasSpellCondition, healingBlocked, spellDisadvantage } from './spell-conditions.mjs';
+import { spellSpeed, spellFlySpeed, enfeeblementReduction, consumeSpellAttack, endSpellTurn, startSpellTurn, syncSpellConditions, hasSpellCondition, healingBlocked, spellDisadvantage } from './spell-conditions.mjs';
 import { handleWarlock, syncHex, reflectThoughtShield, luckBonus } from './warlock-features.mjs';
 import { warlockProfile, warlockResistance, bondAdvantage, hexActive, damageTypeName } from '../shared/warlock.mjs';
 import { psiResources, handlePsi, psionicStrike } from './psi-warrior.mjs';
@@ -23,13 +32,14 @@ import { fightingStyleAttackBonus, fightingStyleDamageBonus, unarmedStrikeProfil
 import { publicCaster, resourceState, saveResources, secondWindMaximum, speciesResourceState, proficiencyBonus } from './spell-resources.mjs';
 import { handleCombatSpell } from './spell-combat.mjs';
 import { beginDelayedSpellDamage, dueSpellDamage, syncDelayedSpellDamage } from './delayed-spells.mjs';
-import { beginZoneDamage, dueZoneDamage, handleSpellZone, restoreSpellZones, syncSpellZones, zoneMovementDue } from './spell-zones.mjs';
+import { dueStartZoneEvents, beginStartZoneEvent, beginZoneDamage, dueZoneDamage, handleSpellZone, restoreSpellZones, syncSpellZones, zoneMovementDue } from './spell-zones.mjs';
+import { handleRepeatSpell, restoreRepeatSpells, syncRepeatSpells } from './repeat-spells.mjs';
 
 const int = (n, min, max) => Number.isInteger(n) && n >= min && n <= max;
 const requireValue = (ok, message) => { if (!ok) throw new Error(message); };
 const fresh = f => {
   if (f.shieldAC) { f.ac -= f.shieldAC; f.shieldAC = 0; }
-  return Object.assign(f, { action: '', bonus: '', reaction: '', reactionDeferred: false, moved: 0, pounceMoved: 0, extraMove: 0, attacksLeft: 0, usedWeapons: [], lightExtraUsed: false, dodge: false, attackRollMade: false, recklessActive: false, frenzyUsed: false, disengaged: false, psiStrikeUsed: false, psiReduction: 0, actionSurgeUsedThisTurn: false, surgeAction: null, surgeAttacksLeft: 0, lastAbilityCheck: null });
+  return Object.assign(f, { action: '', bonus: '', reaction: '', reactionDeferred: false, moved: 0, pounceMoved: 0, extraMove: 0, attacksLeft: 0, usedWeapons: [], lightExtraUsed: false, dodge: false, attackRollMade: false, recklessActive: false, frenzyUsed: false, disengaged: false, psiStrikeUsed: false, psiReduction: 0, hasteActionUsed: false, extraFlyMove: 0, actionSurgeUsedThisTurn: false, surgeAction: null, surgeAttacksLeft: 0, lastAbilityCheck: null });
 };
 const clearProtection = (b, protectorId) => b.fighters.forEach(f => {
   if (Array.isArray(f.protectedBy)) {
@@ -70,13 +80,13 @@ function characterFighter(db, sessionId, memberId) {
     const offHand = item.slot === 'off-hand';
     const weapon = { ...item, properties };
     const weaponDamageBonus = offHand ? Math.min(0, mod) + (dice ? 0 : Number(item.damage) || 0) : mod + (dice ? 0 : Number(item.damage) || 0);
-    attacks.push({ ability: finesse ? (strength >= dex ? 'str' : 'dex') : item.type === 'dystansowa' ? 'dex' : 'str', finesse, strengthBonus: strength == null ? null : strength + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(stats.choices?.fightingStyle, weapon), strengthDamageBonus: (offHand ? Math.min(0, strength) : strength) + (dice ? 0 : Number(item.damage) || 0) + fightingStyleDamageBonus(stats.choices?.fightingStyle, weapon, equippedWeapons, strength ?? 0), id: String(item.itemId), name: item.name, bonus: mod + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(stats.choices?.fightingStyle, weapon), dice: dice ? Number(dice[1]) : 0,
+    attacks.push({ melee: item.type !== 'dystansowa', ability: finesse ? (strength >= dex ? 'str' : 'dex') : item.type === 'dystansowa' ? 'dex' : 'str', finesse, strengthBonus: strength == null ? null : strength + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(stats.choices?.fightingStyle, weapon), strengthDamageBonus: (offHand ? Math.min(0, strength) : strength) + (dice ? 0 : Number(item.damage) || 0) + fightingStyleDamageBonus(stats.choices?.fightingStyle, weapon, equippedWeapons, strength ?? 0), id: String(item.itemId), name: item.name, bonus: mod + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(stats.choices?.fightingStyle, weapon), dice: dice ? Number(dice[1]) : 0,
       sides: dice ? Number(dice[2]) : 0, damageBonus: weaponDamageBonus + fightingStyleDamageBonus(stats.choices?.fightingStyle, weapon, equippedWeapons, mod), type: item.damage_type,
       light: properties.includes('lekka'), offHand, nick: item.mastery === 'Nick' && (stats.choices?.weaponMastery ?? []).includes(item.id), disadvantage: Boolean(s.d20StrengthDexDisadvantage || (properties.includes('ciężka') && (stats.values[item.type === 'dystansowa' ? 'dex' : 'str'] ?? 0) < 13)) });
   }
   if (s.abilities.str.modifier !== null) {
     const unarmed = unarmedStrikeProfile(stats.choices?.fightingStyle, equippedWeapons, equipment.some(item => item.equipped && item.armorCategory === 'shield'), s.abilities.str.modifier, traits.feats.includes('Tavern Brawler'));
-    attacks.push({ id: 'unarmed', ability: 'str', name: 'Cios bez broni', bonus: s.abilities.str.modifier + s.proficiency, ...unarmed, type: 'obuchowe', light: false });
+    attacks.push({ melee: true, id: 'unarmed', ability: 'str', name: 'Cios bez broni', bonus: s.abilities.str.modifier + s.proficiency, ...unarmed, type: 'obuchowe', light: false });
   }
   const baseClass = c.class.split(' ')[0];
   const maxAttacks = baseClass === 'Fighter' || c.class.includes('Fighter') ? c.level >= 20 ? 4 : c.level >= 11 ? 3 : c.level >= 5 ? 2 : 1
@@ -86,7 +96,7 @@ function characterFighter(db, sessionId, memberId) {
   const speciesResources = speciesResourceState(db, c.id, c);
   const fighter = fresh({ id: randomUUID(), name: c.name, memberId, characterId: c.id, ownerId: c.user_id, level: c.level, timedEffects, appliedTimedHpBonus: timedHpBonus(timedEffects), hp: s.hp, maxHp: s.maxHp + timedHpBonus(timedEffects), tempHp: s.tempHp ?? 0,
     dexModifier: s.abilities.dex.modifier, wearingArmor: equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'), equipmentShieldBonus: s.untrainedShield ? 0 : Number.parseInt(equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0,
-    manualConditions: resources.manualConditions ?? [], prone: resources.prone === true, concentrationKey: resources.concentrationKey ?? null, ac: s.ac, speed: s.speed ?? 0, saves: s.savingThrows, notes: '', attacks, maxAttacks, concentration: resourceState(db, c.id).concentration ?? null,
+    conditionSources: resources.conditionSources ?? [], exhaustion: resources.exhaustion ?? 0, seenInvisibleIds: [], manualConditions: resources.manualConditions ?? [], prone: resources.prone === true, concentrationKey: resources.concentrationKey ?? null, ac: s.ac, speed: s.speed ?? 0, saves: s.savingThrows, notes: '', attacks, maxAttacks, concentration: resourceState(db, c.id).concentration ?? null,
     divineSense: resources.divineSense?.expiresAt > Date.now() ? resources.divineSense : null,
     wildShapeUses: Math.min(druidProfile(c).max, resources.wildShapeUses ?? druidProfile(c).max), wildCompanion: resources.wildCompanion ?? null,
     rageProfile: rageProfile(c), rageUses: Math.min(rageProfile(c).max, resources.rageUses ?? rageProfile(c).max), relentlessRageDC: resources.relentlessRageDC ?? 10, rageRecoveryOffered: rageProfile(c).persistent && resources.persistentRageAvailable !== false,
@@ -102,7 +112,7 @@ function characterFighter(db, sessionId, memberId) {
     largeFormAvailable: speciesResources.largeFormAvailable,
     warlockResistance: warlockProfile(c, stats.values.cha, resources).resistance, thoughtShield: warlockProfile(c, stats.values.cha, resources).thoughtShield, warlockBond: warlockProfile(c, stats.values.cha, resources).awakenedMind, hex: resources.hex?.expiresAt > Date.now() && resources.concentration === resources.hex.name ? { ...resources.hex, defeatedRound: resources.hex.targetDefeated ? 0 : resources.hex.defeatedRound } : null,
     damageResistance: traits.ancestry?.damageType ?? traits.fiendishLegacy?.damageType ?? null,
-    creatureType: traits.creatureType,
+    creatureType: traits.creatureType, size: traits.size,
     draconicFlightAvailable: speciesResources.draconicFlightAvailable,
     protectionAvailable: stats.choices?.fightingStyle === 'protection' && equipment.some(item => item.equipped && item.armorCategory === 'shield'),
     deathSuccesses: s.deathSuccesses ?? 0, deathFailures: s.deathFailures ?? 0 });
@@ -125,11 +135,14 @@ function damage(db, f, amount, critical = false, damageType = null, resistanceRe
   const before = f.hp;
   const absorbed = Math.min(f.tempHp, amount);
   f.tempHp -= absorbed;
+  if (f.tempHp === 0) endProtectiveSpell(db, f, 'armor-of-agathys');
   const remaining = amount - absorbed;
   const excess = Math.max(0, remaining - before);
   f.lastDamage = { amount, hpBefore: before, tempHpAbsorbed: absorbed, hpLost: Math.min(before, remaining), excess };
   f.overkillDamage = (f.overkillDamage ?? 0) + excess;
   f.hp = Math.max(0, f.hp - remaining);
+  const ward = before > 0 && f.hp === 0 && consumeDeathWard(db, f);
+  if (ward) { f.hp = 1; f.lastDamage.deathWard = true; f.lastDamage.hpLost = before - 1; }
   if (f.characterId && before > 0 && f.hp === 0 && f.relentlessEnduranceAvailable && excess < f.maxHp) {
     f.hp = 1;
     f.relentlessEnduranceAvailable = false;
@@ -143,7 +156,7 @@ function damage(db, f, amount, critical = false, damageType = null, resistanceRe
     if (f.deathSuccesses >= 3) { f.deathSuccesses = 0; f.deathFailures = 0; }
     f.deathFailures = Math.min(3, f.deathFailures + (critical ? 2 : 1));
   }
-  if (f.characterId && remaining - before >= f.maxHp) f.deathFailures = 3;
+  if (!ward && f.characterId && remaining - before >= f.maxHp) f.deathFailures = 3;
   if (f.hp === 0) {
     f.dodge = false;
     if (before > 0 && f.rage && f.rageProfile?.relentless && f.deathFailures < 3 && f.saves.con != null) f.relentlessRagePending = { dc: f.relentlessRageDC ?? 10 };
@@ -203,14 +216,15 @@ export function handleBattles(db, user, path, method, body, send) {
     battle: battle ? { ...battle,
       defeatedMonsters: gm ? battle.defeatedMonsters : battle.defeatedMonsters?.map(f => ({ id: f.id, name: f.name, damageTaken: f.damageTaken })),
       fighters: battle.fighters.map(f => !gm && !f.characterId ? {
-        id: f.id, name: f.name, hidden: true, attackDisadvantage: Boolean(f.dodge),
+        id: f.id, name: f.name, hidden: true, ...(f.falling ? { falling: true } : {}), attackDisadvantage: Boolean(f.dodge),
+        ...(f.seenInvisibleIds?.length ? { seenInvisibleIds: f.seenInvisibleIds } : {}),
         ...(conditionsOf(f).size ? { visibleConditions: [...conditionsOf(f)] } : {}),
         damageTaken: f.damageTaken ?? Math.max(0, f.maxHp - f.hp),
-      } : { ...f, ac: timedAc(f), speed: spellSpeed(f), divineSense: f.divineSense?.expiresAt > Date.now() && f.hp > 0 && !f.incapacitated && !f.unconscious && !(f.deathFailures >= 3) ? f.divineSense : null, ...(f.characterId && (gm || f.ownerId === user.id) ? { spellcasting: publicCaster(db, f.characterId) } : {}) }),
-      pending: !gm && battle.pending && !battle.fighters.find(f => f.id === battle.pending.actorId)?.characterId
-        ? { kind: 'waiting', actorId: battle.pending.actorId } : !gm && battle.pending?.kind === 'spell'
+      } : { ...f, size: timedSize(f), flySpeed: spellFlySpeed(f), canHover: f.timedEffects?.some(e => e.modifiers.hover) ?? false, ac: timedAc(f), speed: spellSpeed(f), divineSense: f.divineSense?.expiresAt > Date.now() && f.hp > 0 && !f.incapacitated && !f.unconscious && !(f.deathFailures >= 3) ? f.divineSense : null, ...(f.characterId && (gm || f.ownerId === user.id) ? { spellcasting: publicCaster(db, f.characterId) } : {}) }),
+      pending: battle.pending?.kind === 'casting' ? castingProjection(battle.pending) : !gm && battle.pending && !(battle.pending.reactive && battle.fighters.find(f => f.id === battle.pending.sourceId)?.ownerId === user.id) && !battle.fighters.find(f => f.id === battle.pending.actorId)?.characterId
+        ? { kind: 'waiting', actorId: battle.pending.actorId } : battle.pending?.kind === 'sanctuary' ? { kind: 'sanctuary', actorId: battle.pending.actorId, targetId: battle.pending.targetId, dc: battle.pending.dc, stage: battle.pending.stage, visited: battle.pending.visited } : !gm && battle.pending?.kind === 'spell'
           ? { ...battle.pending, targets: battle.pending.targets.map(({ multiplier, ...target }) => target) } : battle.pending,
-      suspendedAction: undefined,
+      suspendedAction: undefined, retaliations: undefined, retaliationSuspended: undefined,
       // Also hide armor classes in log entries saved by earlier versions.
       log: battle.log.map(entry => {
         const clean = entry.replace(/ vs KP -?\d+/g, '');
@@ -225,6 +239,7 @@ export function handleBattles(db, user, path, method, body, send) {
   if (!action) return reply(200, response());
   db.exec('SAVEPOINT battle_action');
   try {
+    const temporalBefore = battle ? temporalSnapshot(battle) : new Map();
     const hpBefore = new Map((battle?.fighters ?? []).map(f => [f.id, f.hp]));
     const damageSourceId = ['damage', 'spell-effect', 'resolve'].includes(body.kind) ? battle?.pending?.sourceId ?? battle?.pending?.actorId ?? null : null;
     requireValue(body.sessionId === session.id, 'Sesja zmieniła się. Odśwież widok.');
@@ -247,11 +262,14 @@ export function handleBattles(db, user, path, method, body, send) {
         return { ...f, initiative: entry.initiative };
       }).sort((a, b) => b.initiative - a.initiative);
       battle = { sessionId: session.id, startedAt: Date.now(), version: battle?.version ?? 0, active: true, round: 1, turn: 0, fighters, pending: null, log: ['Walka rozpoczęta.'] };
+      bindConditionSources(battle);
       bindTimedEffects(db, battle);
       restoreSpellZones(db, battle);
+      restoreRepeatSpells(db, battle);
     } else {
       requireValue(battle?.active, 'Walka nie trwa.');
       const b = battle, current = b.fighters[b.turn];
+      syncSourceConditions(db, b);
       syncRage(db, b);
       syncSpellConditions(b, db);
       syncTimedEffects(db, b, persistVitals);
@@ -261,14 +279,21 @@ export function handleBattles(db, user, path, method, body, send) {
       requireValue(!b.fighters.some(f => f.relentlessRagePending) || action === 'act' && body.kind === 'relentless-rage', 'Najpierw rozstrzygnij Relentless Rage.');
       syncDelayedSpellDamage(b);
       syncSpellZones(db, b);
-      if (action === 'end') { requireValue(gm, 'Tylko GM może zakończyć walkę.'); requireValue(!(b.delayedSpellDamage ?? []).length, 'Dokończ tury celów i rozlicz obrażenia opóźnione przed zakończeniem walki.'); requireValue(!b.fighters.some(f => f.concentrationDC), 'Najpierw rozstrzygnij rzuty koncentracji.'); b.active = false; b.pending = null; b.suspendedAction = null; log(b, 'GM zakończył walkę.'); }
+      syncRepeatSpells(db, b);
+      if (action === 'end') { requireValue(!b.fighters.some(f => f.falling), 'Rozlicz l?dowanie lub zatrzymaj spadanie przed zako?czeniem walki.'); requireValue(b.pending?.kind !== 'casting', 'Najpierw rozstrzygnij rzucany czar.'); requireValue(!b.spellZones?.some(z => z.fires?.some(f => !f.expired)), 'Rozlicz wypalanie płonących fragmentów Web albo koniec czaru przed zakończeniem walki.'); requireValue(gm, 'Tylko GM może zakończyć walkę.'); requireValue(!b.fighters.some(f => f.spellConditions?.some(e => e.kind === 'heated-metal')), 'Dokończ krótki skutek Heat Metal do początku następnej tury rzucającego.'); requireValue(b.pending?.stage !== 'heat-save', 'Najpierw rozlicz CON po Heat Metal.'); requireValue(!b.pending?.reactive && !b.retaliations?.length && !b.retaliationSuspended, 'Najpierw rozlicz automatyczne obrażenia osłon.'); requireValue(!b.pending?.zoneId, 'Najpierw rozlicz działanie strefy.'); requireValue(!(b.delayedSpellDamage ?? []).length, 'Dokończ tury celów i rozlicz obrażenia opóźnione przed zakończeniem walki.'); requireValue(!b.fighters.some(f => f.concentrationDC), 'Najpierw rozstrzygnij rzuty koncentracji.'); b.active = false; b.pending = null; b.suspendedAction = null; log(b, 'GM zakończył walkę.'); }
+      else if (action === 'next' && dueStartZoneEvents(b, current).length) {
+        requireValue(gm || current.ownerId === user.id && activeMember(db, session.id, current), 'To nie jest twoja tura.');
+        requireValue(!zoneMovementDue(b) && !b.fighters.some(f => f.concentrationDC), 'Najpierw odtwórz pozycje stref i rozlicz koncentrację.');
+        beginStartZoneEvent(b, current);
+      }
       else if (action === 'next') {
+        requireValue(b.pending?.kind !== 'casting', 'Najpierw rozstrzygnij rzucany czar.');
         b.fighters.forEach(f => { f.lastAbilityCheck = null; });
         requireValue(!b.fighters.some(f => f.concentrationDC), 'Najpierw rozstrzygnij rzuty koncentracji.');
         requireValue(gm || (current.ownerId === user.id && activeMember(db, session.id, current)), 'To nie jest twoja tura.');
         requireValue(!b.pending || gm, 'Najpierw rozstrzygnij rozpoczęte działanie.');
         requireValue(!b.pending?.delayedDamageId, 'Najpierw rozlicz obrażenia opóźnione.');
-        requireValue(!b.pending?.zoneId, 'Najpierw rozlicz działanie strefy.');
+        requireValue(b.pending?.stage !== 'heat-save', 'Najpierw rozlicz CON po Heat Metal.'); requireValue(!b.pending?.reactive && !b.retaliations?.length && !b.retaliationSuspended, 'Najpierw rozlicz automatyczne obrażenia osłon.'); requireValue(!b.pending?.zoneId, 'Najpierw rozlicz działanie strefy.');
         requireValue(!zoneMovementDue(b), 'MG musi odtworzyć położenie stref lub potwierdzić przesunięcie chmury na początku tury.');
         requireValue(!(current.spellConditions ?? []).some(e => e.concentrationKey && e.lastSaveRound !== b.round), 'Powtórz rzuty obronne na koniec tury.');
         requireValue(!strongestEffects(current.timedEffects).some(e => e.modifiers.repeatSave && e.lastSaveRound !== b.round), 'Powtórz rzuty obronne na koniec tury.');
@@ -293,16 +318,31 @@ export function handleBattles(db, user, path, method, body, send) {
           fresh(b.fighters[b.turn]); log(b, `Runda ${b.round}: tura ${b.fighters[b.turn].name}.`);
         }
       } else {
+        const ward = interceptSanctuary({ db, b, body, canControl, activeMember, log });
+        if (!ward.waiting) {
+        body = ward.body;
         const kind = body.kind;
-        requireValue(!zoneMovementDue(b) || ['zone-move', 'zone-place', 'zone-end', 'end-concentration', 'concentration', 'spell-defense', 'spell-save', 'spell-effect', 'relentless-rage', 'condition', 'resolve'].includes(kind), 'MG musi odtworzyć położenie stref lub potwierdzić przesunięcie chmury na początku tury.');
+        if (b.pending?.kind === 'casting') requireValue(['casting-pass', 'casting-continue', 'counterspell-save'].includes(kind) || ['cast', 'monster-cast'].includes(kind) && body.spellId === 'counterspell', 'Najpierw rozstrzygnij rzucany czar.');
+        requireValue(!dueStartZoneEvents(b, current).length || ['zone-start', 'zone-place', 'zone-leave', 'zone-end', 'zone-free', 'zone-fire-members', 'spell-save', 'spell-defense', 'spell-effect', 'condition', 'condition-source', 'condition-sight', 'exhaustion', 'flight-state', 'base-size', 'concentration', 'end-concentration', 'death', 'relentless-rage', 'resolve'].includes(kind), 'Najpierw rozlicz wyzwalacze początku tury w Web.');
+        requireValue(!zoneMovementDue(b) || ['flight-state', 'base-size', 'condition-source', 'condition-sight', 'exhaustion', 'zone-move', 'zone-place', 'zone-end', 'end-concentration', 'concentration', 'spell-defense', 'spell-save', 'spell-effect', 'relentless-rage', 'condition', 'resolve'].includes(kind), 'MG musi odtworzyć położenie stref lub potwierdzić przesunięcie chmury na początku tury.');
         const acting = b.fighters.find(f => f.id === (body.actorId ?? (['spell-effect', 'spell-attack'].includes(kind) ? b.pending?.actorId : null) ?? current.id));
-        if (!(kind === 'spell-effect' && (b.pending?.delayedDamageId || b.pending?.zoneEvent)) && !['zone-enter', 'zone-leave', 'zone-move', 'zone-place', 'zone-end', 'zone-end-turn', 'delayed-spell', 'condition-save', 'spell-save', 'concentration', 'saving-throw', 'condition', 'resolve', 'spell-defense', 'death', 'end-concentration', 'dismiss-effect', 'relentless-rage'].includes(kind)) requireValue(!acting || (!isIncapacitated(acting) || ['move', 'stand-up'].includes(kind)) && (acting.id !== current.id || acting.spellTurnEnded !== b.round), 'Paraliż lub zakończenie tury uniemożliwia działanie.');
+        if (!(kind === 'spell-effect' && (b.pending?.delayedDamageId || b.pending?.zoneEvent || b.pending?.reactive)) && !['zone-start', 'zone-free', 'zone-fire', 'zone-fire-members', 'flight-state', 'fall-start', 'fall-stop', 'fall-land', 'fall-water', 'base-size', 'condition-source', 'condition-sight', 'exhaustion', 'heat-save', 'repeat-contacts', 'repeat-end', 'zone-update', 'zone-wall-enter', 'zone-wall-leave', 'zone-enter', 'zone-leave', 'zone-move', 'zone-place', 'zone-end', 'zone-end-turn', 'delayed-spell', 'condition-save', 'spell-save', 'casting-pass', 'casting-continue', 'counterspell-save', 'dispel-check', 'concentration', 'saving-throw', 'condition', 'resolve', 'spell-defense', 'death', 'end-concentration', 'dismiss-effect', 'relentless-rage'].includes(kind)) requireValue(!acting || (!isIncapacitated(acting) || ['move', 'stand-up'].includes(kind)) && (acting.id !== current.id || acting.spellTurnEnded !== b.round), 'Paraliż lub zakończenie tury uniemożliwia działanie.');
+        if (kind === 'attack') requireValue(!cannotHarm(acting, b.fighters.find(f => f.id === body.targetId)), 'Charmed: nie możesz atakować sprawcy.');
+        if (kind === 'move' && conditionSourcesOf(acting, 'frightened').length) requireValue(body.confirmedFearSafe === true, 'Frightened: MG musi potwierdzić, że dobrowolny ruch nie zbliża do żadnego źródła strachu.');
         syncVows(b);
         if (kind !== 'tactical-mind') b.fighters.forEach(f => { f.lastAbilityCheck = null; });
         if (acting && (body.slot === 'reaction' || ['protection', 'protective-field'].includes(kind)) && hasSpellCondition(acting, 'no-reactions')) throw new Error('Arms of Hadar: reakcje są zablokowane.');
         if (acting && body.kind === 'request' && body.slot === 'reaction' && hasSpellCondition(acting, 'shocking-grasp') && body.opportunityAttack) throw new Error('Shocking Grasp: brak ataków okazyjnych.');
+        if (acting && hasTimedModifier(acting, 'slow') && ['action-surge'].includes(kind)) throw new Error('Slow blokuje dodatkowe akcje.');
+        const hasteState = prepareHasteAction(b, body, canControl);
         const surgeState = prepareSurgeAction(b, body, canControl);
-        if (handleSpellZone({ db, b, body, gm, log })) {
+        if (handleFalling({ db, b, body, gm, canControl, activeMember, damage, log, persistVitals })) {
+          // Landing is confirmed by the GM; falling geometry stays manual.
+        } else if (handleSourceConditions({ db, b, body, gm, canControl, activeMember, log, persistVitals })) {
+          // Source-aware conditions and grapple escape.
+        } else if (handleRepeatSpell({ db, b, body, gm, log, canControl, activeMember })) {
+          // Sustained spells spend a bonus action, never another spell slot.
+        } else if (handleSpellZone({ db, b, body, gm, log, canControl, activeMember, persistVitals })) {
           // Geometry and zone triggers are confirmed by the GM.
         } else if (handleWarlock({ db, b, body, gm, canControl, activeMember, log })) {
           // Warlock features persist in this battle transaction.
@@ -325,8 +365,12 @@ export function handleBattles(db, user, path, method, body, send) {
           requireValue(typeof body.note === 'string' && body.note.trim() && body.note.length <= 1000, 'Opisz rozstrzygnięcie.');
           if (body.targetId) {
             const target = b.fighters.find(f => f.id === body.targetId);
-            requireValue(target && int(body.amount, 0, 9999) && ['damage', 'heal'].includes(body.effect), 'Wybierz cel, efekt i wartość.');
-            if (body.effect === 'damage') {
+            requireValue(target && (body.effect === 'instant-death' || int(body.amount, 0, 9999)) && ['damage', 'heal', 'instant-death'].includes(body.effect), 'Wybierz cel, efekt i wartość.');
+            if (body.effect === 'instant-death') {
+              requireValue(target.deathFailures < 3, 'Cel ju\u017c nie \u017cyje.'.replace(/\\u([0-9a-f]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16))));
+              const killed = instantDeath(db, target, persistVitals);
+              log(b, `${target.name}: ${killed ? 'instant death' : 'Death Ward negates instant death'}.`);
+            } else if (body.effect === 'damage') {
               damage(db, target, body.amount, false, body.damageType ?? null);
               if (target.thoughtShield && damageTypeName(body.damageType) === 'psychiczne' && target.lastDamage.amount > 0) {
                 const source = b.fighters.find(f => f.id === body.sourceId);
@@ -336,7 +380,7 @@ export function handleBattles(db, user, path, method, body, send) {
             }
             else { requireValue(!healingBlocked(target), 'Cel nie może odzyskiwać PW.'); requireValue(target.deathFailures < 3, 'Zwykłe leczenie nie przywraca życia.'); target.hp = Math.min(target.maxHp, target.hp + body.amount); if (target.hp > 0) { target.deathFailures = 0; target.deathSuccesses = 0; } persistVitals(db, target); }
           }
-          log(b, `GM: ${body.note}${body.targetId ? ` (${body.effect === 'damage' ? 'obrażenia' : 'leczenie'}: ${body.amount})` : ''}`); b.pending = null;
+          log(b, `GM: ${body.note}${body.targetId ? ` (${body.effect === 'instant-death' ? 'instant death' : body.effect === 'damage' ? 'obrażenia' : 'leczenie'}: ${body.amount})` : ''}`); b.pending = null;
         } else {
           const actor = (kind === 'request' && body.slot === 'reaction' || kind === 'protection') ? b.fighters.find(f => f.id === body.actorId) : current;
           requireValue(!b.fighters.some(f => f.concentrationDC), 'Najpierw rozstrzygnij rzuty koncentracji.');
@@ -346,7 +390,7 @@ export function handleBattles(db, user, path, method, body, send) {
             requireValue(int(body.roll, 1, 20), 'Podaj wynik k20 (1–20).');
             const luck = luckBonus(db, actor.characterId, body.luckRoll);
             if (body.roll === 20) { actor.hp = 1; actor.deathSuccesses = 0; actor.deathFailures = 0; }
-            else if (body.roll !== 1 && body.roll + luck >= 10) actor.deathSuccesses = Math.min(3, actor.deathSuccesses + 1);
+            else if (body.roll !== 1 && body.roll + luck - exhaustionPenalty(actor) >= 10) actor.deathSuccesses = Math.min(3, actor.deathSuccesses + 1);
             else actor.deathFailures = Math.min(3, actor.deathFailures + (body.roll === 1 ? 2 : 1));
             actor.action = body.roll === 20 ? '' : 'Rzut przeciw śmierci'; persistVitals(db, actor); log(b, `${actor.name}: rzut przeciw śmierci ${body.roll}.`);
           } else {
@@ -368,8 +412,15 @@ export function handleBattles(db, user, path, method, body, send) {
               requireValue(!frenzyCount || Array.isArray(body.frenzyRolls) && body.frenzyRolls.length === frenzyCount && body.frenzyRolls.every(n => int(n, 1, 6)), 'Podaj wyniki wszystkich kosci k6 Frenzy.');
               const frenzyDamage = frenzyCount ? body.frenzyRolls.reduce((sum, n) => sum + n, 0) : 0;
               requireValue(!hasSpellCondition(actor, 'enfeebled') || int(body.enfeeblementRoll, 1, 8), 'Ray of Enfeeblement: podaj k8 odejmowane od obrażeń.');
-              const amount = Math.max(0, frenzyDamage + body.rolls.reduce((sum, n) => sum + n, 0) + p.attack.damageBonus - (hasSpellCondition(actor, 'enfeebled') ? body.enfeeblementRoll : 0));
+              let amount = Math.max(0, frenzyDamage + body.rolls.reduce((sum, n) => sum + n, 0) + p.attack.damageBonus - (hasSpellCondition(actor, 'enfeebled') ? body.enfeeblementRoll : 0));
+              if (p.sizeModifier) {
+                const count = p.sizeModifier > 0 && p.critical ? 2 : 1;
+                requireValue(Array.isArray(body.sizeRolls) && body.sizeRolls.length === count && body.sizeRolls.every(n => int(n, 1, 4)), 'Enlarge/Reduce: podaj poprawne kości k4 modyfikatora broni / ciosu.');
+                amount = Math.max(p.sizeModifier < 0 ? 1 : 0, amount + Math.sign(p.sizeModifier) * body.sizeRolls.reduce((sum, n) => sum + n, 0));
+              }
               const target = b.fighters.find(f => f.id === p.targetId);
+              queueRetaliations(b, target, actor, p.hit);
+              if (amount > 0) endProtectiveSpell(db, actor, 'sanctuary');
               damage(db, target, amount, p.critical, p.attack.type);
               reflectThoughtShield(db, b, target, actor, p.attack.type, target.lastDamage.amount, damage, log);
               if (hexActive(actor, target)) {
@@ -388,8 +439,15 @@ export function handleBattles(db, user, path, method, body, send) {
                 log(b, `${actor.name}: wstaje, koszt ${cost} stóp ruchu.`);
               } else if (kind === 'move') {
                 requireValue(!conditionSpeedZero(actor), 'Szybkość wynosi 0 i nie może wzrosnąć.');
-                const cost = body.feet * (hasCondition(actor, 'prone') ? 2 : 1);
-                requireValue(int(body.feet, 1, 999) && actor.moved + cost <= spellSpeed(actor) + actor.extraMove, 'Przekroczono dostępny ruch.');
+                const dragged = body.draggedIds ?? [];
+                requireValue(Array.isArray(dragged) && new Set(dragged).size === dragged.length && dragged.every(id => b.fighters.some(f => f.id === id && conditionSourcesOf(f, 'grappled').some(e => e.sourceId === actor.id))), 'Możesz przeciągać tylko pochwycone przez siebie cele.');
+                const terrain = body.terrainFeet ?? 0;
+                requireValue(Number.isInteger(terrain) && terrain >= 0 && terrain <= body.feet && (!actor.zoneDifficultTerrain || body.terrainFeet !== undefined), 'MG musi określić liczbę stóp trudnego terenu (0 do długości ruchu).');
+                const cost = body.feet * (1 + (hasCondition(actor, 'prone') ? 1 : 0) + (dragged.length && body.confirmedDragExempt !== true ? 1 : 0)) + terrain;
+                requireValue(body.movementMode !== 'fly' || spellFlySpeed(actor) > 0, 'Brak dostępnej szybkości lotu.');
+                requireValue(!actor.aloft || body.movementMode === 'fly' || body.confirmedGrounded === true, 'MG musi potwierdzić lądowanie przed ruchem po ziemi.');
+                requireValue(int(body.feet, 1, 999) && actor.moved + cost <= (body.movementMode === 'fly' ? spellFlySpeed(actor) + (actor.extraFlyMove ?? 0) : spellSpeed(actor) + actor.extraMove), 'Przekroczono dostępny ruch.');
+                actor.aloft = body.movementMode === 'fly';
                 actor.moved += cost; log(b, `${actor.name}: ruch ${body.feet} stóp.`);
               } else if (kind === 'attack') {
                 const slot = body.slot;
@@ -416,7 +474,7 @@ export function handleBattles(db, user, path, method, body, send) {
                   const nickExtra = !actor.lightExtraUsed && attack.nick && attack.light && attack.offHand
                     && actor.usedWeapons.some(id => id !== attack.id && actor.attacks.find(a => a.id === id)?.light);
                   requireValue(!actor.action || actor.action === 'Atak' && (actor.attacksLeft > 0 || nickExtra), 'Akcja została wykorzystana.');
-                  if (!actor.action) actor.attacksLeft = actor.maxAttacks;
+                  if (!actor.action) actor.attacksLeft = hasTimedModifier(actor, 'slow') ? 1 : actor.maxAttacks;
                   actor.action = 'Atak';
                   if (nickExtra) actor.lightExtraUsed = true;
                   else actor.attacksLeft--;
@@ -431,8 +489,10 @@ export function handleBattles(db, user, path, method, body, send) {
                 }
                 if (actor.rage && attack.ability === 'str') attack = { ...attack, damageBonus: attack.damageBonus + actor.rageProfile.damage };
                 if (Boolean(actor.characterId) !== Boolean(target.characterId)) extendRage(b, actor);
+                if (body.sanctuaryLost) { log(b, `${actor.name}: Sanctuary — traci ten atak.`); } else {
                 const conditionModifiers = conditionAttackModifiers(actor, target, body);
                 const disadvantage = Boolean(conditionModifiers.disadvantage || spellDisadvantage(actor, attack.ability) || attack.disadvantage || bondAdvantage(target, actor) || target.dodge || target.attackDisadvantage || body.disadvantage || actor.mockery);
+                endProtectiveSpell(db, actor, 'sanctuary');
                 recordAttackRoll(b, actor, body, log);
                 const advantage = Boolean(conditionModifiers.advantage || body.advantage || hasSpellCondition(target, 'guiding-bolt') || hasSpellCondition(target, 'paralyzed') || bondAdvantage(actor, target) || vowAttackAdvantage(actor, target) || barbarianAttackAdvantage(actor, target, attack.ability) || wolfAttackAdvantage(b, actor, target));
                 requireValue(int(body.roll, 1, 20) && (disadvantage === advantage || int(body.roll2, 1, 20)), 'Podaj wynik k20; przy ułatwieniu lub utrudnieniu podaj dwie kości.');
@@ -441,11 +501,12 @@ export function handleBattles(db, user, path, method, body, send) {
                 consumeSpellAttack(actor);
                 target.spellConditions = (target.spellConditions ?? []).filter(e => e.kind !== 'guiding-bolt');
                 const attackModifier = timedRollModifier(actor, body);
-                const hit = roll !== 1 && (roll === 20 || roll + attack.bonus + attackModifier >= timedAc(target));
+                const hit = roll !== 1 && (roll === 20 || roll + attack.bonus + attackModifier - exhaustionPenalty(actor) >= timedAc(target));
                 log(b, `${actor.name} → ${target.name}: ${roll} + ${attack.bonus}: ${hit ? roll === 20 ? 'trafienie krytyczne' : 'trafienie' : 'pudło'}.`);
                 const frenzy = hit ? frenzyDice(b, actor, attack.ability) : 0;
                 if (frenzy) actor.frenzyUsed = true;
-                if (hit) b.pending = { kind: 'damage', actorId: actor.id, targetId: target.id, attack, frenzyDice: frenzy, critical: roll === 20 || conditionModifiers.criticalOnHit, attackTotal: roll + attack.bonus + attackModifier };
+                if (hit) b.pending = { hit: { melee: body.attackRange === 'melee' || body.attackRange !== 'ranged' && attack.melee === true, within5Feet: body.within5Feet === true }, sizeModifier: weaponSizeModifier(actor) && (attack.id === 'unarmed' || actor.characterId && !attack.id.startsWith('beast:') || body.sizeWeaponConfirmed === true) ? weaponSizeModifier(actor) : 0, kind: 'damage', actorId: actor.id, targetId: target.id, attack, frenzyDice: frenzy, critical: roll === 20 || conditionModifiers.criticalOnHit, attackTotal: roll + attack.bonus + attackModifier - exhaustionPenalty(actor) };
+                }
               } else if (kind === 'second-wind') {
                 requireValue(!healingBlocked(actor), 'Cel nie może odzyskiwać PW.');
                 requireValue(actor.characterId && actor.secondWindMax > 0, 'Drugi oddech jest dostępny tylko dla wojownika.');
@@ -468,7 +529,7 @@ export function handleBattles(db, user, path, method, body, send) {
                 requireValue(body.slot === 'bonus' && !actor.bonus, 'Adrenaline Rush wymaga dostępnej akcji bonusowej.');
                 requireValue(actor.adrenalineRushUses > 0, 'Brak dostępnych użyć Adrenaline Rush.');
                 actor.bonus = 'Adrenaline Rush';
-                actor.extraMove += actor.speed;
+                actor.extraMove += spellSpeed(actor); actor.extraFlyMove = (actor.extraFlyMove ?? 0) + spellFlySpeed(actor);
                 actor.tempHp = proficiencyBonus(actor.level);
                 actor.adrenalineRushUses--;
                 const state = resourceState(db, actor.characterId);
@@ -513,7 +574,7 @@ export function handleBattles(db, user, path, method, body, send) {
                 if (kind === 'skip' && slot === 'reaction') actor.reactionDeferred = true;
                 else actor[slot] = labels[kind];
                 if (skipAttacks) actor.attacksLeft = 0;
-                if (kind === 'dash') actor.extraMove += spellSpeed(actor);
+                if (kind === 'dash') { actor.extraMove += spellSpeed(actor); actor.extraFlyMove = (actor.extraFlyMove ?? 0) + spellFlySpeed(actor); }
                 if (kind === 'dodge') actor.dodge = true;
                 if (kind === 'disengage') actor.disengaged = true;
                 log(b, `${actor.name}: ${labels[kind]}.`);
@@ -522,6 +583,8 @@ export function handleBattles(db, user, path, method, body, send) {
           }
         }
         finishSurgeAction(current, surgeState);
+        finishHasteAction(current, hasteState);
+        }
       }
     }
     if (battle.active && !battle.pending && battle.suspendedAction) {
@@ -538,6 +601,9 @@ export function handleBattles(db, user, path, method, body, send) {
       else battle.pending = p;
       battle.suspendedAction = null;
     }
+    if (action === 'act') validateSlowActions(battle, temporalBefore, body);
+    syncFallingChecks(battle);
+    syncSourceConditions(db, battle);
     syncRage(db, battle);
     syncWildShapes(db, battle);
     syncDivineSense(db, battle);
@@ -548,9 +614,11 @@ export function handleBattles(db, user, path, method, body, send) {
     syncTimedEffects(db, battle, persistVitals);
     if (syncConditionConsequences(db, battle)) { syncSpellConditions(battle, db); syncTimedEffects(db, battle, persistVitals); }
     if (!battle.active) releaseTimedEffects(db, battle);
+    advanceRetaliations(battle);
     removeDeadMonsters(battle);
     syncDelayedSpellDamage(battle);
     syncSpellZones(db, battle);
+    syncRepeatSpells(db, battle);
     if (!battle.active && !battle.summary) battle.summary = {
       endedAt: Date.now(), rounds: battle.round,
       defeatedMonsterCount: battle.defeatedMonsters?.length ?? 0,

@@ -1,8 +1,10 @@
-import { automaticCheckFailure, automaticSaveFailure, conditionCheckDisadvantage, conditionDefinitions, conditionSaveDisadvantage, hasCondition, isIncapacitated } from '../shared/conditions.mjs';
+import { timedSaveModifier } from '../shared/timed-effects.mjs';
+import { exhaustionPenalty, socialAdvantage, conditionCheckAdvantage } from '../shared/conditions.mjs';
+import { automaticCheckFailure, automaticSaveFailure, conditionCheckDisadvantage, conditionDefinitions, conditionSaveDisadvantage, conditionSaveAdvantage, hasCondition, isIncapacitated } from '../shared/conditions.mjs';
 import { persistConditionState } from './conditions.mjs';
 import { endConcentration } from './concentration.mjs';
 import { timedRollModifier } from '../shared/timed-effects.mjs';
-import { consumeSavePenalty, hasSpellCondition } from './spell-conditions.mjs';
+import { consumeSavePenalty, hasSpellCondition, spellSpeed, spellFlySpeed } from './spell-conditions.mjs';
 import { luckBonus } from './warlock-features.mjs';
 import { hexDisadvantage } from '../shared/warlock.mjs';
 import { primalSkills, barbarianSaveAdvantage, wildHeartAnimals } from '../shared/barbarian.mjs';
@@ -47,6 +49,7 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
   };
   if (body.kind === 'condition') {
     check(!b.pending, 'Najpierw rozstrzygnij rozpoczęte działanie.');
+    check(!['charmed', 'frightened', 'grappled', 'exhaustion'].includes(body.condition), 'Użyj panelu źródeł stanów lub poziomu Exhaustion.');
     check(gm && Object.hasOwn(conditionDefinitions, body.condition) && typeof body.enabled === 'boolean', 'Stan nakłada GM.');
     check(!(body.enabled && body.condition === 'poisoned' && hasCondition(f, 'petrified')), 'Petrified daje niewrażliwość na Poisoned.');
     f.manualConditions = (f.manualConditions ?? []).filter(c => c !== body.condition);
@@ -63,7 +66,7 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
   if (body.kind === 'relentless-rage') {
     check(f.relentlessRagePending && f.deathFailures < 3, 'Brak rzutu Relentless Rage.');
     const dc = f.relentlessRagePending.dc;
-    const success = body.decline !== true && d20(false) + f.saves.con >= dc;
+    const success = body.decline !== true && d20(false) - exhaustionPenalty(f) + f.saves.con >= dc;
     if (body.decline !== true) { state.relentlessRageDC = dc + 5; f.relentlessRageDC = dc + 5; }
     f.relentlessRagePending = null;
     if (success) { f.hp = 2 * f.level; f.deathSuccesses = 0; f.deathFailures = 0; }
@@ -97,9 +100,9 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
       bonus = s.abilities.str.modifier + s.proficiency * traits.effectiveSkills[skill.id] + extra;
     }
     check(bonus != null, 'Uzupełnij cechę postaci.');
-    const automaticAdvantage = body.kind === 'saving-throw' ? barbarianSaveAdvantage(f, ability) : Boolean(f.rage && ability === 'str');
-    body = { ...body, hexDisadvantage: hexDisadvantage(b, f, ability, body.kind === 'saving-throw') || hasSpellCondition(f, 'enfeebled') && ability === 'str' || body.kind === 'ability-check' && conditionCheckDisadvantage(f) || body.kind === 'saving-throw' && conditionSaveDisadvantage(f, ability) };
-    const total = d20(automaticAdvantage) + bonus + luckBonus(db, f.characterId, body.luckRoll) + (body.kind === 'saving-throw' ? timedRollModifier(f, body) : 0) - (body.kind === 'saving-throw' ? consumeSavePenalty(f, body.mindSliverRoll) : 0);
+    const automaticAdvantage = body.kind === 'saving-throw' ? (barbarianSaveAdvantage(f, ability) || conditionSaveAdvantage(f, ability)) : (Boolean(f.rage && ability === 'str') || conditionCheckAdvantage(f, ability)) || body.kind === 'ability-check' && socialAdvantage(f, b.fighters.find(t => t.id === body.socialTargetId));
+    body = { ...body, hexDisadvantage: hexDisadvantage(b, f, ability, body.kind === 'saving-throw') || hasSpellCondition(f, 'enfeebled') && ability === 'str' || body.kind === 'ability-check' && (conditionCheckDisadvantage(f, ability) || body.skill === 'perception' && body.requiresSight && body.lightlyObscured === true) || body.kind === 'saving-throw' && conditionSaveDisadvantage(f, ability) };
+    const total = d20(automaticAdvantage) - exhaustionPenalty(f) + (body.kind === 'saving-throw' ? timedSaveModifier(f, ability) : 0) + bonus + luckBonus(db, f.characterId, body.luckRoll) + (body.kind === 'saving-throw' ? timedRollModifier(f, body) : 0) - (body.kind === 'saving-throw' ? consumeSavePenalty(f, body.mindSliverRoll) : 0);
     if (body.kind === 'ability-check') {
       check(body.dc == null || Number.isInteger(body.dc) && body.dc >= 1 && body.dc <= 100, 'Podaj poprawne ST testu.');
       f.lastAbilityCheck = body.dc == null ? null : { total, dc: body.dc, attempted: false };
@@ -118,7 +121,7 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
   }
   if (body.kind === 'eagle-flight') {
     check(f.id === b.fighters[b.turn].id && !b.pending && !f.bonus && f.rage?.animal === 'eagle', 'Orzeł wymaga Szału i wolnej akcji dodatkowej we własnej turze.');
-    f.extraMove += f.speed; f.disengaged = true; f.bonus = 'Eagle: Dash + Disengage';
+    f.extraMove += spellSpeed(f); f.extraFlyMove = (f.extraFlyMove ?? 0) + spellFlySpeed(f); f.disengaged = true; f.bonus = 'Eagle: Dash + Disengage';
     log(b, `${f.name}: Eagle — Dash i Disengage.`);
     return true;
   }
@@ -145,7 +148,7 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
       f.rage = { expiresRound: b.round + 1, maxRound: b.round + 100 };
       if (p.wildHeart) {
         f.rage.animal = body.animal;
-        if (body.animal === 'eagle') { f.extraMove += f.speed; f.disengaged = true; }
+        if (body.animal === 'eagle') { f.extraMove += spellSpeed(f); f.extraFlyMove = (f.extraFlyMove ?? 0) + spellFlySpeed(f); f.disengaged = true; }
       }
       f.concentration = null; f.concentrationDC = null; f.concentrationChecks = []; state.concentration = null;
       const feet = body.feet ?? 0;
