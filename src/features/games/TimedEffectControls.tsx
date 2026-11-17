@@ -11,9 +11,12 @@ export function TimedEffectControls({ controller, actor }: { controller: ReturnT
   const controlled = controller.response!.controlledIds;
   const activeIds = new Set(strongestEffects(actor.timedEffects).map(e => e.id));
   return <>{actor.concentration && controlled.includes(actor.id) && <button className="text-button" disabled={controller.pending} onClick={() => void controller.mutate('act', { kind: 'end-concentration', actorId: actor.id })}>Zakończ koncentrację — bez akcji</button>}
+    {!!actor.climbSpeed && <p>Szybkość wspinaczki: {actor.climbSpeed} stóp.</p>}
+    {!!actor.darkvision && <p>Darkvision: {actor.darkvision} stóp; warunki widoczności ustala MG.</p>}
+    {actor.timedEffects?.some(e => e.modifiers.spiderClimb) && <p>Spider Climb: pionowe powierzchnie i sufity, wolne ręce; przebieg drogi oraz podparcie po końcu czaru rozstrzyga MG.</p>}
     {actor.timedEffects?.map(e => {
       const source = b.fighters.find(f => f.characterId === e.sourceCharacterId);
-      return <p key={e.id}>{e.name} · {e.sourceName ?? source?.name ?? 'rzucający poza walką'} · {e.endRound == null ? 'do zakończenia efektu' : `${Math.max(0, Math.ceil(e.endRound - b.round))} rund`}{!activeIds.has(e.id) && ' · nie sumuje się z silniejszym lub nowszym rzuceniem'}{e.dismissible !== false && source && controlled.includes(source.id) && <button className="text-button" disabled={controller.pending} onClick={() => void controller.mutate('act', { kind: 'dismiss-effect', actorId: source.id, castingId: e.castingId })}>Zakończ czar</button>}</p>;
+      return <p key={e.id}>{e.name}{e.modifiers.energyProtection && ` (${e.modifiers.resistances?.join(', ')})`} · {e.sourceName ?? source?.name ?? 'rzucający poza walką'} · {e.endRound == null ? 'do zakończenia efektu' : `${Math.max(0, Math.ceil(e.endRound - b.round))} rund`}{!activeIds.has(e.id) && ' · nie sumuje się z silniejszym lub nowszym rzuceniem'}{e.dismissible !== false && source && controlled.includes(source.id) && <button className="text-button" disabled={controller.pending} onClick={() => void controller.mutate('act', { kind: 'dismiss-effect', actorId: source.id, castingId: e.castingId })}>Zakończ czar</button>}</p>;
     })}
   </>;
 }

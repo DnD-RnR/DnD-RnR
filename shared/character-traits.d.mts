@@ -1,7 +1,7 @@
 import type { CharacterStatistics, Character } from '../src/api';
 export type TraitSelection = Record<string, string[]>;
 export type TraitGroup = { id: string; label: string; limit: number; options: { id: string; label: string }[]; kind: string };
-export type TraitProfile = {
+export type TraitProfile = { darkvision: number;
   creatureType: 'Humanoid' | null;
   originFeatEntries: import('./origin-feats.mjs').OriginFeatEntry[];
   invocationEntries: import('./warlock-invocation-effects.mjs').InvocationSheetEntry[]; swimSpeed: number | null;

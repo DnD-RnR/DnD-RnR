@@ -171,6 +171,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     const projectiles = spec.cantripBeams ? c.character.level >= 17 ? 4 : c.character.level >= 11 ? 3 : c.character.level >= 5 ? 2 : 1 : spec.projectiles ? spec.projectiles + (body.level - c.spell.level) * (spec.projectilesPerLevel ?? 0) : 0;
     const maxTargets = spec.maxTargets ? spec.maxTargets + (body.level - c.spell.level) * (spec.targetsPerLevel ?? 0) : spec.extraTargets ? body.level - 1 : spec.area ? 50 : 1;
     check(projectiles ? targets.length === projectiles && targets.every(Boolean) : (targets.length > 0 || spec.zone || spec.optionalTarget) && targets.length <= maxTargets && targets.every(Boolean) && new Set(targets.map(t => t.id)).size === targets.length, 'Wybierz właściwe cele czaru i cel dla każdego promienia.');
+    if (spec.willingOnly) check(body.willing === true, 'Ten czar wymaga dobrowolnego celu, co potwierdza MG.');
     if (c.spell.id === 'feather-fall') {
       check(body.confirmedFalling === true && targets.every(t => t.falling), 'Feather Fall: MG potwierdza do pięciu spadających stworzeń w 60 stopach.');
       check(caster.falling || b.fighters.some(t => t.falling && canSeeConditionTarget(caster, t)), 'Feather Fall wymaga własnego spadania albo widocznego spadającego stworzenia jako wyzwalacza.');
@@ -180,7 +181,8 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     if (spec.humanoid) check(targets.every(t => t.creatureType === 'Humanoid' || !t.creatureType && body.confirmedHumanoid === true), 'Hold Person: cel musi być Humanoidem; nieznany typ potwierdza GM.');
     check(targets.every(t => t.deathFailures < 3), 'Zwykły czar nie przywraca życia martwemu celowi.');
     if (c.spell.id === 'power-word-kill' && targets[0].hp <= 100) {
-      const target = targets[0], killed = instantDeath(db, target, persistVitals);
+      const target = targets[0], hpBefore = target.hp, killed = instantDeath(db, target, persistVitals);
+      if (killed && hpBefore > 0) target.fiendDefeatPending = { sourceId: caster.id };
       log(b, `${c.spell.name} → ${target.name}: ${killed ? 'natychmiastowa śmierć bez obrażeń' : 'Death Ward neguje efekt i kończy się'}.`);
       return true;
     }

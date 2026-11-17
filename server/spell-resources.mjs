@@ -1,11 +1,12 @@
 import { characterZoneConditions } from './spell-zones.mjs';
 import { endProtectiveSpell } from './protective-spells.mjs';
-import { timedSpeedMultiplier, timedFlySpeed, timedSize } from '../shared/timed-effects.mjs';
+import { timedSpeedMultiplier, timedFlySpeed, timedSize, timedDarkvision } from '../shared/timed-effects.mjs';
+import { spellClimbSpeed } from './spell-conditions.mjs';
 import { conditionsOf, conditionSpeedZero, isIncapacitated } from '../shared/conditions.mjs';
 import { restWarlock, useWarlockFeature } from './warlock-features.mjs';
 import { psiResources, restPsi } from './psi-warrior.mjs';
 import { paladinResources, restPaladin } from './paladin.mjs';
-import { druidProfile } from '../shared/druid.mjs';
+import { druidProfile, druidForms } from '../shared/druid.mjs';
 import { warlockProfile } from '../shared/warlock.mjs';
 import { rageProfile } from '../shared/barbarian.mjs';
 import { selectedOriginFeats, originSpellGrants } from '../shared/origin-feats.mjs';
@@ -110,6 +111,10 @@ export function publicCaster(db, id) {
 
   effectiveStats.flySpeed = conditionSpeedZero(conditionSubject) || !timedFlySpeed({ timedEffects }) ? 0 : Math.floor(Math.max(0, timedFlySpeed({ timedEffects }) + timedSpeedBonus({ timedEffects }) - 5 * (c.state.exhaustion ?? 0)) * timedSpeedMultiplier({ timedEffects }));
   effectiveStats.size = timedSize({ size: characterTraits(c.character, c.stats).size, timedEffects });
+  const traits = characterTraits(c.character, c.stats);
+  const form = c.state.wildShape?.expiresAt > Date.now() ? druidForms.find(f => f.id === c.state.wildShape.formId) : null;
+  effectiveStats.darkvision = timedDarkvision({ darkvision: form ? form.darkvision ?? 0 : traits.darkvision, timedEffects });
+  effectiveStats.climbSpeed = spellClimbSpeed({ ...conditionSubject, speed: form?.speed ?? summary.speed ?? 0, climbSpeed: form?.climb ?? 0 });
   return { conditions, effectiveStats, activeEffects: c.state.activeEffects ?? [], concentration: c.state.concentration ?? null, warlock: warlockProfile(c.character, c.stats.values.cha, c.state), psiWarrior: psiResources(c.character, c.state), paladin: { ...paladinResources(c.character, c.state), channelDivinityDc: c.dc }, druid: { ...druidProfile(c.character), uses: Math.min(druidProfile(c.character).max, c.state.wildShapeUses ?? druidProfile(c.character).max), forms: c.stats.traits?.druidForms ?? [], wildShape: c.state.wildShape?.expiresAt > Date.now() ? c.state.wildShape : null, companion: c.state.wildCompanion ?? null }, slots: c.slots, spells: c.spells, ability: c.ability, attack: c.attack, dc: c.dc, error: c.error, species: c.species, barbarian: { ...rageProfile(c.character), uses: Math.min(rageProfile(c.character).max, c.state.rageUses ?? rageProfile(c.character).max), relentlessDC: c.state.relentlessRageDC ?? 10, recoveryAvailable: c.state.persistentRageAvailable !== false }, resourceVersion: c.state.version };
 }
 export function spendSpell(db, id, spellId, level, source, options = {}) {

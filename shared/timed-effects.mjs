@@ -1,5 +1,8 @@
 // SRD 5.2 pp. 106, 179: different spells combine; strongest/latest same spell wins.
 export const timedSpellDefinitions = {
+  'protection-from-energy': { seconds: 3600, concentration: true, targets: 1, willingOnly: true, energyProtection: true, effectOptions: ['Acid', 'Cold', 'Fire', 'Lightning', 'Thunder'] },
+  darkvision: { seconds: 28800, targets: 1, willingOnly: true, darkvision: 150 },
+  'spider-climb': { seconds: 3600, concentration: true, targets: 1, targetsPerLevel: 1, willingOnly: true, spiderClimb: true },
   'death-ward': { seconds: 28800, targets: 1, deathWard: true },
   'feather-fall': { seconds: 60, targets: 5, fallProtection: true },
   'armor-of-agathys': { seconds: 3600, self: true, targets: 1, armorOfAgathys: true },
@@ -45,6 +48,7 @@ export const timedSpeedMultiplier = fighter => strongestEffects(fighter.timedEff
 export const hasTimedModifier = (fighter, key) => strongestEffects(fighter?.timedEffects).some(e => e.modifiers[key]);
 export const timedSaveModifier = (fighter, ability) => ability === 'dex' && hasTimedModifier(fighter, 'slow') ? -2 : 0;
 export const timedFlySpeed = fighter => Math.max(fighter.flySpeed ?? 0, ...strongestEffects(fighter.timedEffects).map(e => e.modifiers.flySpeed ?? 0));
+export const timedDarkvision = fighter => Math.max(fighter.darkvision ?? 0, ...strongestEffects(fighter.timedEffects).map(e => e.modifiers.darkvision ?? 0));
 export const weaponSizeModifier = fighter => strongestEffects(fighter?.timedEffects).find(e => e.modifiers.sizeDelta)?.modifiers.sizeDelta ?? 0;
 export function timedSize(fighter) {
   const sizes = ['Tiny', 'Small', 'Medium', 'Large', 'Huge', 'Gargantuan'];

@@ -6,6 +6,7 @@ export const hasSpellCondition = (fighter, kind) => conditionDefinitions[kind] ?
 export const healingBlocked = fighter => fighter.healingBlocked || hasSpellCondition(fighter, 'chill-touch');
 export const spellSpeed = fighter => conditionSpeedZero(fighter) ? 0 : Math.floor(Math.max(0, fighter.speed + timedSpeedBonus(fighter) - 5 * (fighter.exhaustion ?? 0) - (hasSpellCondition(fighter, 'ray-of-frost') ? 10 : 0) - (hasSpellCondition(fighter, 'wrath') ? 10 : 0)) * timedSpeedMultiplier(fighter) / (fighter.zoneSpeedHalved ? 2 : 1));
 export const spellFlySpeed = fighter => conditionSpeedZero(fighter) || timedFlySpeed(fighter) <= 0 ? 0 : spellSpeed({ ...fighter, speed: timedFlySpeed(fighter) });
+export const spellClimbSpeed = fighter => Math.max(fighter.climbSpeed > 0 ? spellSpeed({ ...fighter, speed: fighter.climbSpeed }) : 0, (fighter.timedEffects ?? []).some(e => e.modifiers.spiderClimb) ? spellSpeed(fighter) : 0);
 export function consumeSavePenalty(fighter, roll) {
   if (!hasSpellCondition(fighter, 'mind-sliver')) return 0;
   if (!Number.isInteger(roll) || roll < 1 || roll > 4) throw new Error('Mind Sliver: podaj odejmowane k4.');

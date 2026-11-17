@@ -13,8 +13,306 @@ import { hasCondition, isIncapacitated } from '../shared/conditions.mjs';
 import { defendSpellDamage, spellDamageParts } from '../shared/spell-damage.mjs';
 import { startConcentration } from './concentration.mjs';
 import { eligibleZoneTargets } from './spell-zones.mjs';
-import { applyTimedEffect } from './timed-effects.mjs';
+import { applyTimedEffect, advanceEffectTime } from './timed-effects.mjs';
 import { spellById } from '../shared/spellcasting.mjs';
+
+test('Protection from Energy validates five choices and willing targets, and never stacks matching resistances', () => {
+  for (const [choice, type] of [['Acid', 'kwas'], ['Cold', 'zimno'], ['Fire', 'ogień'], ['Lightning', 'błyskawice'], ['Thunder', 'grom']]) {
+    const { db, start, call, gm } = setup('wizard', 5);
+    try {
+      chooseTimedSpell(db, 'protection-from-energy');
+      const self = start().battle.fighters[0].id;
+      const castBody = { kind: 'cast', spellId: 'protection-from-energy', slot: 'action', source: 'slot', level: 3, targetIds: [self], willing: true, effectChoice: choice };
+      assert.equal(call('act', { ...castBody, effectChoice: 'Psychic' }).status, 409);
+      assert.equal(call('act', { ...castBody, willing: false }).status, 409);
+      assert.equal(resourceState(db, 1).spent[2], 0);
+      const cast = call('act', castBody);
+      assert.equal(cast.status, 200, cast.error);
+      assert.deepEqual(cast.battle.fighters[0].timedEffects[0].modifiers.resistances, [type]);
+      const raw = JSON.parse(db.prepare('SELECT data FROM session_battles').get().data);
+      raw.fighters[0].damageResistance = type;
+      db.prepare('UPDATE session_battles SET data = ?').run(JSON.stringify(raw));
+      const hit = call('act', { kind: 'resolve', targetId: self, effect: 'damage', amount: 5, damageType: type, note: 'Matching damage' }, gm);
+      assert.equal(hit.status, 200, hit.error);
+      assert.equal(hit.battle.fighters[0].hp, 13);
+      assert.equal(hit.battle.fighters[0].concentrationDC, 10);
+      call('act', { kind: 'concentration', roll: 20 });
+      const other = call('act', { kind: 'resolve', targetId: self, effect: 'damage', amount: 5, damageType: 'moc', note: 'Unprotected damage' }, gm);
+      assert.equal(other.battle.fighters[0].hp, 8);
+      call('act', { kind: 'concentration', roll: 1 });
+      assert.equal(call().battle.fighters[0].timedEffects.length, 0);
+    } finally { db.close(); }
+  }
+});
+
+test('Protection from Energy resolves typed spell damage after saves without dividing resistance twice', () => {
+  const { db, start, call, gm } = setup('wizard', 5);
+  try {
+    const s = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 1').get().data);
+    s.spells.selections = { book: ['protection-from-energy', 'burning-hands'], prepared: ['protection-from-energy', 'burning-hands'] };
+    db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = 1').run(JSON.stringify(s));
+    const self = start().battle.fighters[0].id;
+    call('act', { kind: 'cast', spellId: 'protection-from-energy', slot: 'action', source: 'slot', level: 3, targetIds: [self], willing: true, effectChoice: 'Fire' });
+    for (let i = 0; i < 3; i++) call('next', {}, gm);
+    call('act', { kind: 'cast', spellId: 'burning-hands', slot: 'action', source: 'slot', level: 1, targetIds: [self] });
+    call('act', { kind: 'spell-save', targetId: self, roll: 20 });
+    call('act', { kind: 'spell-defense', targetId: self, multiplier: 0.5 }, gm);
+    const hit = call('act', { kind: 'spell-effect', rolls: [2,2,2] });
+    assert.equal(hit.status, 200, hit.error);
+    assert.equal(hit.battle.fighters[0].hp, 14, '6 / save 2 / resistance 2 rounded down is 1');
+  } finally { db.close(); }
+});
+
+test('Darkvision grants 150 feet without reducing a stronger sense and restores base senses when dismissed', () => {
+  for (const monster of [true, false]) {
+    const { db, start, call, gm } = setup('wizard', 5);
+    try {
+      chooseTimedSpell(db, 'darkvision');
+      db.prepare('UPDATE characters SET species = ? WHERE id = 1').run('Krasnolud (Dwarf)');
+      const b = start().battle, self = b.fighters[0].id, target = b.fighters[monster ? 1 : 0].id;
+      if (monster) {
+        const raw = JSON.parse(db.prepare('SELECT data FROM session_battles').get().data);
+        raw.fighters[1].darkvision = 300;
+        db.prepare('UPDATE session_battles SET data = ?').run(JSON.stringify(raw));
+      } else assert.equal(b.fighters[0].darkvision, 120);
+      const cast = call('act', { kind: 'cast', spellId: 'darkvision', slot: 'action', source: 'slot', level: 2, targetIds: [target], willing: true });
+      assert.equal(cast.status, 200, cast.error);
+      const view = call('', {}, gm), result = view.battle.fighters.find(f => f.id === target);
+      assert.equal(result.darkvision, monster ? 300 : 150);
+      assert.equal(view.battle.fighters[0].concentration, null);
+      const effect = result.timedEffects.find(e => e.spellId === 'darkvision');
+      assert.equal(call('act', { kind: 'dismiss-effect', actorId: self, castingId: effect.castingId }).status, 200);
+      assert.equal(call('', {}, gm).battle.fighters.find(f => f.id === target).darkvision, monster ? 300 : 120);
+    } finally { db.close(); }
+  }
+});
+
+test('Spider Climb upcasts to two willing targets, shares movement with walking and works with Dash', () => {
+  const { db, start, call, gm } = setup('wizard', 5);
+  try {
+    chooseTimedSpell(db, 'spider-climb');
+    const b = start().battle, self = b.fighters[0].id, friend = b.fighters[2].id;
+    assert.equal(call('act', { kind: 'cast', spellId: 'spider-climb', slot: 'action', source: 'slot', level: 2, targetIds: [self, friend], willing: true }).status, 409);
+    const cast = call('act', { kind: 'cast', spellId: 'spider-climb', slot: 'action', source: 'slot', level: 3, targetIds: [self, friend], willing: true });
+    assert.equal(cast.status, 200, cast.error);
+    assert.equal(cast.battle.fighters[0].climbSpeed, cast.battle.fighters[0].speed);
+    assert.equal(cast.battle.fighters[2].climbSpeed, cast.battle.fighters[2].speed);
+    assert.equal(call('act', { kind: 'move', feet: 20, movementMode: 'climb' }).status, 200);
+    assert.equal(call('act', { kind: 'move', feet: 15, movementMode: 'walk' }).status, 409);
+    for (let i = 0; i < 3; i++) call('next', {}, gm);
+    assert.equal(call('act', { kind: 'dash', slot: 'action' }).status, 200);
+    const moved = call('act', { kind: 'move', feet: 60, movementMode: 'climb' });
+    assert.equal(moved.status, 200, moved.error);
+    assert.equal(moved.battle.fighters[0].moved, 60);
+    assert.equal(call('act', { kind: 'end-concentration', actorId: self }).status, 200);
+    assert.equal(call().battle.fighters[2].climbSpeed, 0);
+    assert.equal(call('act', { kind: 'move', feet: 1, movementMode: 'climb' }).status, 409);
+  } finally { db.close(); }
+});
+
+test('Spider Climb follows current Speed modifiers without reducing faster natural climbing', () => {
+  const { db, start, call } = setup('wizard', 5);
+  try {
+    chooseTimedSpell(db, 'spider-climb'); start();
+    const raw = JSON.parse(db.prepare('SELECT data FROM session_battles').get().data), self = raw.fighters[0], friend = raw.fighters[2];
+    self.climbSpeed = 40; self.exhaustion = 2;
+    startConcentration(db, friend, spellById.get('haste'), raw);
+    applyTimedEffect(db, raw, friend, self, spellById.get('haste'), 3, 'haste');
+    applyTimedEffect(db, raw, friend, self, spellById.get('longstrider'), 1, 'longstrider');
+    db.prepare('UPDATE session_battles SET data = ?').run(JSON.stringify(raw));
+    const cast = call('act', { kind: 'cast', spellId: 'spider-climb', slot: 'action', source: 'slot', level: 2, targetIds: [self.id], willing: true });
+    assert.equal(cast.status, 200, cast.error);
+    assert.equal(cast.battle.fighters[0].speed, 60);
+    assert.equal(cast.battle.fighters[0].climbSpeed, 80);
+    assert.equal(call('act', { kind: 'move', feet: 80, movementMode: 'climb' }).status, 200);
+  } finally { db.close(); }
+});
+
+test('utility protection spells apply outside combat and expire through game time', () => {
+  for (const [id, level, seconds] of [['protection-from-energy', 3, 3600], ['darkvision', 2, 28800], ['spider-climb', 2, 3600]]) {
+    const { db, player } = setup('wizard', 5);
+    try {
+      chooseTimedSpell(db, id);
+      let cast;
+      handleSpellResources(db, player, '/api/characters/1/spell-resources', 'POST', { kind: 'cast-outside-combat', spellId: id, source: 'slot', level, confirmed: true, effectChoice: 'Cold', version: resourceState(db, 1).version }, (status, data) => { cast = { status, ...data }; });
+      assert.equal(cast.status, 200, cast.error);
+      const state = cast.spellcasting;
+      assert.equal(state.activeEffects[0].remainingSeconds, seconds);
+      if (id === 'darkvision') { assert.equal(state.effectiveStats.darkvision, 150); assert.equal(state.concentration, null); }
+      if (id === 'spider-climb') assert.equal(state.effectiveStats.climbSpeed, state.effectiveStats.speed);
+      if (id === 'protection-from-energy') assert.deepEqual(state.activeEffects[0].modifiers.resistances, ['zimno']);
+      advanceEffectTime(db, [1], seconds);
+      assert.equal(publicCaster(db, 1).activeEffects.length, 0);
+      assert.equal(publicCaster(db, 1).concentration, null);
+    } finally { db.close(); }
+  }
+});
+
+test('Death Ward prevents ordinary and massive lethal damage before racial endurance, while damage still checks concentration', () => {
+  for (const amount of [15, 1000]) {
+    const { db, start, call, gm } = setup('cleric', 9);
+    try {
+      chooseTimedSpell(db, 'death-ward');
+      const self = start().battle.fighters[0].id;
+      const cast = call('act', { kind: 'cast', spellId: 'death-ward', slot: 'action', source: 'slot', level: 4, targetIds: [self] });
+      assert.equal(cast.status, 200, cast.error);
+      const raw = JSON.parse(db.prepare('SELECT data FROM session_battles').get().data);
+      raw.fighters[0].relentlessEnduranceAvailable = true;
+      startConcentration(db, raw.fighters[0], spellById.get('bless'), raw);
+      db.prepare('UPDATE session_battles SET data = ?').run(JSON.stringify(raw));
+      const hit = call('act', { kind: 'resolve', targetId: self, effect: 'damage', amount, note: 'Lethal damage' }, gm);
+      assert.equal(hit.status, 200, hit.error);
+      const f = hit.battle.fighters[0];
+      assert.equal(f.hp, 1); assert.equal(f.deathFailures, 0);
+      assert.equal(f.relentlessEnduranceAvailable, true);
+      assert.equal(f.lastDamage.deathWard, true);
+      assert.equal(f.lastDamage.hpLost, 14);
+      assert.equal(f.concentrationDC, amount === 15 ? 10 : 30);
+      assert.equal(resourceState(db, 1).activeEffects.some(e => e.spellId === 'death-ward'), false);
+    } finally { db.close(); }
+  }
+});
+
+test('Death Ward persists between encounters and consumes one effective casting per trigger', () => {
+  const { db, start, call, gm } = setup('cleric', 9);
+  try {
+    chooseTimedSpell(db, 'death-ward');
+    const initial = start().battle.fighters[0].id;
+    call('act', { kind: 'cast', spellId: 'death-ward', slot: 'action', source: 'slot', level: 4, targetIds: [initial] });
+    call('end', {}, gm);
+    const self = start().battle.fighters[0].id;
+    const raw = JSON.parse(db.prepare('SELECT data FROM session_battles').get().data);
+    applyTimedEffect(db, raw, raw.fighters[0], raw.fighters[0], spellById.get('death-ward'), 4, 'another-ward');
+    let hit = call('act', { kind: 'resolve', targetId: self, effect: 'damage', amount: 15, note: 'First lethal hit' }, gm);
+    assert.equal(hit.status, 200, hit.error);
+    assert.equal(hit.battle.fighters[0].hp, 1);
+    assert.equal(resourceState(db, 1).activeEffects.filter(e => e.spellId === 'death-ward').length, 1);
+    hit = call('act', { kind: 'resolve', targetId: self, effect: 'damage', amount: 1, note: 'Next lethal hit' }, gm);
+    assert.equal(hit.battle.fighters[0].hp, 1);
+    assert.equal(resourceState(db, 1).activeEffects.filter(e => e.spellId === 'death-ward').length, 0);
+    hit = call('act', { kind: 'resolve', targetId: self, effect: 'damage', amount: 1, note: 'Unprotected hit' }, gm);
+    assert.equal(hit.battle.fighters[0].hp, 0);
+  } finally { db.close(); }
+});
+
+test('Death Ward does not heal a target already at zero HP, but can negate instant death on that target', () => {
+  const { db, start, call, gm } = setup('cleric', 9);
+  try {
+    chooseTimedSpell(db, 'death-ward');
+    const friend = start().battle.fighters[2].id;
+    call('act', { kind: 'resolve', targetId: friend, effect: 'damage', amount: 15, note: 'Unconscious' }, gm);
+    const cast = call('act', { kind: 'cast', spellId: 'death-ward', slot: 'action', source: 'slot', level: 4, targetIds: [friend] });
+    assert.equal(cast.status, 200, cast.error);
+    const hit = call('act', { kind: 'resolve', targetId: friend, effect: 'damage', amount: 1, note: 'Damage at zero' }, gm);
+    assert.equal(hit.battle.fighters[2].hp, 0);
+    assert.equal(hit.battle.fighters[2].deathFailures, 1);
+    assert.equal(resourceState(db, 2).activeEffects.length, 1);
+    const saved = call('act', { kind: 'resolve', targetId: friend, effect: 'instant-death', note: 'Lethal effect without damage' }, gm);
+    assert.equal(saved.status, 200, saved.error);
+    assert.equal(saved.battle.fighters[2].deathFailures, 1);
+    assert.equal(resourceState(db, 2).activeEffects.length, 0);
+    const killed = call('act', { kind: 'resolve', targetId: friend, effect: 'instant-death', note: 'Second lethal effect' }, gm);
+    assert.equal(killed.battle.fighters[2].deathFailures, 3);
+    assert.equal(call('act', { kind: 'resolve', targetId: friend, effect: 'heal', amount: 10, note: 'Ordinary healing' }, gm).status, 409);
+  } finally { db.close(); }
+});
+
+test('Death Ward prevents dropping to zero when Aid ends, for both characters and monsters', () => {
+  for (const monster of [true, false]) {
+    const { db, start, call, gm } = setup('cleric', 9);
+    try {
+      chooseTimedSpell(db, 'death-ward'); start();
+      const raw = JSON.parse(db.prepare('SELECT data FROM session_battles').get().data), source = raw.fighters[0], target = raw.fighters[monster ? 1 : 2];
+      applyTimedEffect(db, raw, source, target, spellById.get('death-ward'), 4, 'ward');
+      applyTimedEffect(db, raw, source, target, spellById.get('aid'), 2, 'aid');
+      if (monster) db.prepare('UPDATE session_battles SET data = ?').run(JSON.stringify(raw));
+      const hit = call('act', { kind: 'resolve', targetId: target.id, effect: 'damage', amount: monster ? 102 : 17, note: 'Damage while Aid is active' }, gm);
+      assert.equal(hit.status, 200, hit.error);
+      const dropped = call('act', { kind: 'dismiss-effect', actorId: source.id, castingId: 'aid' });
+      assert.equal(dropped.status, 200, dropped.error);
+      const result = JSON.parse(db.prepare('SELECT data FROM session_battles').get().data).fighters.find(f => f.id === target.id);
+      assert.equal(result.hp, 1);
+      assert.equal(result.timedEffects.some(e => e.spellId === 'death-ward'), false);
+    } finally { db.close(); }
+  }
+});
+
+test('Power Word Kill at 100 HP kills without damage, ignoring temporary HP and racial endurance', () => {
+  const { db, start, call } = setup('wizard', 20);
+  try {
+    chooseTimedSpell(db, 'power-word-kill');
+    const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 2').get().data);
+    Object.assign(stats.values, { hp: 100, maxHp: 100, tempHp: 200 });
+    db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = 2').run(JSON.stringify(stats));
+    const friend = start().battle.fighters[2].id;
+    const raw = JSON.parse(db.prepare('SELECT data FROM session_battles').get().data);
+    raw.fighters[2].relentlessEnduranceAvailable = true; raw.fighters[2].thoughtShield = true;
+    startConcentration(db, raw.fighters[2], spellById.get('bless'), raw);
+    db.prepare('UPDATE session_battles SET data = ?').run(JSON.stringify(raw));
+    const cast = call('act', { kind: 'cast', spellId: 'power-word-kill', slot: 'action', source: 'slot', level: 9, targetIds: [friend] });
+    assert.equal(cast.status, 200, cast.error);
+    const target = cast.battle.fighters[2];
+    assert.equal(cast.battle.pending, null);
+    assert.equal(target.hp, 0); assert.equal(target.deathFailures, 3);
+    assert.equal(target.tempHp, 200); assert.equal(target.relentlessEnduranceAvailable, true);
+    assert.equal(target.concentration, null); assert.equal(target.lastDamage, undefined);
+    assert.equal(cast.battle.fighters[0].hp, 15, 'no psychic damage means no Thought Shield reflection');
+    assert.equal(resourceState(db, 1).spent[8], 1);
+  } finally { db.close(); }
+});
+
+test('Power Word Kill negated by Death Ward leaves HP unchanged; above 100 HP it deals 12d12 and can trigger the HP floor', () => {
+  for (const hp of [100, 101]) {
+    const { db, start, call, gm } = setup('wizard', 20);
+    try {
+      chooseTimedSpell(db, 'power-word-kill');
+      const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 2').get().data);
+      Object.assign(stats.values, { hp, maxHp: hp });
+      db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = 2').run(JSON.stringify(stats));
+      const b = start().battle, friend = b.fighters[2].id;
+      applyTimedEffect(db, b, b.fighters[0], b.fighters[2], spellById.get('death-ward'), 4, 'ward');
+      let cast = call('act', { kind: 'cast', spellId: 'power-word-kill', slot: 'action', source: 'slot', level: 9, targetIds: [friend] });
+      assert.equal(cast.status, 200, cast.error);
+      if (hp === 101) {
+        assert.equal(cast.battle.pending.stage, 'effect');
+        assert.equal(cast.battle.pending.spec.dice, 12);
+        call('act', { kind: 'spell-defense', targetId: friend, multiplier: 1 }, gm);
+        cast = call('act', { kind: 'spell-effect', rolls: Array(12).fill(12) });
+      }
+      assert.equal(cast.status, 200, cast.error);
+      assert.equal(cast.battle.fighters[2].hp, hp === 100 ? 100 : 1);
+      assert.equal(cast.battle.fighters[2].deathFailures, 0);
+      assert.equal(resourceState(db, 2).activeEffects.some(e => e.spellId === 'death-ward'), false);
+    } finally { db.close(); }
+  }
+});
+
+test('Power Word Kill waits for Counterspell and instant monster death does not invent damage', () => {
+  for (const countered of [true, false]) {
+    const { db, start, call, gm, ally } = counterspellDuel();
+    try {
+      db.prepare('UPDATE characters SET level = 20 WHERE id = 1').run();
+      chooseTimedSpell(db, 'power-word-kill');
+      const b = start().battle, enemy = b.fighters[1].id, friend = b.fighters[2].id;
+      let cast = call('act', { kind: 'cast', spellId: 'power-word-kill', slot: 'action', source: 'slot', level: 9, targetIds: [enemy] });
+      assert.equal(cast.status, 200, cast.error);
+      assert.equal(cast.battle.pending.kind, 'casting');
+      assert.ok(cast.battle.fighters.some(f => f.id === enemy));
+      if (countered) {
+        cast = call('act', { kind: 'cast', actorId: friend, spellId: 'counterspell', slot: 'reaction', source: 'slot', level: 3, confirmedCounterspell: true, castingId: cast.battle.pending.id }, ally);
+        cast = call('act', { kind: 'counterspell-save', roll: 1, castingId: cast.battle.pending.id });
+        assert.equal(resourceState(db, 1).spent[8], 0);
+        assert.ok(cast.battle.fighters.some(f => f.id === enemy));
+      } else {
+        cast = call('act', { kind: 'casting-pass', actorId: friend, castingId: cast.battle.pending.id }, ally);
+        assert.equal(cast.status, 200, cast.error);
+        assert.equal(cast.battle.fighters.some(f => f.id === enemy), false);
+        const view = call('', {}, gm);
+        assert.equal(view.battle.defeatedMonsters[0].damageTaken, 0);
+      }
+    } finally { db.close(); }
+  }
+});
 
 test('Feather Fall protects up to five falling creatures and ends separately on each landing', () => {
   const { db, start, call, gm } = setup('wizard', 5);

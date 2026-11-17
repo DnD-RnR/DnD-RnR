@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { takeDeathWard } from './death-ward.mjs';
+import { damageTypeName } from '../shared/warlock.mjs';
 import { resourceState, saveResources } from './spell-resources.mjs';
 import { timedHpBonus, timedSpellDefinitions } from '../shared/timed-effects.mjs';
 import { endConcentration } from './concentration.mjs';
@@ -83,6 +84,10 @@ export function applyTimedEffect(db, b, source, target, spell, level, castingId,
   const definition = timedSpellDefinitions[spell.id];
   if (definition.concentration && (!source.concentration || !source.concentrationKey)) return false;
   const modifiers = { ...definition };
+  if (definition.energyProtection) {
+    if (!definition.effectOptions.includes(options.effectChoice)) throw new Error('Wybierz Acid, Cold, Fire, Lightning albo Thunder.');
+    modifiers.resistances = [damageTypeName(options.effectChoice)];
+  }
   if (definition.armorOfAgathys) {
     modifiers.retaliationAmount = 5 * level; modifiers.retaliationType = options.damageType ?? 'Cold';
     const row = target.characterId ? db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(target.characterId) : null;

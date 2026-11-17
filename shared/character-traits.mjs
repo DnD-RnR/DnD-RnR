@@ -296,7 +296,7 @@ export function characterTraits(character, stats) {
     ancestry, fiendishLegacy,
     goliathAncestry, giantAncestry: goliathAncestry,
     baseSpeed: species ? (species === 'Goliat (Goliath)' ? 35 : 30) + (feats.has('Transmuted Anatomy') ? 5 : 0) : null,
-    senses, defenses, resources, hpBonus, firstLevelMaxHp: level === 1 && die && con !== null ? Math.max(1, die + con) + hpBonus : null,
+    darkvision, senses, defenses, resources, hpBonus, firstLevelMaxHp: level === 1 && die && con !== null ? Math.max(1, die + con) + hpBonus : null,
     initiativeBonus: feats.has('Alert') ? proficiency : 0,
   };
 }

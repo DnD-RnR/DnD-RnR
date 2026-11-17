@@ -10,10 +10,10 @@ import { cannotHarm, conditionSourcesOf, exhaustionPenalty } from '../shared/con
 import { conditionsOf, conditionAttackModifiers, conditionSpeedZero, hasCondition, isIncapacitated } from '../shared/conditions.mjs';
 import { persistConditionState, endCondition, syncConditionConsequences } from './conditions.mjs';
 import { strongestEffects } from '../shared/timed-effects.mjs';
-import { timedAc, timedHpBonus, timedResistance, timedRollModifier } from '../shared/timed-effects.mjs';
+import { timedDarkvision, timedAc, timedHpBonus, timedResistance, timedRollModifier } from '../shared/timed-effects.mjs';
 import { bindTimedEffects, characterTimedEffects, releaseTimedEffects, syncTimedEffects } from './timed-effects.mjs';
 import { endConcentration } from './concentration.mjs';
-import { spellSpeed, spellFlySpeed, enfeeblementReduction, consumeSpellAttack, endSpellTurn, startSpellTurn, syncSpellConditions, hasSpellCondition, healingBlocked, spellDisadvantage } from './spell-conditions.mjs';
+import { spellSpeed, spellFlySpeed, spellClimbSpeed, enfeeblementReduction, consumeSpellAttack, endSpellTurn, startSpellTurn, syncSpellConditions, hasSpellCondition, healingBlocked, spellDisadvantage } from './spell-conditions.mjs';
 import { handleWarlock, syncHex, reflectThoughtShield, luckBonus } from './warlock-features.mjs';
 import { warlockProfile, warlockResistance, bondAdvantage, hexActive, damageTypeName } from '../shared/warlock.mjs';
 import { psiResources, handlePsi, psionicStrike } from './psi-warrior.mjs';
@@ -39,7 +39,7 @@ const int = (n, min, max) => Number.isInteger(n) && n >= min && n <= max;
 const requireValue = (ok, message) => { if (!ok) throw new Error(message); };
 const fresh = f => {
   if (f.shieldAC) { f.ac -= f.shieldAC; f.shieldAC = 0; }
-  return Object.assign(f, { action: '', bonus: '', reaction: '', reactionDeferred: false, moved: 0, pounceMoved: 0, extraMove: 0, attacksLeft: 0, usedWeapons: [], lightExtraUsed: false, dodge: false, attackRollMade: false, recklessActive: false, frenzyUsed: false, disengaged: false, psiStrikeUsed: false, psiReduction: 0, hasteActionUsed: false, extraFlyMove: 0, actionSurgeUsedThisTurn: false, surgeAction: null, surgeAttacksLeft: 0, lastAbilityCheck: null });
+  return Object.assign(f, { action: '', bonus: '', reaction: '', reactionDeferred: false, moved: 0, pounceMoved: 0, extraMove: 0, attacksLeft: 0, usedWeapons: [], lightExtraUsed: false, dodge: false, attackRollMade: false, recklessActive: false, frenzyUsed: false, disengaged: false, psiStrikeUsed: false, psiReduction: 0, hasteActionUsed: false, extraFlyMove: 0, extraClimbMove: 0, actionSurgeUsedThisTurn: false, surgeAction: null, surgeAttacksLeft: 0, lastAbilityCheck: null });
 };
 const clearProtection = (b, protectorId) => b.fighters.forEach(f => {
   if (Array.isArray(f.protectedBy)) {
@@ -112,7 +112,7 @@ function characterFighter(db, sessionId, memberId) {
     largeFormAvailable: speciesResources.largeFormAvailable,
     warlockResistance: warlockProfile(c, stats.values.cha, resources).resistance, thoughtShield: warlockProfile(c, stats.values.cha, resources).thoughtShield, warlockBond: warlockProfile(c, stats.values.cha, resources).awakenedMind, hex: resources.hex?.expiresAt > Date.now() && resources.concentration === resources.hex.name ? { ...resources.hex, defeatedRound: resources.hex.targetDefeated ? 0 : resources.hex.defeatedRound } : null,
     damageResistance: traits.ancestry?.damageType ?? traits.fiendishLegacy?.damageType ?? null,
-    creatureType: traits.creatureType, size: traits.size,
+    creatureType: traits.creatureType, darkvision: traits.darkvision, size: traits.size,
     draconicFlightAvailable: speciesResources.draconicFlightAvailable,
     protectionAvailable: stats.choices?.fightingStyle === 'protection' && equipment.some(item => item.equipped && item.armorCategory === 'shield'),
     deathSuccesses: s.deathSuccesses ?? 0, deathFailures: s.deathFailures ?? 0 });
@@ -220,7 +220,7 @@ export function handleBattles(db, user, path, method, body, send) {
         ...(f.seenInvisibleIds?.length ? { seenInvisibleIds: f.seenInvisibleIds } : {}),
         ...(conditionsOf(f).size ? { visibleConditions: [...conditionsOf(f)] } : {}),
         damageTaken: f.damageTaken ?? Math.max(0, f.maxHp - f.hp),
-      } : { ...f, size: timedSize(f), flySpeed: spellFlySpeed(f), canHover: f.timedEffects?.some(e => e.modifiers.hover) ?? false, ac: timedAc(f), speed: spellSpeed(f), divineSense: f.divineSense?.expiresAt > Date.now() && f.hp > 0 && !f.incapacitated && !f.unconscious && !(f.deathFailures >= 3) ? f.divineSense : null, ...(f.characterId && (gm || f.ownerId === user.id) ? { spellcasting: publicCaster(db, f.characterId) } : {}) }),
+      } : { ...f, size: timedSize(f), flySpeed: spellFlySpeed(f), climbSpeed: spellClimbSpeed(f), darkvision: timedDarkvision(f), canHover: f.timedEffects?.some(e => e.modifiers.hover) ?? false, ac: timedAc(f), speed: spellSpeed(f), divineSense: f.divineSense?.expiresAt > Date.now() && f.hp > 0 && !f.incapacitated && !f.unconscious && !(f.deathFailures >= 3) ? f.divineSense : null, ...(f.characterId && (gm || f.ownerId === user.id) ? { spellcasting: publicCaster(db, f.characterId) } : {}) }),
       pending: battle.pending?.kind === 'casting' ? castingProjection(battle.pending) : !gm && battle.pending && !(battle.pending.reactive && battle.fighters.find(f => f.id === battle.pending.sourceId)?.ownerId === user.id) && !battle.fighters.find(f => f.id === battle.pending.actorId)?.characterId
         ? { kind: 'waiting', actorId: battle.pending.actorId } : battle.pending?.kind === 'sanctuary' ? { kind: 'sanctuary', actorId: battle.pending.actorId, targetId: battle.pending.targetId, dc: battle.pending.dc, stage: battle.pending.stage, visited: battle.pending.visited } : !gm && battle.pending?.kind === 'spell'
           ? { ...battle.pending, targets: battle.pending.targets.map(({ multiplier, ...target }) => target) } : battle.pending,
@@ -367,9 +367,9 @@ export function handleBattles(db, user, path, method, body, send) {
             const target = b.fighters.find(f => f.id === body.targetId);
             requireValue(target && (body.effect === 'instant-death' || int(body.amount, 0, 9999)) && ['damage', 'heal', 'instant-death'].includes(body.effect), 'Wybierz cel, efekt i wartość.');
             if (body.effect === 'instant-death') {
-              requireValue(target.deathFailures < 3, 'Cel ju\u017c nie \u017cyje.'.replace(/\\u([0-9a-f]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16))));
+              requireValue(target.deathFailures < 3, 'Cel już nie żyje.');
               const killed = instantDeath(db, target, persistVitals);
-              log(b, `${target.name}: ${killed ? 'instant death' : 'Death Ward negates instant death'}.`);
+              log(b, `${target.name}: ${killed ? 'natychmiastowa śmierć bez obrażeń' : 'Death Ward neguje śmierć i kończy się'}.`);
             } else if (body.effect === 'damage') {
               damage(db, target, body.amount, false, body.damageType ?? null);
               if (target.thoughtShield && damageTypeName(body.damageType) === 'psychiczne' && target.lastDamage.amount > 0) {
@@ -380,7 +380,7 @@ export function handleBattles(db, user, path, method, body, send) {
             }
             else { requireValue(!healingBlocked(target), 'Cel nie może odzyskiwać PW.'); requireValue(target.deathFailures < 3, 'Zwykłe leczenie nie przywraca życia.'); target.hp = Math.min(target.maxHp, target.hp + body.amount); if (target.hp > 0) { target.deathFailures = 0; target.deathSuccesses = 0; } persistVitals(db, target); }
           }
-          log(b, `GM: ${body.note}${body.targetId ? ` (${body.effect === 'instant-death' ? 'instant death' : body.effect === 'damage' ? 'obrażenia' : 'leczenie'}: ${body.amount})` : ''}`); b.pending = null;
+          log(b, `GM: ${body.note}${body.targetId ? body.effect === 'instant-death' ? ' (efekt śmierci bez obrażeń)' : ` (${body.effect === 'damage' ? 'obrażenia' : 'leczenie'}: ${body.amount})` : ''}`); b.pending = null;
         } else {
           const actor = (kind === 'request' && body.slot === 'reaction' || kind === 'protection') ? b.fighters.find(f => f.id === body.actorId) : current;
           requireValue(!b.fighters.some(f => f.concentrationDC), 'Najpierw rozstrzygnij rzuty koncentracji.');
@@ -444,9 +444,10 @@ export function handleBattles(db, user, path, method, body, send) {
                 const terrain = body.terrainFeet ?? 0;
                 requireValue(Number.isInteger(terrain) && terrain >= 0 && terrain <= body.feet && (!actor.zoneDifficultTerrain || body.terrainFeet !== undefined), 'MG musi określić liczbę stóp trudnego terenu (0 do długości ruchu).');
                 const cost = body.feet * (1 + (hasCondition(actor, 'prone') ? 1 : 0) + (dragged.length && body.confirmedDragExempt !== true ? 1 : 0)) + terrain;
+                requireValue(body.movementMode !== 'climb' || spellClimbSpeed(actor) > 0, 'Brak dostępnej szybkości wspinaczki.');
                 requireValue(body.movementMode !== 'fly' || spellFlySpeed(actor) > 0, 'Brak dostępnej szybkości lotu.');
                 requireValue(!actor.aloft || body.movementMode === 'fly' || body.confirmedGrounded === true, 'MG musi potwierdzić lądowanie przed ruchem po ziemi.');
-                requireValue(int(body.feet, 1, 999) && actor.moved + cost <= (body.movementMode === 'fly' ? spellFlySpeed(actor) + (actor.extraFlyMove ?? 0) : spellSpeed(actor) + actor.extraMove), 'Przekroczono dostępny ruch.');
+                requireValue(int(body.feet, 1, 999) && actor.moved + cost <= (body.movementMode === 'fly' ? spellFlySpeed(actor) + (actor.extraFlyMove ?? 0) : body.movementMode === 'climb' ? spellClimbSpeed(actor) + (actor.extraClimbMove ?? 0) : spellSpeed(actor) + actor.extraMove), 'Przekroczono dostępny ruch.');
                 actor.aloft = body.movementMode === 'fly';
                 actor.moved += cost; log(b, `${actor.name}: ruch ${body.feet} stóp.`);
               } else if (kind === 'attack') {
@@ -529,7 +530,7 @@ export function handleBattles(db, user, path, method, body, send) {
                 requireValue(body.slot === 'bonus' && !actor.bonus, 'Adrenaline Rush wymaga dostępnej akcji bonusowej.');
                 requireValue(actor.adrenalineRushUses > 0, 'Brak dostępnych użyć Adrenaline Rush.');
                 actor.bonus = 'Adrenaline Rush';
-                actor.extraMove += spellSpeed(actor); actor.extraFlyMove = (actor.extraFlyMove ?? 0) + spellFlySpeed(actor);
+                actor.extraMove += spellSpeed(actor); actor.extraFlyMove = (actor.extraFlyMove ?? 0) + spellFlySpeed(actor); actor.extraClimbMove = (actor.extraClimbMove ?? 0) + spellClimbSpeed(actor);
                 actor.tempHp = proficiencyBonus(actor.level);
                 actor.adrenalineRushUses--;
                 const state = resourceState(db, actor.characterId);
@@ -574,7 +575,7 @@ export function handleBattles(db, user, path, method, body, send) {
                 if (kind === 'skip' && slot === 'reaction') actor.reactionDeferred = true;
                 else actor[slot] = labels[kind];
                 if (skipAttacks) actor.attacksLeft = 0;
-                if (kind === 'dash') { actor.extraMove += spellSpeed(actor); actor.extraFlyMove = (actor.extraFlyMove ?? 0) + spellFlySpeed(actor); }
+                if (kind === 'dash') { actor.extraMove += spellSpeed(actor); actor.extraFlyMove = (actor.extraFlyMove ?? 0) + spellFlySpeed(actor); actor.extraClimbMove = (actor.extraClimbMove ?? 0) + spellClimbSpeed(actor); }
                 if (kind === 'dodge') actor.dodge = true;
                 if (kind === 'disengage') actor.disengaged = true;
                 log(b, `${actor.name}: ${labels[kind]}.`);

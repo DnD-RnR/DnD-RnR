@@ -25,6 +25,10 @@ Przerywanie rzucania i reakcje: [Counterspell](counterspell.md).
 
 Upadki, lądowanie i ochrona: [Spadanie oraz Feather Fall](falling.md).
 
+Ochrona przed zerem PW i śmiercią: [Death Ward oraz Power Word Kill](death-ward.md).
+
+Efekty użytkowe: [Protection from Energy, Darkvision i Spider Climb](utility-protection-spells.md).
+
 Eldritch Blast oraz Scorching Ray wybierają cel dla każdego promienia, a każdy promień ma osobny atak, krytyk i obrażenia. Zasób i akcja są wydawane jeden raz. Agonizing Blast dodaje CHA do wybranej sztuczki; przesunięcie z Repelling Blast wymaga ustalenia pozycji przez MG.
 
 Poza walką dostępny jest formularz rzucania czarów i rytuałów. Obsługuje długie czasy rzucania, kontrolę wersji zasobów, historię ostatnich 50 rzuceń, odblokowane źródła i koncentrację. Wizard może wykonać rytuał zapisany w księdze bez przygotowania; nie może wydać slotu na nieprzygotowany rytuał. Efekty poza walką rozstrzyga MG. Nie można używać tego formularza do omijania akcji aktywnej walki.

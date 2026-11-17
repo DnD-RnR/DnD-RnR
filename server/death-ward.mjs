@@ -25,6 +25,7 @@ export function consumeDeathWard(db, target) {
 }
 export function instantDeath(db, target, persistVitals) {
   if (consumeDeathWard(db, target)) return false;
+  target.damageTaken ??= Math.max(0, target.maxHp - target.hp);
   target.hp = 0; target.deathFailures = 3; target.deathSuccesses = 0;
   target.dodge = false; target.rage = null; target.relentlessRagePending = null;
   endConcentration(db, target); endWildShape(target);

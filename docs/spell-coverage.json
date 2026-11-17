@@ -7,9 +7,9 @@
   "extra": [],
   "invalid": [],
   "counts": {
-    "engine": 86,
+    "engine": 91,
     "dedicated": 1,
-    "gm": 438
+    "gm": 433
   },
   "spells": [
     {
@@ -1592,8 +1592,8 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:darkvision",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "timed",
       "gmNote": null
     },
     {
@@ -2208,8 +2208,8 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:spider-climb",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "timed",
       "gmNote": null
     },
     {
@@ -2879,8 +2879,8 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:protection-from-energy",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "timed",
       "gmNote": null
     },
     {
@@ -3297,8 +3297,8 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:death-ward",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "timed",
       "gmNote": null
     },
     {
@@ -5673,9 +5673,9 @@
       "source": "Player's Handbook",
       "url": "https://dnd2024.wikidot.com/spell:power-word-kill",
       "combatAction": "action",
-      "resolution": "gm",
-      "mode": null,
-      "gmNote": null
+      "resolution": "engine-with-gm-confirmation",
+      "mode": "save",
+      "gmNote": "Do 100 PW włącznie: natychmiastowa śmierć bez obrażeń. Powyżej 100 PW: 12k12 Psychic, bez rzutu obronnego. Death Ward rozlicza się według odpowiedniej gałęzi."
     },
     {
       "id": "prismatic-wall",
