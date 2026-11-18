@@ -1,3 +1,8 @@
+import { rageDamageTypes } from '../shared/barbarian.mjs';
+import { applyBarbarianSaveEffect, barbarianSaveTotal } from './barbarian-features.mjs';
+import { brutalSaveDisadvantage, consumeBrutalSave, indomitableTotal, lionDisadvantage, mindlessImmune } from '../shared/barbarian.mjs';
+import { speciesD20, speciesSaveAdvantage } from '../shared/species.mjs';
+import { speciesHit, endSpeciesHide, applySpeciesFear } from './species.mjs';
 import { beginCasting, handleCasting, validateCounterspell, advanceCasting, handleMonsterCasting } from './counterspell.mjs';
 import { endProtectiveSpell, queueRetaliations } from './protective-spells.mjs';
 import { instantDeath } from './death-ward.mjs';
@@ -28,6 +33,7 @@ import { createRepeatSpell } from './repeat-spells.mjs';
 const check = (condition, message) => { if (!condition) throw new Error(message); };
 const die = (n, sides = 20) => Number.isInteger(n) && n >= 1 && n <= sides;
 const d20 = (body, forcedDisadvantage = false) => {
+  body = { ...body, roll: speciesD20(body.speciesSubject ?? {}, body.roll, body.halflingRoll), roll2: speciesD20(body.speciesSubject ?? {}, body.roll2, body.halflingRoll2) };
   const advantage = Boolean(body.advantage), disadvantage = Boolean(body.disadvantage || forcedDisadvantage);
   check(die(body.roll) && (advantage === disadvantage || die(body.roll2)), 'Podaj wynik k20 i drugą kość przy ułatwieniu/utrudnieniu.');
   return advantage === disadvantage ? body.roll : advantage ? Math.max(body.roll, body.roll2) : Math.min(body.roll, body.roll2);
@@ -70,8 +76,9 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     const effect = timed ?? caster.spellConditions?.find(e => e.sourceId === body.sourceId && e.kind === body.condition && e.concentrationKey && e.lastSaveRound !== b.round);
     const save = timed ? timed.modifiers.repeatSave : effect?.save;
     check(effect && caster.saves[save] != null, 'Brak powtórnego rzutu obronnego.');
-    const roll = d20({ ...body, disadvantage: body.disadvantage || conditionSaveDisadvantage(caster, save) || hexDisadvantage(b, caster, save), advantage: body.advantage || barbarianSaveAdvantage(caster, save) || conditionSaveAdvantage(caster, save) });
-    const success = !automaticSaveFailure(caster, save) && roll - exhaustionPenalty(caster) + caster.saves[save] + timedSaveModifier(caster, save) + timedRollModifier(caster, body) - consumeSavePenalty(caster, body.mindSliverRoll) >= effect.dc;
+    const roll = d20({ ...body, speciesSubject: caster, disadvantage: body.disadvantage || brutalSaveDisadvantage(caster) || conditionSaveDisadvantage(caster, save) || hexDisadvantage(b, caster, save), advantage: body.advantage || speciesSaveAdvantage(caster, save, timed?.modifiers.condition ?? effect.kind) || barbarianSaveAdvantage(caster, save) || conditionSaveAdvantage(caster, save) });
+    const success = !automaticSaveFailure(caster, save) && indomitableTotal(caster, save, roll - exhaustionPenalty(caster) + caster.saves[save] + timedSaveModifier(caster, save) + timedRollModifier(caster, body) - consumeSavePenalty(caster, body.mindSliverRoll)) >= effect.dc;
+    consumeBrutalSave(caster);
     caster.spellTurnEnded = b.round;
     effect.lastSaveRound = b.round;
     if (timed) {
@@ -100,7 +107,9 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     check(!caster[body.slot] && ['action', 'bonus', 'reaction'].includes(body.slot), 'Działanie zostało już wykorzystane.');
     check(!b.fighters.some(f => f.concentrationDC), 'Najpierw rozstrzygnij rzuty koncentracji.');
     c = spendSpell(db, caster.characterId, body.spellId, body.level, body.source);
+    if (/\bV\b/.test(c.spell.components ?? '')) endSpeciesHide(db, caster);
     check(c.spell.action === body.slot, 'Czas rzucania czaru nie pasuje do tego kroku tury.');
+    caster.epicBlinkReady = body.slot === 'action';
     check(!c.blocked, 'Brak wyszkolenia w założonym pancerzu blokuje rzucanie czarów.');
     const spentSlot = c.spell.level > 0 && !['arcanum', 'origin', 'paladin-smite', 'legacy'].includes(body.source);
     check(!spentSlot || !(b.slotCasters ?? []).includes(caster.id), 'W tej turze wykorzystano już miejsce na czar.');
@@ -110,7 +119,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     if (c.spell.duration?.includes('Koncentracja')) {
       startConcentration(db, caster, c.spell, b);
     }
-    log(b, `${caster.name}: ${c.spell.name}${c.spell.level ? ` (${body.level}. krąg, ${body.source === 'paladin-smite' ? 'Paladin Smite' : body.source === 'arcanum' ? 'Mystic Arcanum' : body.source === 'legacy' ? 'Fiendish Legacy — bez miejsca' : body.source === 'origin' ? 'atut Origin' : 'zużyto miejsce'})` : ' (sztuczka)'}.`);
+    log(b, `${caster.name}: ${c.spell.name}${c.spell.level ? ` (${body.level}. krąg, ${body.source === 'paladin-smite' ? 'Paladin Smite' : body.source === 'arcanum' ? 'Mystic Arcanum' : body.source === 'legacy' ? (c.species.tieflingLegacy ? 'Fiendish Legacy — bez miejsca' : 'Czary gatunku — bez miejsca') : body.source === 'origin' ? 'atut Origin' : 'zużyto miejsce'})` : ' (sztuczka)'}.`);
     if (hasTimedModifier(caster, 'slow') && !(warlockProfile(c.character, c.stats.values.cha, c.state).greatOldOne && ['Enchantment', 'Illusion'].includes(c.spell.school)) && /(^|,|\s)S(,|\s|$)/.test(c.spell.components)) {
       check(die(body.slowRoll, 4), 'Slow: podaj k4 sprawdzające 25% szansy niepowodzenia komponentu S.');
       if (body.slowRoll === 1) { if (c.spell.duration?.includes('Koncentracja')) endConcentration(db, caster); caster[body.slot] = `Slow: ${c.spell.name} nie powiódł się`; log(b, `${caster.name}: Slow — czar nie powiódł się, miejsce i działanie zużyte.`); return true; }
@@ -242,9 +251,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
   }
   if (body.kind === 'concentration') {
     check(controlled(caster) && caster.hp > 0 && caster.concentrationDC, 'Brak testu koncentracji do wykonania.');
-    const roll = d20({ ...body, disadvantage: body.disadvantage || hexDisadvantage(b, caster, 'con') }), bonus = caster.saves.con;
-    check(bonus != null, 'Uzupełnij rzut obronny na Kondycję.');
-    const success = roll - exhaustionPenalty(caster) + bonus + timedRollModifier(caster, body) + luckBonus(db, caster.characterId, body.luckRoll) - consumeSavePenalty(caster, body.mindSliverRoll) >= caster.concentrationDC;
+    const success = barbarianSaveTotal(db, b, caster, 'con', body) >= caster.concentrationDC;
     log(b, `${caster.name}: koncentracja — ${success ? 'utrzymana' : 'przerwana'}.`);
     if (!success) endConcentration(db, caster);
     else caster.concentrationChecks = (caster.concentrationChecks ?? [caster.concentrationDC]).slice(1);
@@ -260,8 +267,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     check(p.stage === 'heat-save', 'Brak rzutu po obrażeniach Heat Metal.');
     const t = p.heatSaves.find(t => t.id === body.targetId && !t.resolved), target = b.fighters.find(f => f.id === t?.id);
     check(t && controlled(target), 'CON wykonuje właściciel celu lub MG dla potwora.');
-    const roll = d20({ ...body, disadvantage: body.disadvantage || hexDisadvantage(b, target, 'con') });
-    const success = roll - exhaustionPenalty(target) + target.saves.con + timedRollModifier(target, body) + (target.characterId ? luckBonus(db, target.characterId, body.luckRoll) : 0) - consumeSavePenalty(target, body.mindSliverRoll) >= p.dc;
+    const success = barbarianSaveTotal(db, b, target, 'con', body) >= p.dc;
     const dropped = t.canDrop && (!success || body.dropObject === true);
     if (dropped) {
       const effect = b.repeatSpells?.find(e => e.id === p.repeatSpellId);
@@ -280,12 +286,12 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     const types = [...new Set((p.spec.components ?? [p.spec]).map(c => c.type))];
     const type = p.spec.components ? body.damageType : p.spec.type;
     check(types.includes(type), 'Wybierz typ obrażeń tego czaru.');
-    const resistance = hasCondition(fighter, 'petrified') || timedResistance(fighter, damageTypeName(type)) || barbarianResistance(fighter, type) || warlockResistance(fighter, type) || fighter.damageResistance === damageTypeName(type);
+    const resistance = hasCondition(fighter, 'petrified') || timedResistance(fighter, damageTypeName(type)) || barbarianResistance(fighter, type) || warlockResistance(fighter, type) || fighter.damageResistance === damageTypeName(type) || fighter.damageResistances?.includes(damageTypeName(type));
     target.defenses ??= {};
     target.defenses[type] = { immune: body.multiplier === 0, resistant: Boolean(resistance || body.multiplier === 0.5), vulnerable: body.multiplier === 2 };
     target.multiplier = resistance && body.multiplier !== 0.5 ? body.multiplier * 0.5 : body.multiplier;
     target.defenseReady = types.every(type => Object.hasOwn(target.defenses, type));
-    target.conditionImmune = body.conditionImmune === true;
+    target.conditionImmune = body.conditionImmune === true || mindlessImmune(fighter, p.conditionChoice ?? p.spec.rider);
     target.shapeShifted = p.spec.rider === 'moonbeam' && body.shapeShifted === true;
     if (p.spec.heatMetal) {
       target.heatHolder = body.heatHolder === true;
@@ -295,6 +301,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     return true;
   }
   if (body.kind === 'spell-save') {
+    check(!p.fanaticalTargetId, 'Najpierw zdecyduj o Fanatical Focus.');
     check(p.stage === 'save', 'Czar nie oczekuje teraz na rzut obronny.');
     const t = p.targets.find(t => t.id === body.targetId), target = b.fighters.find(f => f.id === t?.id);
     check(t && t.saved === undefined && controlled(target), 'Rzut obronny wykonuje właściciel celu lub GM dla potwora.');
@@ -303,9 +310,15 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
       t.saved = false;
       target.spellConditions = (target.spellConditions ?? []).filter(e => e.kind !== 'mind-sliver');
     } else {
-      const roll = d20({ ...body, disadvantage: body.disadvantage || conditionSaveDisadvantage(target, p.spec.save) || hexDisadvantage(b, target, p.spec.save) || hasSpellCondition(target, 'enfeebled') && p.spec.save === 'str', advantage: body.advantage || barbarianSaveAdvantage(target, p.spec.save) || conditionSaveAdvantage(target, p.spec.save) });
-      t.saved = roll - exhaustionPenalty(target) + target.saves[p.spec.save] + timedSaveModifier(target, p.spec.save) + timedRollModifier(target, body) + (target.characterId ? luckBonus(db, target.characterId, body.luckRoll) : 0) - consumeSavePenalty(target, body.mindSliverRoll) >= p.dc;
+      t.rerollAdvantage = Boolean(body.advantage || speciesSaveAdvantage(target, p.spec.save, p.conditionChoice ?? p.spec.condition ?? p.spec.rider) || barbarianSaveAdvantage(target, p.spec.save) || conditionSaveAdvantage(target, p.spec.save));
+      t.rerollDisadvantage = Boolean(body.disadvantage || brutalSaveDisadvantage(target) || conditionSaveDisadvantage(target, p.spec.save) || hexDisadvantage(b, target, p.spec.save) || hasSpellCondition(target, 'enfeebled') && p.spec.save === 'str');
+      const roll = d20({ ...body, speciesSubject: target, advantage: t.rerollAdvantage, disadvantage: t.rerollDisadvantage });
+      t.rerollModifier = -exhaustionPenalty(target) + target.saves[p.spec.save] + timedSaveModifier(target, p.spec.save) + timedRollModifier(target, body) + (target.characterId ? luckBonus(db, target.characterId, body.luckRoll) : 0) - consumeSavePenalty(target, body.mindSliverRoll);
+      t.total = indomitableTotal(target, p.spec.save, roll + t.rerollModifier); t.saved = t.total >= p.dc;
+      consumeBrutalSave(target);
     }
+    b.lastRoll = { kind: 'spell-save', actorId: target.id, targetId: target.id, total: t.total ?? -Infinity, dc: p.dc, pending: structuredClone(p) };
+    if (!t.saved && target.rageProfile?.zealot && target.level >= 6 && target.rage && !target.rage.fanaticalUsed) { p.fanaticalTargetId = target.id; return true; }
     log(b, `${target.name}: rzut obronny przeciw ${p.spellName} — ${t.saved ? 'sukces' : 'porażka'}.`);
     if (p.targets.every(t => t.saved !== undefined)) {
       if (!p.spec.half && !p.spec.successRider && p.targets.every(t => t.saved)) b.pending = null;
@@ -321,14 +334,20 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     check(!cannotHarm(actor, target), 'Charmed: nie możesz atakować sprawcy.');
     const conditions = conditionAttackModifiers(actor, target, body);
     endProtectiveSpell(db, actor, 'sanctuary');
-    recordAttackRoll(b, actor, body, log);
-    const roll = d20({ ...body, advantage: body.advantage || conditions.advantage || hasSpellCondition(target, 'guiding-bolt') || bondAdvantage(actor, target) || vowAttackAdvantage(actor, target) || barbarianAttackAdvantage(actor, target) || wolfAttackAdvantage(b, actor, target) }, conditions.disadvantage || spellDisadvantage(actor) || bondAdvantage(target, actor) || target.dodge || target.attackDisadvantage || Boolean(actor.mockery));
+    recordAttackRoll(b, actor, body, log); endSpeciesHide(db, actor);
+    const roll = d20({ ...body, speciesSubject: actor, advantage: body.advantage || conditions.advantage || hasSpellCondition(target, 'guiding-bolt') || bondAdvantage(actor, target) || vowAttackAdvantage(actor, target) || barbarianAttackAdvantage(actor, target) || wolfAttackAdvantage(b, actor, target) }, conditions.disadvantage || spellDisadvantage(actor) || bondAdvantage(target, actor) || target.dodge || target.attackDisadvantage || lionDisadvantage(b, actor, target) || Boolean(actor.mockery));
     target.spellConditions = (target.spellConditions ?? []).filter(e => e.kind !== 'guiding-bolt');
     consumeSpellAttack(actor);
     actor.mockery = null;
-    const attackModifier = timedRollModifier(actor, body);
+    const sundering = target.brutalEffects?.find(e => e.kind === 'sundering' && e.sourceId !== actor.id);
+    const attackModifier = timedRollModifier(actor, body) + (sundering ? 5 : 0);
+    if (sundering) target.brutalEffects = target.brutalEffects.filter(e => e !== sundering);
     const hit = roll !== 1 && (roll === 20 || roll - exhaustionPenalty(actor) + p.attackBonus + attackModifier >= timedAc(target));
     log(b, `${actor.name} → ${target.name}: ${p.spellName} — ${hit ? roll === 20 ? 'trafienie krytyczne' : 'trafienie' : 'pudło'}.`);
+    const hitSnapshot = structuredClone(p);
+    Object.assign(hitSnapshot, { stage: 'effect', attackTotal: roll - exhaustionPenalty(actor) + p.attackBonus + attackModifier, missed: false, critical: roll === 20 || conditions.criticalOnHit, hexDice: hexActive(actor, target) ? (roll === 20 || conditions.criticalOnHit ? 2 : 1) : 0 });
+    hitSnapshot.targets[0].saved = undefined;
+    b.lastRoll = { kind: 'spell-attack', actorId: actor.id, targetId: target.id, natural: roll, total: roll - exhaustionPenalty(actor) + p.attackBonus + attackModifier, dc: timedAc(target), hit, pending: hitSnapshot };
     if (!hit && p.spec.missHalf) { p.missed = true; p.targets[0].saved = true; p.stage = 'effect'; p.critical = false; p.hexDice = 0; }
     else if (!hit) advanceProjectile(b, p);
     else { p.stage = 'effect'; p.critical = roll === 20 || conditions.criticalOnHit; p.hit = { melee: body.attackRange === 'melee' || body.attackRange !== 'ranged' && ['chill-touch','shocking-grasp','thorn-whip','spiritual-weapon'].includes(p.spellId), within5Feet: body.within5Feet === true }; p.attackTotal = roll - exhaustionPenalty(actor) + p.attackBonus + attackModifier; p.hexDice = hexActive(actor, target) ? (p.critical ? 2 : 1) : 0; }
@@ -351,7 +370,9 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     } else if (['timed-save', 'timed-condition'].includes(p.spec.mode)) {
       if (!t.saved && !t.conditionImmune) applyTimedEffect(db, b, actor, target, { id: p.spellId, level: p.spellLevel, name: p.spellName }, p.castingLevel, p.castingId, { condition: p.conditionChoice, effectChoice: p.effectChoice, dc: p.dc });
     } else if (p.spec.mode === 'condition') {
-      if (!t.conditionImmune && (!t.saved || p.spec.successRider)) addSpellCondition(b, target, actor, t.saved ? 'enfeebled-miss' : p.spec.rider, { spellId: p.spellId, level: p.castingLevel, castingId: p.castingId, ...(t.saved ? {} : { concentrationKey: actor.concentrationKey, expiresRound: b.round + 10, dc: p.dc, save: p.spec.save }) });
+      if (p.spec.barbarianFeature && !t.conditionImmune && !t.saved) applyBarbarianSaveEffect(db, b, actor, target, p);
+      if (p.spec.speciesShroud && !t.conditionImmune && !t.saved) applySpeciesFear(db, b, actor, target);
+      if (!p.spec.barbarianFeature && !p.spec.speciesShroud && !t.conditionImmune && (!t.saved || p.spec.successRider)) addSpellCondition(b, target, actor, t.saved ? 'enfeebled-miss' : p.spec.rider, { spellId: p.spellId, level: p.castingLevel, castingId: p.castingId, ...(t.saved ? {} : { concentrationKey: actor.concentrationKey, expiresRound: b.round + 10, dc: p.dc, save: p.spec.save }) });
       log(b, `${target.name}: ${p.spellName} — ${t.conditionImmune ? 'odporność na stan' : t.saved ? 'udany rzut obronny' : p.spec.rider}.`);
     } else if (p.spec.mode === 'temp-hp') {
       target.tempHp = Math.max(target.tempHp ?? 0, total);
@@ -367,12 +388,14 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
       const rawParts = p.spec.components ? spellDamageParts(p.spec, body.rolls, hasSpellCondition(actor, 'enfeebled') ? body.enfeeblementRoll : 0) : [{ type: p.spec.type, amount: total }];
       // Legacy pending actions can predate typed defenses.
       const defenses = t.defenses ?? { [p.spec.type]: { immune: t.multiplier === 0, resistant: t.multiplier === 0.5, vulnerable: t.multiplier === 2 } };
-      const parts = defendSpellDamage(rawParts, t.saved, p.spec.half, defenses, target.psiReduction ?? 0);
-      target.psiReduction = 0;
+      if (actor.epicOffense) for (const part of rawParts) if (rageDamageTypes.includes(part.type?.toLowerCase())) defenses[part.type] = { ...defenses[part.type], resistant: false };
+      const parts = defendSpellDamage(rawParts, t.saved, p.spec.half, defenses, (target.psiReduction ?? 0) + (target.speciesReduction ?? 0));
+      target.psiReduction = 0; target.speciesReduction = 0;
       const amount = parts.reduce((sum, part) => sum + part.amount, 0);
       queueRetaliations(b, target, actor, p.hit);
       if (amount > 0) endProtectiveSpell(db, actor, 'sanctuary');
       damage(db, target, amount, p.critical, null, true);
+      if (body.speciesTargetId === target.id) speciesHit({ db, b, actor, target, body, damage, log, attackRoll: p.spec.mode === 'attack', critical: p.critical, dealt: amount });
       if (p.spec.heatMetal) t.heatDamaged = amount > 0 && t.heatHolder && target.deathFailures < 3 && (target.characterId || target.hp > 0);
       if (p.spec.rider === 'moonbeam' && !t.saved && (target.wildShape || t.shapeShifted)) {
         endWildShape(target);

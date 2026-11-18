@@ -5,7 +5,7 @@ import type { GameMember } from './GameMemberCard';
 import { Card } from '../../components/ui/Card';
 
 import { readMonsters, type Enemy } from './monster-library';
-type Fighter = { id: string; name: string; memberId?: number; enemy?: Enemy; initiative: string; hp: number | null };
+type Fighter = { id: string; name: string; memberId?: number; enemy?: Enemy; initiative: string; initiativeRoll?: string; initiativeRoll2?: string; hp: number | null };
 type Battle = { stage: 'enemies' | 'players' | 'initiative' | 'battle'; fighters: Fighter[]; round: number; turn: number };
 const initial: Battle = { stage: 'enemies', fighters: [], round: 1, turn: 0 };
 
@@ -57,9 +57,9 @@ export function BattlePage({ members, sessionId, gameId, userId }: { members: Ga
       {!participants.length && <p>Brak postaci w aktywnej sesji.</p>}
       <button className="text-button" onClick={() => stage('enemies')}>← Przeciwnicy</button><button className="primary-button" disabled={missing || !battle.fighters.some(f => f.memberId !== undefined)} onClick={() => stage('initiative')}>Dalej: inicjatywa</button>
     </div></Card>}
-    {battle.stage === 'initiative' && <Card title="3. Inicjatywa"><form className="stack-form" onSubmit={async e => { e.preventDefault(); if (missing || battle.fighters.some(f => !f.initiative.trim() || !Number.isInteger(Number(f.initiative)))) return; if (await controller.mutate('start', { fighters: battle.fighters.map(f => ({ memberId: f.memberId, enemyId: f.enemy?.id, initiative: Number(f.initiative) })) })) setBattle(initial); }}>
+    {battle.stage === 'initiative' && <Card title="3. Inicjatywa"><form className="stack-form" onSubmit={async e => { e.preventDefault(); if (missing || battle.fighters.some(f => !f.initiativeRoll && (!f.initiative.trim() || !Number.isInteger(Number(f.initiative))))) return; if (await controller.mutate('start', { fighters: battle.fighters.map(f => ({ memberId: f.memberId, enemyId: f.enemy?.id, initiative: Number(f.initiative), ...(f.initiativeRoll ? { initiativeRoll: Number(f.initiativeRoll), initiativeRoll2: Number(f.initiativeRoll2) } : {}) })) })) setBattle(initial); }}>
       <p>Wpisz końcowe wyniki rzutów z premiami, karą −2 za poziom Exhaustion i ułatwieniem inicjatywy przy Invisible. Przy remisie zachowana zostanie kolejność dodawania uczestników.</p>
-      {battle.fighters.map((f, i) => <label key={f.id}>{f.name} · #{i + 1}<input required type="number" min={-99} max={99} value={f.initiative} onChange={e => update(f.id, { initiative: e.target.value })} /></label>)}
+      {battle.fighters.map((f, i) => <label key={f.id}>{f.name} · #{i + 1}<input required={!f.initiativeRoll} type="number" min={-99} max={99} value={f.initiative} onChange={e => update(f.id, { initiative: e.target.value })} />{members.find(m => m.id === f.memberId)?.character?.class.includes('Barbarian') && (members.find(m => m.id === f.memberId)?.character?.level ?? 0) >= 7 && <span>Feral Instinct: podaj dwie k20 zamiast wyniku końcowego.<input aria-label="Feral Instinct pierwsza k20" type="number" min={1} max={20} value={f.initiativeRoll ?? ''} onChange={e => update(f.id, { initiativeRoll: e.target.value })} /><input aria-label="Feral Instinct druga k20" required={!!f.initiativeRoll} type="number" min={1} max={20} value={f.initiativeRoll2 ?? ''} onChange={e => update(f.id, { initiativeRoll2: e.target.value })} /></span>}</label>)}
       <button type="button" className="text-button" onClick={() => stage('players')}>← Postacie</button><button className="primary-button" disabled={missing}>Rozpocznij bitwę</button>
     </form></Card>}
   </>;

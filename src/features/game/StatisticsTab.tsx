@@ -77,7 +77,7 @@ export function StatisticsTab({ character }: { character: Character }) {
   const skillBonus = (id: string, ability: string) => { const base = bonus(ability, traits.effectiveSkills[id]); const extra = traits.skillBonuses[id]; return base === null || extra === null ? null : base + extra; };
   const perception = skillBonus('perception', 'wis');
   function numberField(id: string, label: string, min: number, max: number) {
-    return <label key={id}>{label}<input type="number" min={min} max={max} placeholder={id === 'speed' && traits.baseSpeed !== null ? String(traits.baseSpeed) : id === 'maxHp' && traits.firstLevelMaxHp !== null ? String(traits.firstLevelMaxHp) : undefined} value={stats!.values[id] ?? ''} onChange={event => {
+    return <label key={id}>{id === 'speed' && rageProfile(character).fastMovement ? 'Bazowa szybkość bez Fast Movement (stopy)' : label}<input type="number" min={min} max={max} placeholder={id === 'speed' && traits.baseSpeed !== null ? String(traits.baseSpeed) : id === 'maxHp' && traits.firstLevelMaxHp !== null ? String(traits.firstLevelMaxHp) : undefined} value={stats!.values[id] ?? ''} onChange={event => {
       const value = event.target.value === '' ? null : event.target.valueAsNumber;
       setDraft(previous => previous && ({ ...previous, values: { ...previous.values, [id]: value } }));
     }} /></label>;

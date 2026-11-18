@@ -22,7 +22,7 @@ export function weaponMasteryCount(character) {
 export function weaponMasteryChoicesValid(character, values) {
   const count = weaponMasteryCount(character);
   return Array.isArray(values) && values.length <= count && new Set(values).size === values.length &&
-    values.every(id => weapons.some(weapon => weapon.id === id));
+    values.every(id => weapons.some(weapon => weapon.id === id && (!character.class?.includes('Barbarian') || weapon.type !== 'dystansowa')));
 }
 
 export function weaponById(id) {

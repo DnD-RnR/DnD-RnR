@@ -19,7 +19,8 @@ import { timedAc, timedHpBonus, timedSpeedBonus } from '../shared/timed-effects.
 
 function effectiveSnapshot(character, stats, equipment, timedEffects, conditionState) {
   const traits = characterTraits(character, stats);
-  const speed = stats.values.speed ?? traits.baseSpeed, maxHp = stats.values.maxHp ?? traits.firstLevelMaxHp;
+  const fast = character.class?.includes('Barbarian') && character.level >= 5 && !equipment.some(i => i.equipped && i.armorCategory === 'heavy') ? 10 : 0;
+  const speed = (stats.values.speed ?? traits.baseSpeed) == null ? null : (stats.values.speed ?? traits.baseSpeed) + fast, maxHp = stats.values.maxHp ?? traits.firstLevelMaxHp;
   return { hp: stats.values.hp, maxHp: maxHp == null ? null : maxHp + timedHpBonus(timedEffects), speed: conditionSpeedZero({ hp: stats.values.hp, timedEffects, zoneConditions: conditionState.zoneConditions, conditionSources: conditionState.conditionSources, manualConditions: conditionState.manualConditions }) ? 0 : speed == null ? null : Math.floor(Math.max(0, speed + timedSpeedBonus({ timedEffects }) - 5 * (conditionState.exhaustion ?? 0)) * timedSpeedMultiplier({ timedEffects })), ac: timedAc({ ac: stats.values.ac, timedEffects, dexModifier: stats.values.dex == null ? null : Math.floor((stats.values.dex - 10) / 2), wearingArmor: equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'), equipmentShieldBonus: stats.untrainedShield ? 0 : Number.parseInt(equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0 }) };
 }
 

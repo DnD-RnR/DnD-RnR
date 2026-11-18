@@ -174,7 +174,7 @@ test('GM-confirmed enemy saving throw extends Rage and invalid Pounce activation
   const { db, call, start, player } = barbarianFixture(7);
   try {
     const b = start().battle;
-    assert.equal(call('act', { kind: 'rage', feet: 16 }, player).status, 409);
+    assert.equal(call('act', { kind: 'rage', feet: 21 }, player).status, 409);
     assert.equal(publicCaster(db, 1).barbarian.uses, 4);
     call('act', { kind: 'rage', feet: 15 }, player);
     call('next', {}, player); call('next'); call('next');

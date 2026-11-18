@@ -31,14 +31,16 @@ export function conditionsOf(fighter) {
   if (fighter.hp === 0 && !fighter.relentlessRagePending) result.add('unconscious');
   if (result.has('unconscious')) result.add('prone');
   if (['paralyzed', 'petrified', 'stunned', 'unconscious'].some(c => result.has(c))) result.add('incapacitated');
+  if (fighter.rage && fighter.rageProfile?.berserker && fighter.level >= 6) { result.delete('charmed'); result.delete('frightened'); }
   if (result.has('petrified')) result.delete('poisoned');
   return result;
 }
 export const hasCondition = (fighter, kind) => conditionsOf(fighter).has(kind);
 export const isIncapacitated = fighter => hasCondition(fighter, 'incapacitated');
-export const conditionSpeedZero = fighter => ['paralyzed', 'petrified', 'unconscious', 'restrained', 'grappled'].some(c => hasCondition(fighter, c)) || strongestEffects(fighter.timedEffects).some(e => e.modifiers.speedZero);
+export const conditionSpeedZero = fighter => Boolean(fighter?.branchHold) || ['paralyzed', 'petrified', 'unconscious', 'restrained', 'grappled'].some(c => hasCondition(fighter, c)) || strongestEffects(fighter.timedEffects).some(e => e.modifiers.speedZero);
 export const exhaustionPenalty = fighter => 2 * Math.min(6, Math.max(0, fighter?.exhaustion ?? 0));
 export function conditionSourcesOf(fighter, kind) {
+  if (fighter?.rage && fighter.rageProfile?.berserker && fighter.level >= 6 && ['charmed', 'frightened'].includes(kind)) return [];
   return [...(fighter?.conditionSources ?? []).filter(e => e.kind === kind), ...strongestEffects(fighter?.timedEffects).filter(e => e.modifiers.condition === kind).map(e => ({ kind, sourceId: e.sourceFighterId, visible: true }))];
 }
 export const cannotHarm = (actor, target) => conditionSourcesOf(actor, 'charmed').some(e => e.sourceId === target?.id);

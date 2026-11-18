@@ -1,3 +1,5 @@
+import { barbarianFeatureDescriptions } from './barbarian.mjs';
+import { epicBoons } from './epic-boons.mjs';
 import { warlockDescriptions } from './warlock.mjs';
 import { eligibleDruidForms } from './druid.mjs';
 import data from './trait-data.json' with { type: 'json' };
@@ -8,19 +10,32 @@ import { invocationCount, invocationOptions, tomeOptions } from './warlock-invoc
 import { invocationSheet } from './warlock-invocation-effects.mjs';
 import { eligibleOriginFeats, originFeats, originFeatSheet } from './origin-feats.mjs';
 import spellCatalog from './spell-catalog.json' with { type: 'json' };
+import { elvenLineages, speciesNotes, speciesResistances } from './species.mjs';
 
 export const emptyTraitSelection = () => ({});
-export const dragonbornAncestries = [
+const legacyDragonbornAncestries = [
   { id: 'acid', label: 'Kwas — odporność na kwas' },
   { id: 'cold', label: 'Zimno — odporność na zimno' },
   { id: 'fire', label: 'Ogień — odporność na ogień' },
   { id: 'lightning', label: 'Błyskawice — odporność na błyskawice' },
   { id: 'poison', label: 'Trucizna — odporność na truciznę' },
 ];
-const dragonbornDamageTypes = Object.fromEntries(dragonbornAncestries.map(entry => [entry.id, entry.label.split(' — ')[0].toLowerCase()]));
+export const dragonbornAncestries = [
+  { id: 'black', label: 'Black — kwas', damageType: 'kwas' },
+  { id: 'blue', label: 'Blue — błyskawice', damageType: 'błyskawice' },
+  { id: 'brass', label: 'Brass — ogień', damageType: 'ogień' },
+  { id: 'bronze', label: 'Bronze — błyskawice', damageType: 'błyskawice' },
+  { id: 'copper', label: 'Copper — kwas', damageType: 'kwas' },
+  { id: 'gold', label: 'Gold — ogień', damageType: 'ogień' },
+  { id: 'green', label: 'Green — trucizna', damageType: 'trucizna' },
+  { id: 'red', label: 'Red — ogień', damageType: 'ogień' },
+  { id: 'silver', label: 'Silver — zimno', damageType: 'zimno' },
+  { id: 'white', label: 'White — zimno', damageType: 'zimno' },
+];
+const dragonbornDamageTypes = Object.fromEntries(legacyDragonbornAncestries.map(entry => [entry.id, entry.label.split(' — ')[0].toLowerCase()]));
 export const dragonbornAncestryProfile = ancestry => {
-  const entry = dragonbornAncestries.find(value => value.id === ancestry);
-  return entry ? { id: entry.id, label: entry.label, damageType: dragonbornDamageTypes[entry.id] } : null;
+  const entry = [...dragonbornAncestries, ...legacyDragonbornAncestries].find(value => value.id === ancestry);
+  return entry ? { id: entry.id, label: entry.label, damageType: entry.damageType ?? dragonbornDamageTypes[entry.id] } : null;
 };
 export const tieflingLegacies = [
   { id: 'abyssal', label: 'Abyssal — odporność na truciznę', damageType: 'trucizna', spells: ['poison-spray', 'ray-of-sickness', 'hold-person'] },
@@ -93,6 +108,7 @@ export function characterTraits(character, stats) {
     group('tomeRituals', 'Pact of the Tome — rytuały 1. kręgu', 2, spells.filter(s => s.level === 1).map(s => ({ id: s.id, label: s.name })), 'spell');
   }
   const toolGroup = (id, label, limit, names) => group(id, label, limit, namedOptions(names.filter(name => !tools.has(name))), 'tool');
+  if (classId === 'barbarian' && character.subclass === 'Path of the Wild Heart' && level >= 6) group('wildAspect', 'Aspect of the Wilds (zmiana po długim odpoczynku)', 1, [{ id: 'owl', label: 'Owl — Darkvision +60' }, { id: 'panther', label: 'Panther — Climb Speed' }, { id: 'salmon', label: 'Salmon — Swim Speed' }], 'lineage');
   group('languages', 'Dwa języki początkowe', 2, options.languages.filter(language => language.standard && !languages.has(language.id)), 'language');
   if (species === 'Człowiek (Human)') {
     skillGroup('humanSkill', 'Human — Skillful', 1);
@@ -100,6 +116,12 @@ export function characterTraits(character, stats) {
     group('humanSize', 'Human — rozmiar', 1, [{ id: 'medium', label: 'Średni (Medium)' }, { id: 'small', label: 'Mały (Small)' }], 'size');
   }
   if (species === 'Elf') skillGroup('elfSkill', 'Elf — Keen Senses', 1, ['insight', 'perception', 'survival']);
+  if (species === 'Elf') {
+    group('elfLineage', 'Elven Lineage', 1, elvenLineages, 'lineage');
+    group('elfSpellAbility', 'Elven Lineage — cecha czarowania', 1, ['int', 'wis', 'cha'].map(id => ({ id, label: options.abilityNames && Object.entries(options.abilityNames).find(([, value]) => value === id)?.[0] || id })), 'ability');
+    if (chosen.elfLineage?.[0] === 'high') group('highElfCantrip', 'High Elf — sztuczka (zmiana po długim odpoczynku)', 1, spellCatalog.spells.filter(s => s.level === 0 && s.classes.includes('wizard')).map(s => ({ id: s.id, label: s.name })), 'spell');
+  }
+  if (species === 'Aasimar') group('aasimarSize', 'Aasimar — rozmiar', 1, [{ id: 'medium', label: 'Medium' }, { id: 'small', label: 'Small' }], 'size');
   if (species === 'Gnom (Gnome)') {
     group('gnomeLineage', 'Gnomish Lineage — linia', 1, [
       { id: 'forest', label: 'Forest Gnome (Leśny gnom)' },
@@ -111,7 +133,7 @@ export function characterTraits(character, stats) {
       { id: 'cha', label: 'Charyzma' },
     ], 'ability');
   }
-  if (species === 'Smokowiec (Dragonborn)') group('dragonbornAncestry', 'Draconic Ancestry — przodek', 1, dragonbornAncestries, 'ancestry');
+  if (species === 'Smokowiec (Dragonborn)') group('dragonbornAncestry', 'Draconic Ancestry — przodek', 1, [...dragonbornAncestries, ...legacyDragonbornAncestries.filter(e => chosen.dragonbornAncestry?.includes(e.id))], 'ancestry');
   if (species === 'Diabelstwo (Tiefling)') {
     group('tieflingLegacy', 'Fiendish Legacy — dziedzictwo', 1, tieflingLegacies.map(({ id, label }) => ({ id, label })), 'lineage');
     group('tieflingSpellAbility', 'Fiendish Legacy — cecha czarowania', 1, [
@@ -239,12 +261,14 @@ export function characterTraits(character, stats) {
       ...(level >= 5 ? [{ level: 5, name: 'Large Form — rozmiar Large, ułatwienie testów Siły i +10 stóp szybkości', url: 'https://dnd2024.wikidot.com/species:goliath#Large-Form', source: 'Goliat (Goliath)' }] : []),
     );
   }
+  for (const [name, description] of speciesNotes[species] ?? []) if (name !== 'Celestial Revelation' || level >= 3) lineageFeatures.push({ level: name === 'Celestial Revelation' ? 3 : 1, name, description, source: species, url: 'https://dnd2024.wikidot.com/species:all' });
+  if (classId === 'barbarian') for (const feature of [...classFeatures, ...subclassFeatures]) feature.description ??= barbarianFeatureDescriptions[feature.name];
   const features = [...new Map([...classFeatures, ...subclassFeatures, ...lineageFeatures].map(feature => [`${feature.source}:${feature.name}`, feature])).values()];
   if (classId === 'warlock') for (let i = 0; i < features.length; i++) {
     const description = warlockDescriptions[features[i].name];
     if (description) features[i] = { ...features[i], description };
   }
-  const originFeatDescriptions = {};
+  const originFeatDescriptions = Object.fromEntries(epicBoons.filter(f => feats.has(f.name)).map(f => [f.name, f.description]));
   for (const f of originFeats.filter(f => feats.has(f.name))) originFeatDescriptions[f.name] = f.description;
   if (feats.has('Crafter')) Object.assign(originFeatDescriptions, {
     'Biegłość w narzędziach': crafterDescription.toolProficiency,
@@ -257,9 +281,12 @@ export function characterTraits(character, stats) {
   if (feats.has('Healer')) Object.assign(originFeatDescriptions, {
     'Healing Rerolls (Przerzuty leczenia)': 'Za każdym razem, gdy wykonujesz rzut kością, aby określić liczbę Punktów Wytrzymałości odzyskanych dzięki czarowi lub atutowi Healer — Medycyna bitewna, możesz przerzucić kość, jeśli wypadnie na niej 1. Musisz użyć nowego wyniku.',
   });
-  const darkvision = species === 'Krasnolud (Dwarf)' || species === 'Ork (Orc)' ? 120 : ['Aasimar', 'Smokowiec (Dragonborn)', 'Elf', 'Gnom (Gnome)', 'Diabelstwo (Tiefling)'].includes(species) ? 60 : 0;
+  const baseDarkvision = species === 'Krasnolud (Dwarf)' || species === 'Ork (Orc)' || species === 'Elf' && chosen.elfLineage?.[0] === 'drow' ? 120 : ['Aasimar', 'Smokowiec (Dragonborn)', 'Elf', 'Gnom (Gnome)', 'Diabelstwo (Tiefling)'].includes(species) ? 60 : 0;
+  const wildAspect = classId === 'barbarian' && character.subclass === 'Path of the Wild Heart' && level >= 6 ? chosen.wildAspect?.[0] : null;
+  const darkvision = baseDarkvision + (wildAspect === 'owl' ? 60 : 0);
   const senses = darkvision ? [`Widzenie w ciemności: ${darkvision} stóp (gatunek)`] : [];
   if (invocationIds.has('devils-sight')) senses.push('Devil’s Sight: normalne widzenie w słabym świetle i ciemności (także magicznej), 120 stóp');
+  if (feats.has('Boon of Truesight')) senses.push('Truesight: 60 feet');
   if (invocationIds.has('witch-sight')) senses.push('Witch Sight: Truesight, 30 stóp');
   if (classId === 'ranger' && level >= 18) senses.push('Ślepowidzenie: 30 stóp (Feral Senses)');
   const defenses = [];
@@ -281,21 +308,28 @@ export function characterTraits(character, stats) {
   const resources = (cls?.resources ?? []).map(resource => ({ name: resource.name, value: resource.levels.find(entry => entry.level === level)?.value ?? '—' }));
   if (classId === 'paladin') resources.push({ name: 'Lay On Hands — pula leczenia', value: String(5 * level) });
   if (classId === 'bard') resources.push({ name: 'Bardic Inspiration — użycia', value: abilityMod(stats, 'cha') === null ? '—' : String(Math.max(1, abilityMod(stats, 'cha'))) });
+  const speciesSpeed = species ? (species === 'Goliat (Goliath)' || species === 'Elf' && chosen.elfLineage?.[0] === 'wood' ? 35 : 30) + (feats.has('Transmuted Anatomy') ? 5 : 0) : null;
+  const naturalSpeed = (stats.values?.speed ?? speciesSpeed ?? 30) + (classId === 'barbarian' && level >= 5 ? 10 : 0);
   return {
     originFeatEntries: originFeatSheet([...feats], character, stats),
-    invocationEntries, swimSpeed: invocationIds.has('gift-of-the-depths') || feats.has('Child of the Sea') ? (stats.values?.speed ?? (species === 'Goliat (Goliath)' ? 35 : species ? 30 : null)) + (feats.has('Transmuted Anatomy') ? 5 : 0) : null,
+    climbSpeed: wildAspect === 'panther' ? naturalSpeed : null,
+    invocationEntries, swimSpeed: wildAspect === 'salmon' || invocationIds.has('gift-of-the-depths') || feats.has('Child of the Sea') ? naturalSpeed : null,
     classId, source: cls?.url ?? data.source, groups, skills, effectiveSkills: allSkills,
     savingThrows: [...new Set(savingThrows)], effectiveSavingThrows: [...new Set([...savingThrows, ...(stats.savingThrows ?? [])])],
     skillSources: sourceLabels, skillBonuses, languages: options.languages.filter(language => languages.has(language.id)),
     tools: [...tools], armor: armor.filter(Boolean), weapons: weapons.filter(Boolean), feats: [...feats], originFeatDescriptions, features,
     hitDie: die, hitDiceTotal: level,
-    creatureType: species === 'Diabelstwo (Tiefling)' ? 'Humanoid' : null,
-    size: ['Diabelstwo (Tiefling)', 'Człowiek (Human)'].includes(species)
-      ? (chosen[species === 'Człowiek (Human)' ? 'humanSize' : 'tieflingSize']?.[0] === 'small' ? 'Small' : 'Medium')
+    damageResistances: [...speciesResistances(species), ...(ancestry && species === 'Smokowiec (Dragonborn)' ? [ancestry.damageType] : []), ...(fiendishLegacy && species === 'Diabelstwo (Tiefling)' ? [fiendishLegacy.damageType] : [])],
+    creatureType: species ? 'Humanoid' : null,
+    sleepImmune: species === 'Elf',
+    longRestHours: species === 'Elf' ? 4 : 8,
+    carryingCapacity: stats.values?.str == null ? null : stats.values.str * 15 * (species === 'Goliat (Goliath)' ? 2 : 1),
+    size: ['Diabelstwo (Tiefling)', 'Człowiek (Human)', 'Aasimar'].includes(species)
+      ? (chosen[species === 'Aasimar' ? 'aasimarSize' : species === 'Człowiek (Human)' ? 'humanSize' : 'tieflingSize']?.[0] === 'small' ? 'Small' : 'Medium')
       : ['Gnom (Gnome)', 'Niziołek (Halfling)'].includes(species) ? 'Small' : species ? 'Medium' : null,
     ancestry, fiendishLegacy,
     goliathAncestry, giantAncestry: goliathAncestry,
-    baseSpeed: species ? (species === 'Goliat (Goliath)' ? 35 : 30) + (feats.has('Transmuted Anatomy') ? 5 : 0) : null,
+    baseSpeed: species ? (species === 'Goliat (Goliath)' || species === 'Elf' && chosen.elfLineage?.[0] === 'wood' ? 35 : 30) + (feats.has('Transmuted Anatomy') ? 5 : 0) : null,
     darkvision, senses, defenses, resources, hpBonus, firstLevelMaxHp: level === 1 && die && con !== null ? Math.max(1, die + con) + hpBonus : null,
     initiativeBonus: feats.has('Alert') ? proficiency : 0,
   };
@@ -314,6 +348,8 @@ export function validateTraitSelection(character, stats) {
     if (stats.requireCompleteTraits && values.length !== group.limit
       && (group.id === 'skilled' || character.species === 'Człowiek (Human)' && ['humanSkill', 'humanFeat', 'humanSize'].includes(group.id)
         || character.species === 'Gnom (Gnome)' && ['gnomeLineage', 'gnomeSpellAbility'].includes(group.id)
+        || character.species === 'Elf' && ['elfSkill', 'elfLineage', 'elfSpellAbility'].includes(group.id)
+        || character.species === 'Aasimar' && group.id === 'aasimarSize'
         || character.species === 'Smokowiec (Dragonborn)' && group.id === 'dragonbornAncestry'
         || character.species === 'Diabelstwo (Tiefling)' && ['tieflingLegacy', 'tieflingSpellAbility', 'tieflingSize'].includes(group.id)
         || character.species === 'Goliat (Goliath)' && group.id === 'giantAncestry')) {

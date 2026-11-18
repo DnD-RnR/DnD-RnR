@@ -1,3 +1,4 @@
+import { brutalSaveDisadvantage, consumeBrutalSave } from '../shared/barbarian.mjs';
 import { randomUUID } from 'node:crypto';
 import { casterData, resourceState, saveResources } from './spell-resources.mjs';
 import { canSeeConditionTarget, isIncapacitated, exhaustionPenalty, conditionSaveAdvantage, conditionSaveDisadvantage, automaticSaveFailure, cannotHarm } from '../shared/conditions.mjs';
@@ -117,11 +118,12 @@ export function handleCasting({ db, b, body, gm, canControl, activeMember, log }
   }
   check(p.stage === 'save' && controlled(caster) && caster.saves.con != null, 'CON wykonuje właściciel rzucającego.');
   const adv = Boolean(body.advantage || conditionSaveAdvantage(caster, 'con') || barbarianSaveAdvantage(caster, 'con'));
-  const dis = Boolean(body.disadvantage || conditionSaveDisadvantage(caster, 'con') || hexDisadvantage(b, caster, 'con'));
+  const dis = Boolean(body.disadvantage || brutalSaveDisadvantage(caster) || conditionSaveDisadvantage(caster, 'con') || hexDisadvantage(b, caster, 'con'));
   const die = n => Number.isInteger(n) && n >= 1 && n <= 20;
   const autoFail = automaticSaveFailure(caster, 'con');
   check(autoFail || die(body.roll) && (adv === dis || die(body.roll2)), 'Podaj k20 i drugą kość przy ułatwieniu/utrudnieniu.');
   const roll = adv === dis ? body.roll : adv ? Math.max(body.roll, body.roll2) : Math.min(body.roll, body.roll2);
+  consumeBrutalSave(caster);
   const penalty = consumeSavePenalty(caster, autoFail ? 1 : body.mindSliverRoll);
   const total = autoFail ? -Infinity : roll + caster.saves.con - exhaustionPenalty(caster) + timedSaveModifier(caster, 'con') + timedRollModifier(caster, body) + (caster.characterId ? luckBonus(db, caster.characterId, body.luckRoll) : 0) - penalty;
   const success = total >= p.counterDC;

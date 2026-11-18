@@ -29,8 +29,9 @@ export function armorSpeedPenalty(stats, equipment = []) {
   return strength !== null && (stats.values.str === null || stats.values.str < strength) ? 10 : 0;
 }
 
-export function speedFromEquipment(stats, equipment, baseSpeed) {
-  return baseSpeed === null ? null : Math.max(0, baseSpeed - armorSpeedPenalty(stats, equipment));
+export function speedFromEquipment(stats, equipment, baseSpeed, character = {}) {
+  const fastMovement = character.class?.includes('Barbarian') && character.level >= 5 && !equipment.some(i => i.equipped && i.armorCategory === 'heavy') ? 10 : 0;
+  return baseSpeed === null ? null : Math.max(0, baseSpeed + fastMovement - armorSpeedPenalty(stats, equipment));
 }
 
 export function hasStealthDisadvantage(equipment = []) {

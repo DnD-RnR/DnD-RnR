@@ -1,3 +1,4 @@
+import { epicBoonForName } from '../shared/epic-boons.mjs';
 import { randomUUID, createHash } from 'node:crypto';
 import { advancementPreview, hasLevelFeat, levelFeatOptions } from '../shared/advancement.mjs';
 import { characterTraits, validateTraitSelection } from '../shared/character-traits.mjs';
@@ -54,7 +55,12 @@ function validateAdvancement(db, character, previous, draft) {
   if (hasLevelFeat(next)) {
     if (draft.featMode === 'feat') {
       if (!levelFeatOptions(next, previous).some(f => f.name === draft.feat)) return error('Wybierz dostępny atut, którego jeszcze nie masz.');
-      if (Object.values(draft.increases ?? {}).some(Boolean)) return error('Wybierz atut albo zwiększenie cech.');
+      const epic = epicBoonForName(draft.feat);
+      if (epic) {
+        const increases = Object.entries(draft.increases ?? {}).filter(([, value]) => value);
+        if (increases.length !== 1 || increases[0][1] !== 1 || !epic.abilities.includes(increases[0][0]) || !Number.isInteger(previous.values[increases[0][0]]) || previous.values[increases[0][0]] >= 30) return error('Epic Boon: zwiększ jedną dozwoloną cechę o 1, maksymalnie do 30.');
+      }
+      if (!epic && Object.values(draft.increases ?? {}).some(Boolean)) return error('Wybierz atut albo zwiększenie cech.');
     } else {
       if (Object.values(draft.increases ?? {}).reduce((sum, n) => sum + n, 0) !== 2) return error('Rozdziel dwa punkty cech: +2 do jednej lub +1 do dwóch.');
       for (const [id, amount] of Object.entries(draft.increases ?? {})) if (amount && (!Number.isInteger(previous.values[id]) || previous.values[id] + amount > 20)) return error('Uzupełnij zwiększane cechy; ten wybór nie może podnieść ich powyżej 20.');

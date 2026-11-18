@@ -1,3 +1,4 @@
+import { mindlessImmune } from '../shared/barbarian.mjs';
 import { randomUUID } from 'node:crypto';
 import { isIncapacitated } from '../shared/conditions.mjs';
 import { persistConditionState } from './conditions.mjs';
@@ -23,7 +24,7 @@ export function handleSourceConditions(context) {
     const source = target.conditionSources?.find(e => e.id === body.effectId && e.kind === 'grappled');
     check(source?.escapeDC && target.characterId && canControl(target) && target.id === b.fighters[b.turn].id && !target.action && !isIncapacitated(target), 'Ucieczka wymaga własnej akcji, postaci i znanego ST chwytu.');
     check(['athletics', 'acrobatics'].includes(body.skill), 'Wybierz Athletics albo Acrobatics.');
-    handleBarbarian({ ...context, body: { ...body, kind: 'ability-check', dc: source.escapeDC } });
+    handleBarbarian({ ...context, body: { ...body, kind: 'ability-check', escapeGrapple: true, dc: source.escapeDC } });
     target.action = 'Ucieczka z chwytu';
     const success = target.lastAbilityCheck?.total >= source.escapeDC;
     if (success) target.conditionSources = target.conditionSources.filter(e => e !== source);
@@ -48,6 +49,7 @@ export function handleSourceConditions(context) {
     target.seenInvisibleIds = (target.seenInvisibleIds ?? []).filter(id => id !== body.targetId);
     if (body.visible) target.seenInvisibleIds.push(body.targetId);
   } else {
+    check(!body.enabled || !mindlessImmune(target, body.condition), 'Mindless Rage: niewrażliwość na Charmed i Frightened.');
     check(['charmed', 'frightened', 'grappled'].includes(body.condition) && typeof body.enabled === 'boolean', 'Wybierz stan ze źródłem.');
     if (!body.enabled && typeof body.effectId === 'string') {
       target.conditionSources = (target.conditionSources ?? []).filter(e => e.id !== body.effectId);

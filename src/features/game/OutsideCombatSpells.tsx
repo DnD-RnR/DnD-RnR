@@ -11,7 +11,7 @@ export function OutsideCombatSpells({ characterId, state, onChange }: { characte
   const options = spell ? [
     ...(/or Ritual/i.test(spell.castingTime ?? '') || spell.ritualOnly ? [{ key: `ritual:${spell.level}`, label: 'Rytuał — dodatkowe 10 minut, bez slotu' }] : []),
     ...(!spell.ritualOnly && spell.level === 0 ? [{ key: 'cantrip:0', label: 'Sztuczka' }] : []),
-    ...(spell.legacyFreeCast ? [{ key: `legacy:${spell.level}`, label: 'Fiendish Legacy — bez slotu' }] : []),
+    ...(spell.legacyFreeCast ? [{ key: `legacy:${spell.level}`, label: 'Czary gatunku — bez slotu' }] : []),
     ...(spell.originFreeCast ? [{ key: `origin:${spell.level}`, label: 'Atut Origin — bez slotu' }] : []),
     ...(spell.arcanumRemaining ? [{ key: `arcanum:${spell.level}`, label: 'Mystic Arcanum' }] : []),
     ...(!spell.ritualOnly && spell.level > 0 ? state.slots.filter(s => s.remaining > 0 && s.level >= spell.level).map(s => ({ key: `${s.source}:${s.level}`, label: `${s.level}. krąg (${s.remaining}/${s.total})${s.source === 'pact' ? ' — Pact Magic' : ''}` })) : []),

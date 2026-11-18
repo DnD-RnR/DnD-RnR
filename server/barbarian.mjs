@@ -1,10 +1,13 @@
+import { barbarianRageStarted, barbarianSaveTotal } from './barbarian-features.mjs';
+import { indomitableTotal, brutalSaveDisadvantage, consumeBrutalSave } from '../shared/barbarian.mjs';
+import { speciesSaveAdvantage, speciesD20 } from '../shared/species.mjs';
 import { timedSaveModifier } from '../shared/timed-effects.mjs';
 import { exhaustionPenalty, socialAdvantage, conditionCheckAdvantage } from '../shared/conditions.mjs';
 import { automaticCheckFailure, automaticSaveFailure, conditionCheckDisadvantage, conditionDefinitions, conditionSaveDisadvantage, conditionSaveAdvantage, hasCondition, isIncapacitated } from '../shared/conditions.mjs';
 import { persistConditionState } from './conditions.mjs';
 import { endConcentration } from './concentration.mjs';
 import { timedRollModifier } from '../shared/timed-effects.mjs';
-import { consumeSavePenalty, hasSpellCondition, spellSpeed, spellFlySpeed } from './spell-conditions.mjs';
+import { consumeSavePenalty, hasSpellCondition, spellSpeed, spellFlySpeed, spellClimbSpeed } from './spell-conditions.mjs';
 import { luckBonus } from './warlock-features.mjs';
 import { hexDisadvantage } from '../shared/warlock.mjs';
 import { primalSkills, barbarianSaveAdvantage, wildHeartAnimals } from '../shared/barbarian.mjs';
@@ -43,6 +46,8 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
   const state = f.characterId ? resourceState(db, f.characterId) : null;
   const p = f.rageProfile;
   const d20 = advantage => {
+    body = { ...body, roll: speciesD20(f, body.roll, body.halflingRoll), roll2: speciesD20(f, body.roll2, body.halflingRoll2) };
+
     const adv = Boolean(advantage || body.advantage), dis = Boolean(body.disadvantage || body.hexDisadvantage);
     check(Number.isInteger(body.roll) && body.roll >= 1 && body.roll <= 20 && (adv === dis || Number.isInteger(body.roll2) && body.roll2 >= 1 && body.roll2 <= 20), 'Podaj k20 i drugą kość przy ułatwieniu lub utrudnieniu.');
     return adv === dis ? body.roll : adv ? Math.max(body.roll, body.roll2) : Math.min(body.roll, body.roll2);
@@ -66,10 +71,17 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
   if (body.kind === 'relentless-rage') {
     check(f.relentlessRagePending && f.deathFailures < 3, 'Brak rzutu Relentless Rage.');
     const dc = f.relentlessRagePending.dc;
-    const success = body.decline !== true && d20(false) - exhaustionPenalty(f) + f.saves.con >= dc;
+    const capture = {};
+    let total = body.decline === true ? -Infinity : barbarianSaveTotal(db, b, f, 'con', body, 0, null, capture);
+    if (total < dc && body.fanaticalRoll != null && body.decline !== true) {
+      check(p.zealot && f.level >= 6 && f.rage && !f.rage.fanaticalUsed, 'Fanatical Focus jest niedostępne.');
+      f.rage.fanaticalUsed = true;
+      total = barbarianSaveTotal(db, b, f, 'con', { roll: body.fanaticalRoll, roll2: body.fanaticalRoll2, advantage: capture.advantage, disadvantage: capture.disadvantage }, p.damage, capture.modifier);
+    }
+    const success = total >= dc;
     if (body.decline !== true) { state.relentlessRageDC = dc + 5; f.relentlessRageDC = dc + 5; }
     f.relentlessRagePending = null;
-    if (success) { f.hp = 2 * f.level; f.deathSuccesses = 0; f.deathFailures = 0; }
+    if (success) { f.hp = Math.min(f.maxHp, 2 * f.level); f.deathSuccesses = 0; f.deathFailures = 0; }
     else endRage(f);
     saveResources(db, f.characterId, state); persistVitals(db, f);
     log(b, `${f.name}: Relentless Rage, ST ${dc} — ${success ? `sukces, ${f.hp} PW` : '0 PW; Szał zakończony'}.`);
@@ -100,9 +112,14 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
       bonus = s.abilities.str.modifier + s.proficiency * traits.effectiveSkills[skill.id] + extra;
     }
     check(bonus != null, 'Uzupełnij cechę postaci.');
-    const automaticAdvantage = body.kind === 'saving-throw' ? (barbarianSaveAdvantage(f, ability) || conditionSaveAdvantage(f, ability)) : (Boolean(f.rage && ability === 'str') || conditionCheckAdvantage(f, ability)) || body.kind === 'ability-check' && socialAdvantage(f, b.fighters.find(t => t.id === body.socialTargetId));
-    body = { ...body, hexDisadvantage: hexDisadvantage(b, f, ability, body.kind === 'saving-throw') || hasSpellCondition(f, 'enfeebled') && ability === 'str' || body.kind === 'ability-check' && (conditionCheckDisadvantage(f, ability) || body.skill === 'perception' && body.requiresSight && body.lightlyObscured === true) || body.kind === 'saving-throw' && conditionSaveDisadvantage(f, ability) };
-    const total = d20(automaticAdvantage) - exhaustionPenalty(f) + (body.kind === 'saving-throw' ? timedSaveModifier(f, ability) : 0) + bonus + luckBonus(db, f.characterId, body.luckRoll) + (body.kind === 'saving-throw' ? timedRollModifier(f, body) : 0) - (body.kind === 'saving-throw' ? consumeSavePenalty(f, body.mindSliverRoll) : 0);
+    const automaticAdvantage = body.kind === 'saving-throw' ? (speciesSaveAdvantage(f, ability, body.condition) || barbarianSaveAdvantage(f, ability) || conditionSaveAdvantage(f, ability)) : (Boolean((f.rage || f.speciesEffects?.large) && ability === 'str') || f.species === 'Goliat (Goliath)' && body.kind === 'ability-check' && body.escapeGrapple === true || conditionCheckAdvantage(f, ability)) || body.kind === 'ability-check' && socialAdvantage(f, b.fighters.find(t => t.id === body.socialTargetId));
+    body = { ...body, hexDisadvantage: hexDisadvantage(b, f, ability, body.kind === 'saving-throw') || hasSpellCondition(f, 'enfeebled') && ability === 'str' || body.kind === 'ability-check' && (conditionCheckDisadvantage(f, ability) || body.skill === 'perception' && body.requiresSight && body.lightlyObscured === true) || body.kind === 'saving-throw' && (brutalSaveDisadvantage(f) || conditionSaveDisadvantage(f, ability)) };
+    const selectedRoll = d20(automaticAdvantage);
+    const rawTotal = selectedRoll - exhaustionPenalty(f) + (body.kind === 'saving-throw' ? timedSaveModifier(f, ability) : 0) + bonus + luckBonus(db, f.characterId, body.luckRoll) + (body.kind === 'saving-throw' ? timedRollModifier(f, body) : 0) - (body.kind === 'saving-throw' ? consumeSavePenalty(f, body.mindSliverRoll) : 0);
+    const total = indomitableTotal(f, ability, rawTotal);
+    b.lastRoll = { kind: body.kind, actorId: f.id, total, dc: body.dc ?? null };
+    if (body.kind === 'saving-throw') f.lastSavingThrow = { ability, total, modifier: rawTotal - selectedRoll, advantage: Boolean(automaticAdvantage || body.advantage), disadvantage: Boolean(body.disadvantage || body.hexDisadvantage), round: b.round, turn: b.turn };
+    if (body.kind === 'saving-throw') consumeBrutalSave(f);
     if (body.kind === 'ability-check') {
       check(body.dc == null || Number.isInteger(body.dc) && body.dc >= 1 && body.dc <= 100, 'Podaj poprawne ST testu.');
       f.lastAbilityCheck = body.dc == null ? null : { total, dc: body.dc, attempted: false };
@@ -121,7 +138,7 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
   }
   if (body.kind === 'eagle-flight') {
     check(f.id === b.fighters[b.turn].id && !b.pending && !f.bonus && f.rage?.animal === 'eagle', 'Orzeł wymaga Szału i wolnej akcji dodatkowej we własnej turze.');
-    f.extraMove += spellSpeed(f); f.extraFlyMove = (f.extraFlyMove ?? 0) + spellFlySpeed(f); f.disengaged = true; f.bonus = 'Eagle: Dash + Disengage';
+    f.extraMove += spellSpeed(f); f.extraClimbMove = (f.extraClimbMove ?? 0) + spellClimbSpeed(f); f.extraFlyMove = (f.extraFlyMove ?? 0) + spellFlySpeed(f); f.disengaged = true; f.bonus = 'Eagle: Dash + Disengage';
     log(b, `${f.name}: Eagle — Dash i Disengage.`);
     return true;
   }
@@ -145,21 +162,24 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
       check(!db.prepare(`SELECT 1 FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ? AND i.equipped = 1 AND a.category = 'heavy'`).get(f.characterId), 'Ciężka zbroja uniemożliwia Szał.');
       check(p.wildHeart ? wildHeartAnimals.includes(body.animal) : body.animal == null, 'Wild Heart wymaga wyboru bear, eagle lub wolf przy aktywacji Szału.');
       f.rageUses--; state.rageUses = f.rageUses;
-      f.rage = { expiresRound: b.round + 1, maxRound: b.round + 100 };
+      f.rage = { expiresRound: b.round + 1, maxRound: b.round + 100, activationTurn: `${b.round}:${b.turn}` };
+      barbarianRageStarted(db, b, f, body, persistVitals);
       if (p.wildHeart) {
         f.rage.animal = body.animal;
-        if (body.animal === 'eagle') { f.extraMove += spellSpeed(f); f.extraFlyMove = (f.extraFlyMove ?? 0) + spellFlySpeed(f); f.disengaged = true; }
+        if (body.animal === 'eagle') { f.extraMove += spellSpeed(f); f.extraClimbMove = (f.extraClimbMove ?? 0) + spellClimbSpeed(f); f.extraFlyMove = (f.extraFlyMove ?? 0) + spellFlySpeed(f); f.disengaged = true; }
       }
       f.concentration = null; f.concentrationDC = null; f.concentrationChecks = []; state.concentration = null;
       const feet = body.feet ?? 0;
-      check(Number.isInteger(feet) && feet >= 0 && feet <= (p.instinctivePounce ? Math.floor(f.speed / 2) : 0), 'Przekroczono ruch Instinctive Pounce.');
+      check(Number.isInteger(feet) && feet >= 0 && feet <= (p.instinctivePounce ? Math.floor(spellSpeed(f) / 2) : 0), 'Przekroczono ruch Instinctive Pounce.');
       f.pounceMoved = feet;
       if (feet) log(b, `${f.name}: Instinctive Pounce — ${feet} stóp (dodatkowy ruch przy aktywacji).`);
     }
     f.bonus = body.kind === 'rage' ? 'Szał' : 'Przedłużenie Szału';
     f.rageRecoveryOffered = false;
   }
-  saveResources(db, f.characterId, state);
+  const latest = resourceState(db, f.characterId);
+  latest.concentration = state.concentration; latest.rageUses = state.rageUses; latest.persistentRageAvailable = state.persistentRageAvailable;
+  saveResources(db, f.characterId, latest);
   const labels = { rage: 'Szał aktywowany', 'rage-extend': 'Szał przedłużony', 'rage-end': 'Szał zakończony', 'rage-recover': 'Persistent Rage — użycia odzyskane' };
   log(b, `${f.name}: ${labels[body.kind]}; użycia Szału ${f.rageUses}/${p.max}.`);
   return true;

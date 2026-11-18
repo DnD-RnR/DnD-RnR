@@ -1,3 +1,4 @@
+import { epicBoons, epicBoonForName } from './epic-boons.mjs';
 import { characterTraits } from './character-traits.mjs';
 import { eligibleOriginFeats } from './origin-feats.mjs';
 
@@ -9,24 +10,24 @@ export function hasLevelFeat(character) {
 }
 export function levelFeatOptions(character, statistics) {
   const owned = new Set(characterTraits(character, statistics).feats);
-  return eligibleOriginFeats(character).filter(feat => !owned.has(feat.name) && !feat.list && !(feat.spells?.length) && !feat.cantrips?.length);
+  return [...eligibleOriginFeats(character), ...(character.level >= 19 ? epicBoons : [])].filter(feat => !owned.has(feat.name) && !feat.list && !(feat.spells?.length) && !feat.cantrips?.length);
 }
 export function advancementPreview(character, statistics, draft) {
   const next = { ...character, level: character.level + 1, subclass: character.level === 2 ? draft.subclass || '' : character.subclass };
   const stats = structuredClone(statistics);
   const before = characterTraits(character, statistics);
   const increases = draft.increases ?? {};
-  if (hasLevelFeat(next) && draft.featMode !== 'feat') {
+  if (hasLevelFeat(next) && (draft.featMode !== 'feat' || epicBoonForName(draft.feat))) {
     for (const id of ['str', 'dex', 'con', 'int', 'wis', 'cha']) {
       if (Number.isInteger(stats.values[id])) stats.values[id] += Number(increases[id]) || 0;
     }
   }
   if (hasLevelFeat(next) && draft.featMode === 'feat' && draft.feat) {
-    stats.levelFeats = [...(stats.levelFeats ?? []), { name: draft.feat, level: next.level }];
+    stats.levelFeats = [...(stats.levelFeats ?? []), { name: draft.feat, level: next.level, ...(epicBoonForName(draft.feat) ? { ability: Object.keys(increases).find(id => increases[id]) } : {}) }];
   }
   if (next.level === 20) {
     const ids = next.class.includes('Barbarian') ? ['str', 'con'] : next.class.includes('Monk') ? ['dex', 'wis'] : [];
-    for (const id of ids) if (Number.isInteger(stats.values[id])) stats.values[id] = Math.min(25, stats.values[id] + 4);
+    for (const id of ids) if (Number.isInteger(stats.values[id])) stats.values[id] = Math.max(stats.values[id], Math.min(25, stats.values[id] + 4));
   }
   stats.traits = draft.traits ?? stats.traits;
   stats.spells = draft.spells ?? stats.spells;

@@ -3,6 +3,7 @@ import progression from './spell-progression.json' with { type: 'json' };
 import subclassSpells from './subclass-spells.json' with { type: 'json' };
 import { tieflingLegacyProfile } from './character-traits.mjs';
 import { selectedOriginFeats, originSpellGrants } from './origin-feats.mjs';
+import { elvenLineages } from './species.mjs';
 
 export const emptySpellSelection = () => ({ choices: {}, selections: {} });
 export const spellById = new Map(catalog.spells.map(spell => [spell.id, spell]));
@@ -20,6 +21,22 @@ export function spellcastingProfile(character, selection = emptySpellSelection()
   const automatic = new Map();
   const grant = (ids, reason) => { for (const id of ids) { const spell = spellById.get(id); if (!spell) throw new Error(`Unknown granted spell: ${id}`); automatic.set(id, { ...spell, ...automatic.get(id), reason }); } };
   for (const entry of originSpellGrants(selectedOriginFeats(character, traits), traits)) grant([entry.id], entry.reason);
+  const speciesGrant = (ids, reason, ability, free = {}) => {
+    grant(ids, reason);
+    for (const id of ids) automatic.set(id, { ...automatic.get(id), spellcastingAbility: ability, speciesFreeMaximum: free[id] ?? 0 });
+    if (!profile.ability) profile.ability = ability;
+  };
+  if (character.species === 'Aasimar') speciesGrant(['light'], 'Light Bearer', 'cha');
+  if (character.species === 'Elf') {
+    const lineage = elvenLineages.find(l => l.id === traits.elfLineage?.[0]);
+    if (lineage) {
+      const cantrip = lineage.id === 'high' ? traits.highElfCantrip?.[0] ?? 'prestidigitation' : lineage.spells[0];
+      if (!spellById.get(cantrip) || spellById.get(cantrip).level !== 0 || lineage.id === 'high' && !spellById.get(cantrip).classes.includes('wizard')) throw new Error('Niepoprawna sztuczka High Elf.');
+      const ids = [cantrip, ...(level >= 3 ? [lineage.spells[1]] : []), ...(level >= 5 ? [lineage.spells[2]] : [])];
+      speciesGrant(ids, 'Elven Lineage', traits.elfSpellAbility?.[0] ?? '', Object.fromEntries(lineage.spells.slice(1).map(id => [id, 1])));
+    }
+  }
+  if (character.species === 'Gnom (Gnome)' && traits.gnomeLineage?.[0] === 'forest') speciesGrant(['minor-illusion', 'speak-with-animals'], 'Gnomish Lineage (Forest Gnome)', traits.gnomeSpellAbility?.[0] ?? '', { 'speak-with-animals': 2 + Math.floor((level - 1) / 4) });
   if (character.species === 'Gnom (Gnome)' && traits.gnomeLineage?.[0] === 'rock') {
     grant(['mending', 'prestidigitation'], 'Gnomish Lineage (Rock Gnome)');
     for (const id of ['mending', 'prestidigitation']) {

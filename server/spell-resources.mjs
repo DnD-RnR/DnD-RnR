@@ -1,3 +1,5 @@
+import { advanceSpeciesTime } from './species.mjs';
+import { speciesOutside } from './species-outside.mjs';
 import { characterZoneConditions } from './spell-zones.mjs';
 import { endProtectiveSpell } from './protective-spells.mjs';
 import { timedSpeedMultiplier, timedFlySpeed, timedSize, timedDarkvision } from '../shared/timed-effects.mjs';
@@ -53,6 +55,13 @@ export const speciesResourceState = (db, id, character = null) => {
   if (maxGiantAncestry && state.giantAncestryUses == null) state.giantAncestryUses = maxGiantAncestry;
   if (state.largeFormAvailable == null) state.largeFormAvailable = true;
   return {
+    name: c?.species ?? '', level: c?.level ?? 1,
+    effects: Object.fromEntries(Object.entries(state.speciesEffects ?? {}).filter(([key, e]) => e.expiresAt > Date.now())),
+    healingHandsAvailable: c?.species === 'Aasimar' && !state.healingHandsUsed,
+    revelationAvailable: c?.species === 'Aasimar' && c.level >= 3 && !state.revelationUsed,
+    stonecunningRemaining: c?.species === 'Krasnolud (Dwarf)' ? Math.max(0, proficiencyBonus(c.level) - (state.stonecunningUses ?? 0)) : 0,
+    gnomeDevices: (state.gnomeDevices ?? []).filter(d => d.expiresAt > Date.now()),
+    rockGnome: c?.species === 'Gnom (Gnome)' && stats.traits?.gnomeLineage?.[0] === 'rock',
     maxAdrenalineRush, adrenalineRushUses: Math.min(maxAdrenalineRush, state.adrenalineRushUses ?? maxAdrenalineRush),
     maxBreathWeapon, breathWeaponUses: Math.min(maxBreathWeapon, state.breathWeaponUses ?? maxBreathWeapon),
     breathWeaponDamage: maxBreathWeapon ? (c.level >= 17 ? 4 : c.level >= 11 ? 3 : c.level >= 5 ? 2 : 1) : 0,
@@ -95,9 +104,10 @@ export function casterData(db, id) {
     const arcanum = profile.groups.find(g => g.id.startsWith('arcanum') && stats.spells.selections[g.id]?.includes(spell.id));
     const origin = originGrants.find(g => g.id === spell.id);
     const automatic = profile.automatic.find(s => s.id === spell.id);
+    if (automatic?.speciesFreeMaximum) species.tieflingLegacyUses[spell.id] = (state.speciesSpellUses?.[spell.id] ?? 0) < automatic.speciesFreeMaximum;
     const spellcastingAbility = automatic?.spellcastingAbility ?? origin?.ability ?? profile.ability;
     const modifier = s.abilities[spellcastingAbility]?.modifier ?? null;
-    return { ...spell, legacySpell: Object.hasOwn(species.tieflingLegacyUses, spell.id), legacyFreeCast: species.tieflingLegacyUses[spell.id] === true, spellcastingAbility, ability: modifier, attack: modifier === null ? null : modifier + proficiencyBonus(character.level) + (stats.values.spellBonus ?? 0), dc: modifier === null ? null : 8 + modifier + proficiencyBonus(character.level) + (stats.values.spellDcBonus ?? 0), ritualOnly: automatic?.ritualOnly === true || bookRituals.has(spell.id), originAbility: origin?.ability, originFreeCast: originGrants.some(g => g.id === spell.id && g.freeCast && !state.originSpellUses?.[g.reason]), action: spellAction(spell), effect: spellEffects[spell.id] ?? null, arcanum: Boolean(arcanum), arcanumRemaining: arcanum ? !state.arcanum[spell.id] : false };
+    return { ...spell, speciesFreeRemaining: automatic?.speciesFreeMaximum ? Math.max(0, automatic.speciesFreeMaximum - (state.speciesSpellUses?.[spell.id] ?? 0)) : undefined, speciesFreeMaximum: automatic?.speciesFreeMaximum, legacySpell: Object.hasOwn(species.tieflingLegacyUses, spell.id), legacyFreeCast: species.tieflingLegacyUses[spell.id] === true, spellcastingAbility, ability: modifier, attack: modifier === null ? null : modifier + proficiencyBonus(character.level) + (stats.values.spellBonus ?? 0), dc: modifier === null ? null : 8 + modifier + proficiencyBonus(character.level) + (stats.values.spellDcBonus ?? 0), ritualOnly: automatic?.ritualOnly === true || bookRituals.has(spell.id), originAbility: origin?.ability, originFreeCast: originGrants.some(g => g.id === spell.id && g.freeCast && !state.originSpellUses?.[g.reason]), action: spellAction(spell), effect: spellEffects[spell.id] ?? null, arcanum: Boolean(arcanum), arcanumRemaining: arcanum ? !state.arcanum[spell.id] : false };
   });
   return { character, stats, profile, state, equipment, blocked: s.spellcastingBlocked, ability: s.abilities[profile.ability]?.modifier ?? null, attack: s.spellAttack, dc: s.spellDc, slots, spells, species, error };
 }
@@ -105,16 +115,20 @@ export function publicCaster(db, id) {
   const c = casterData(db, id);
   const summary = statisticsSummary(c.character, c.stats, c.equipment);
   const timedEffects = c.state.activeEffects ?? [];
-  const conditionSubject = { zoneConditions: characterZoneConditions(db, id), hp: summary.hp, conditionSources: c.state.conditionSources, exhaustion: c.state.exhaustion, manualConditions: c.state.manualConditions, timedEffects, prone: c.state.prone };
+  const speciesEffects = c.species.effects;
+  const conditionSubject = { speciesEffects, zoneConditions: characterZoneConditions(db, id), hp: summary.hp, conditionSources: c.state.conditionSources, exhaustion: c.state.exhaustion, manualConditions: c.state.manualConditions, timedEffects, prone: c.state.prone };
+  if (isIncapacitated(conditionSubject)) delete speciesEffects.flight;
   const conditions = [...conditionsOf(conditionSubject)];
-  const effectiveStats = { hp: summary.hp, maxHp: summary.maxHp == null ? null : summary.maxHp + timedHpBonus(timedEffects), ac: timedAc({ ac: summary.ac, timedEffects, dexModifier: summary.abilities.dex.modifier, wearingArmor: c.equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'), equipmentShieldBonus: summary.untrainedShield ? 0 : Number.parseInt(c.equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0 }), speed: conditionSpeedZero(conditionSubject) ? 0 : summary.speed == null ? null : Math.floor(Math.max(0, summary.speed + timedSpeedBonus({ timedEffects }) - 5 * (c.state.exhaustion ?? 0)) * timedSpeedMultiplier({ timedEffects })) };
+  const effectiveStats = { hp: summary.hp, maxHp: summary.maxHp == null ? null : summary.maxHp + timedHpBonus(timedEffects), ac: timedAc({ ac: summary.ac, timedEffects, dexModifier: summary.abilities.dex.modifier, wearingArmor: c.equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'), equipmentShieldBonus: summary.untrainedShield ? 0 : Number.parseInt(c.equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0 }), speed: conditionSpeedZero(conditionSubject) ? 0 : summary.speed == null ? null : Math.floor(Math.max(0, summary.speed + timedSpeedBonus({ timedEffects, speciesEffects }) - 5 * (c.state.exhaustion ?? 0)) * timedSpeedMultiplier({ timedEffects })) };
 
-  effectiveStats.flySpeed = conditionSpeedZero(conditionSubject) || !timedFlySpeed({ timedEffects }) ? 0 : Math.floor(Math.max(0, timedFlySpeed({ timedEffects }) + timedSpeedBonus({ timedEffects }) - 5 * (c.state.exhaustion ?? 0)) * timedSpeedMultiplier({ timedEffects }));
-  effectiveStats.size = timedSize({ size: characterTraits(c.character, c.stats).size, timedEffects });
+  effectiveStats.flySpeed = conditionSpeedZero(conditionSubject) || !timedFlySpeed({ timedEffects, speciesEffects, speed: summary.speed ?? 0 }) ? 0 : Math.floor(Math.max(0, timedFlySpeed({ timedEffects, speciesEffects, speed: summary.speed ?? 0 }) + timedSpeedBonus({ timedEffects, speciesEffects }) - 5 * (c.state.exhaustion ?? 0)) * timedSpeedMultiplier({ timedEffects }));
+  effectiveStats.tremorsense = speciesEffects.stonecunning ? 60 : 0;
+  effectiveStats.size = timedSize({ size: characterTraits(c.character, c.stats).size, timedEffects, speciesEffects });
   const traits = characterTraits(c.character, c.stats);
   const form = c.state.wildShape?.expiresAt > Date.now() ? druidForms.find(f => f.id === c.state.wildShape.formId) : null;
   effectiveStats.darkvision = timedDarkvision({ darkvision: form ? form.darkvision ?? 0 : traits.darkvision, timedEffects });
-  effectiveStats.climbSpeed = spellClimbSpeed({ ...conditionSubject, speed: form?.speed ?? summary.speed ?? 0, climbSpeed: form?.climb ?? 0 });
+  effectiveStats.swimSpeed = traits.swimSpeed == null ? 0 : spellClimbSpeed({ ...conditionSubject, speed: summary.speed ?? 0, climbSpeed: summary.speed ?? 0 });
+  effectiveStats.climbSpeed = spellClimbSpeed({ ...conditionSubject, speed: form?.speed ?? summary.speed ?? 0, climbSpeed: form?.climb ?? (traits.climbSpeed == null ? 0 : summary.speed ?? 0) });
   return { conditions, effectiveStats, activeEffects: c.state.activeEffects ?? [], concentration: c.state.concentration ?? null, warlock: warlockProfile(c.character, c.stats.values.cha, c.state), psiWarrior: psiResources(c.character, c.state), paladin: { ...paladinResources(c.character, c.state), channelDivinityDc: c.dc }, druid: { ...druidProfile(c.character), uses: Math.min(druidProfile(c.character).max, c.state.wildShapeUses ?? druidProfile(c.character).max), forms: c.stats.traits?.druidForms ?? [], wildShape: c.state.wildShape?.expiresAt > Date.now() ? c.state.wildShape : null, companion: c.state.wildCompanion ?? null }, slots: c.slots, spells: c.spells, ability: c.ability, attack: c.attack, dc: c.dc, error: c.error, species: c.species, barbarian: { ...rageProfile(c.character), uses: Math.min(rageProfile(c.character).max, c.state.rageUses ?? rageProfile(c.character).max), relentlessDC: c.state.relentlessRageDC ?? 10, recoveryAvailable: c.state.persistentRageAvailable !== false }, resourceVersion: c.state.version };
 }
 export function spendSpell(db, id, spellId, level, source, options = {}) {
@@ -125,9 +139,15 @@ export function spendSpell(db, id, spellId, level, source, options = {}) {
   if (source === 'ritual') {
     if (!options.outsideCombat || !options.ritual || !(spell.ritualOnly || /\bor Ritual\b/i.test(spell.castingTime)) || level !== spell.level) throw new Error('Rytuał jest niedostępny albo ma niepoprawny krąg.');
   } else if (source === 'legacy') {
-    if (!spell.legacyFreeCast || level !== spell.level) throw new Error('Fiendish Legacy: brak bezpłatnego użycia lub niepoprawny krąg czaru.');
-    c.state.tieflingLegacyUses ??= {};
-    c.state.tieflingLegacyUses[spellId] = true;
+    if (!spell.legacyFreeCast || level !== spell.level) throw new Error('Czar gatunku: brak bezpłatnego użycia lub niepoprawny krąg czaru.');
+    const speciesGrant = c.profile.automatic.find(s => s.id === spellId && s.speciesFreeMaximum);
+    if (speciesGrant) {
+      c.state.speciesSpellUses ??= {};
+      c.state.speciesSpellUses[spellId] = (c.state.speciesSpellUses[spellId] ?? 0) + 1;
+    } else {
+      c.state.tieflingLegacyUses ??= {};
+      c.state.tieflingLegacyUses[spellId] = true;
+    }
     saveResources(db, id, c.state);
   } else if (spell.originFreeCast && source === 'origin') {
     if (level !== spell.level) throw new Error('Bezpłatny czar atutu używa swojego podstawowego kręgu.');
@@ -159,6 +179,11 @@ export function handleSpellResources(db, user, path, method, body, send) {
   if (own) {
     const id = Number(own[1]);
     if (!db.prepare('SELECT 1 FROM characters WHERE id = ? AND user_id = ?').get(id, user.id)) return reply(404, { error: 'Nie znaleziono postaci.' });
+    if (method === 'POST' && body.kind === 'species-outside') {
+      db.exec('SAVEPOINT outside_species');
+      try { speciesOutside(db, id, body); db.exec('RELEASE outside_species'); return reply(200, { spellcasting: publicCaster(db, id) }); }
+      catch (error) { db.exec('ROLLBACK TO outside_species; RELEASE outside_species'); return reply(409, { error: error.message }); }
+    }
     if (method === 'POST' && ['end-concentration', 'dismiss-effect'].includes(body.kind)) {
       const state = resourceState(db, id);
       if (body.version !== state.version) return reply(409, { error: 'Zasoby zmieniły się. Odśwież kartę.' });
@@ -242,9 +267,11 @@ export function handleSpellResources(db, user, path, method, body, send) {
   if (body.rest === 'time') {
     if (!Number.isInteger(body.seconds) || body.seconds < 1 || body.seconds > 31536000) return reply(400, { error: 'Podaj poprawny czas w sekundach.' });
     advanceEffectTime(db, characters.map(c => c.character_id), body.seconds);
+    advanceSpeciesTime(db, characters.map(c => c.character_id), body.seconds);
     return reply(200, { advanced: characters.length });
   }
   advanceEffectTime(db, characters.map(c => c.character_id), body.rest === 'long' ? 28800 : 3600);
+  advanceSpeciesTime(db, characters.map(c => c.character_id), body.rest === 'long' ? 28800 : 3600);
   for (const { character_id: id } of characters) {
     const character = db.prepare('SELECT class, subclass, level, species FROM characters WHERE id = ?').get(id);
     const state = resourceState(db, id);
@@ -258,7 +285,8 @@ export function handleSpellResources(db, user, path, method, body, send) {
     if (body.rest === 'long') { const vitals = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(id)?.data ?? '{}').values; if ((vitals?.deathFailures ?? 0) < 3) state.exhaustion = Math.max(0, (state.exhaustion ?? 0) - 1); state.wildShape = null; state.wildCompanion = null; }
     const rage = rageProfile(character);
     state.rageUses = body.rest === 'long' ? rage.max : Math.min(rage.max, (state.rageUses ?? rage.max) + 1);
-    state.relentlessRageDC = 10;
+    state.relentlessRageDC = 10; state.epicFateUsed = false;
+    if (character.species === 'Ork (Orc)') state.adrenalineRushUses = proficiencyBonus(character.level);
     if (body.rest === 'long') state.persistentRageAvailable = true;
     if (body.rest === 'long') {
       state.spent = Array(9).fill(0); state.arcanum = {}; state.concentration = null; state.secondWindUses = maxSecondWind;
@@ -272,7 +300,11 @@ export function handleSpellResources(db, user, path, method, body, send) {
       state.giantAncestryUses = goliath ? proficiencyBonus(character.level) : 0;
       state.largeFormAvailable = true;
       state.tieflingLegacyUses = {};
+      state.speciesSpellUses = {};
+      state.stonecunningUses = 0; state.healingHandsUsed = false; state.revelationUsed = false;
+      state.speciesEffects = {};
       state.originSpellUses = {};
+      state.zealotDiceSpent = 0; state.divineFormUsed = false; state.intimidatingUsed = false; state.zealousUsed = false;
       state.layOnHandsSpent = 0; state.paladinSmiteUsed = false;
       state.draconicFlightAvailable = true;
       state.relentlessEnduranceAvailable = true; state.lastLongRest = Date.now();
