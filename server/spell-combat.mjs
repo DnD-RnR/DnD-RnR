@@ -1,3 +1,7 @@
+import { consumeMasteryAttack, fighterIndomitable, masteryAttackFlags, studiedAdvantage, studiedResult } from './fighter.mjs';
+import { persistConditionState } from './conditions.mjs';
+import { applyTurnUndead, clericResources, healTarget } from './cleric.mjs';
+import { isBard } from './bard.mjs';
 import { rageDamageTypes } from '../shared/barbarian.mjs';
 import { applyBarbarianSaveEffect, barbarianSaveTotal } from './barbarian-features.mjs';
 import { brutalSaveDisadvantage, consumeBrutalSave, indomitableTotal, lionDisadvantage, mindlessImmune } from '../shared/barbarian.mjs';
@@ -11,7 +15,6 @@ import { hasTimedModifier, timedSaveModifier } from '../shared/timed-effects.mjs
 import { exhaustionPenalty, cannotHarm, canSeeConditionTarget } from '../shared/conditions.mjs';
 import { luckBonus, reflectThoughtShield } from './warlock-features.mjs';
 import { warlockProfile, warlockResistance, bondAdvantage, hexDisadvantage, hexActive, damageTypeName } from '../shared/warlock.mjs';
-import { moonSpells } from '../shared/druid.mjs';
 import { spendSpell, resourceState, saveResources } from './spell-resources.mjs';
 import { barbarianResistance, barbarianSaveAdvantage, barbarianAttackAdvantage, wolfAttackAdvantage } from '../shared/barbarian.mjs';
 import { recordAttackRoll } from './barbarian.mjs';
@@ -42,6 +45,7 @@ function advanceProjectile(b, p) {
   let next;
   while ((next = p.remainingTargets?.shift())) {
     if (!b.fighters.some(f => f.id === next && f.deathFailures < 3 && (f.characterId || f.hp > 0))) continue;
+    delete p.cuttingWordsReduction;
     p.targets = [{ id: next }]; p.stage = 'attack'; p.critical = false; p.hexDice = 0; p.attackTotal = null;
     return;
   }
@@ -76,8 +80,17 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     const effect = timed ?? caster.spellConditions?.find(e => e.sourceId === body.sourceId && e.kind === body.condition && e.concentrationKey && e.lastSaveRound !== b.round);
     const save = timed ? timed.modifiers.repeatSave : effect?.save;
     check(effect && caster.saves[save] != null, 'Brak powtórnego rzutu obronnego.');
-    const roll = d20({ ...body, speciesSubject: caster, disadvantage: body.disadvantage || brutalSaveDisadvantage(caster) || conditionSaveDisadvantage(caster, save) || hexDisadvantage(b, caster, save), advantage: body.advantage || speciesSaveAdvantage(caster, save, timed?.modifiers.condition ?? effect.kind) || barbarianSaveAdvantage(caster, save) || conditionSaveAdvantage(caster, save) });
-    const success = !automaticSaveFailure(caster, save) && indomitableTotal(caster, save, roll - exhaustionPenalty(caster) + caster.saves[save] + timedSaveModifier(caster, save) + timedRollModifier(caster, body) - consumeSavePenalty(caster, body.mindSliverRoll)) >= effect.dc;
+    const advantage = Boolean(body.advantage || speciesSaveAdvantage(caster, save, timed?.modifiers.condition ?? effect.kind) ||
+      barbarianSaveAdvantage(caster, save) || conditionSaveAdvantage(caster, save));
+    const disadvantage = Boolean(body.disadvantage || brutalSaveDisadvantage(caster) || conditionSaveDisadvantage(caster, save) || hexDisadvantage(b, caster, save));
+    let success = false;
+    if (!automaticSaveFailure(caster, save)) {
+      const roll = d20({ ...body, speciesSubject: caster, disadvantage, advantage });
+      const modifier = -exhaustionPenalty(caster) + caster.saves[save] + timedSaveModifier(caster, save) +
+        timedRollModifier(caster, body) - consumeSavePenalty(caster, body.mindSliverRoll);
+      success = fighterIndomitable(db, caster, body, indomitableTotal(caster, save, roll + modifier), effect.dc,
+        modifier, advantage, disadvantage, message => log(b, message)) >= effect.dc;
+    }
     consumeBrutalSave(caster);
     caster.spellTurnEnded = b.round;
     effect.lastSaveRound = b.round;
@@ -95,10 +108,6 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     check(b.pending?.kind !== 'casting' || parent, 'Najpierw rozstrzygnij okno rzucanego czaru.');
     check(caster && !caster.rage && !isIncapacitated(caster), 'Wild Shape, Szał lub stan postaci uniemożliwia rzucanie czarów.');
     check(controlled(caster) && caster.characterId && caster.hp > 0 && caster.deathFailures < 3, 'Nie możesz rzucić czaru tą postacią.');
-    if (caster.wildShape) {
-      const character = db.prepare('SELECT * FROM characters WHERE id = ?').get(caster.characterId);
-      check(moonSpells(character).includes(body.spellId), 'W Wild Shape możesz rzucać tylko czary Kręgu Księżyca.');
-    }
     if (b.pending && !parent) {
       check(body.slot === 'reaction' && !b.suspendedAction, 'Najpierw rozstrzygnij rozpoczęte działanie.');
       b.suspendedAction = b.pending; b.pending = null;
@@ -106,12 +115,12 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     check(caster.id === b.fighters[b.turn].id || body.slot === 'reaction', 'Poza własną turą dostępne są tylko reakcje.');
     check(!caster[body.slot] && ['action', 'bonus', 'reaction'].includes(body.slot), 'Działanie zostało już wykorzystane.');
     check(!b.fighters.some(f => f.concentrationDC), 'Najpierw rozstrzygnij rzuty koncentracji.');
-    c = spendSpell(db, caster.characterId, body.spellId, body.level, body.source);
+    c = spendSpell(db, caster.characterId, body.spellId, body.level, body.source, { interventionRolls: body.interventionRolls });
     if (/\bV\b/.test(c.spell.components ?? '')) endSpeciesHide(db, caster);
     check(c.spell.action === body.slot, 'Czas rzucania czaru nie pasuje do tego kroku tury.');
     caster.epicBlinkReady = body.slot === 'action';
     check(!c.blocked, 'Brak wyszkolenia w założonym pancerzu blokuje rzucanie czarów.');
-    const spentSlot = c.spell.level > 0 && !['arcanum', 'origin', 'paladin-smite', 'legacy'].includes(body.source);
+    const spentSlot = c.spell.level > 0 && !['arcanum', 'origin', 'paladin-smite', 'legacy', 'divine-intervention', 'natural-recovery'].includes(body.source);
     check(!spentSlot || !(b.slotCasters ?? []).includes(caster.id), 'W tej turze wykorzystano już miejsce na czar.');
     if (spentSlot) b.slotCasters = [...(b.slotCasters ?? []), caster.id];
     caster[body.slot] = `Czar: ${c.spell.name}`;
@@ -119,7 +128,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     if (c.spell.duration?.includes('Koncentracja')) {
       startConcentration(db, caster, c.spell, b);
     }
-    log(b, `${caster.name}: ${c.spell.name}${c.spell.level ? ` (${body.level}. krąg, ${body.source === 'paladin-smite' ? 'Paladin Smite' : body.source === 'arcanum' ? 'Mystic Arcanum' : body.source === 'legacy' ? (c.species.tieflingLegacy ? 'Fiendish Legacy — bez miejsca' : 'Czary gatunku — bez miejsca') : body.source === 'origin' ? 'atut Origin' : 'zużyto miejsce'})` : ' (sztuczka)'}.`);
+    log(b, `${caster.name}: ${c.spell.name}${c.spell.level ? ` (${body.level}. krąg, ${body.source === 'natural-recovery' ? 'Natural Recovery' : body.source === 'divine-intervention' ? 'Divine Intervention' : body.source === 'paladin-smite' ? 'Paladin Smite' : body.source === 'arcanum' ? 'Mystic Arcanum' : body.source === 'legacy' ? (c.species.tieflingLegacy ? 'Fiendish Legacy — bez miejsca' : 'Czary gatunku — bez miejsca') : body.source === 'origin' ? 'atut Origin' : 'zużyto miejsce'})` : ' (sztuczka)'}.`);
     if (hasTimedModifier(caster, 'slow') && !(warlockProfile(c.character, c.stats.values.cha, c.state).greatOldOne && ['Enchantment', 'Illusion'].includes(c.spell.school)) && /(^|,|\s)S(,|\s|$)/.test(c.spell.components)) {
       check(die(body.slowRoll, 4), 'Slow: podaj k4 sprawdzające 25% szansy niepowodzenia komponentu S.');
       if (body.slowRoll === 1) { if (c.spell.duration?.includes('Koncentracja')) endConcentration(db, caster); caster[body.slot] = `Slow: ${c.spell.name} nie powiódł się`; log(b, `${caster.name}: Slow — czar nie powiódł się, miejsce i działanie zużyte.`); return true; }
@@ -178,7 +187,9 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     }
     const targets = spec.self ? [caster] : Array.isArray(body.targetIds) ? body.targetIds.map(id => b.fighters.find(f => f.id === id)) : [];
     const projectiles = spec.cantripBeams ? c.character.level >= 17 ? 4 : c.character.level >= 11 ? 3 : c.character.level >= 5 ? 2 : 1 : spec.projectiles ? spec.projectiles + (body.level - c.spell.level) * (spec.projectilesPerLevel ?? 0) : 0;
-    const maxTargets = spec.maxTargets ? spec.maxTargets + (body.level - c.spell.level) * (spec.targetsPerLevel ?? 0) : spec.extraTargets ? body.level - 1 : spec.area ? 50 : 1;
+    const words = isBard(c.character) && c.character.level >= 20 && ['power-word-heal', 'power-word-kill'].includes(c.spell.id);
+    if (words && targets.length === 2) check(body.confirmedSecondTarget === true, 'Words of Creation: potwierd?, ?e cele s? w odleg?o?ci do 10 st?p od siebie.');
+    const maxTargets = words ? 2 : spec.maxTargets ? spec.maxTargets + (body.level - c.spell.level) * (spec.targetsPerLevel ?? 0) : spec.extraTargets ? body.level - 1 : spec.area ? 50 : 1;
     check(projectiles ? targets.length === projectiles && targets.every(Boolean) : (targets.length > 0 || spec.zone || spec.optionalTarget) && targets.length <= maxTargets && targets.every(Boolean) && new Set(targets.map(t => t.id)).size === targets.length, 'Wybierz właściwe cele czaru i cel dla każdego promienia.');
     if (spec.willingOnly) check(body.willing === true, 'Ten czar wymaga dobrowolnego celu, co potwierdza MG.');
     if (c.spell.id === 'feather-fall') {
@@ -189,11 +200,16 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     if (body.requiresSight === true || spec.requiresSight) check(targets.every(t => canSeeConditionTarget(caster, t)), 'Invisible / Blinded: ten efekt wymaga widzianego celu; MG musi potwierdzić wyjątek widoczności.');
     if (spec.humanoid) check(targets.every(t => t.creatureType === 'Humanoid' || !t.creatureType && body.confirmedHumanoid === true), 'Hold Person: cel musi być Humanoidem; nieznany typ potwierdza GM.');
     check(targets.every(t => t.deathFailures < 3), 'Zwykły czar nie przywraca życia martwemu celowi.');
-    if (c.spell.id === 'power-word-kill' && targets[0].hp <= 100) {
-      const target = targets[0], hpBefore = target.hp, killed = instantDeath(db, target, persistVitals);
-      if (killed && hpBefore > 0) target.fiendDefeatPending = { sourceId: caster.id };
-      log(b, `${c.spell.name} → ${target.name}: ${killed ? 'natychmiastowa śmierć bez obrażeń' : 'Death Ward neguje efekt i kończy się'}.`);
-      return true;
+    if (c.spell.id === 'power-word-kill') {
+      for (let index = targets.length - 1; index >= 0; index--) {
+        const target = targets[index];
+        if (target.hp > 100) continue;
+        const hpBefore = target.hp, killed = instantDeath(db, target, persistVitals);
+        if (killed && hpBefore > 0) target.fiendDefeatPending = { sourceId: caster.id };
+        log(b, `${c.spell.name} ? ${target.name}: ${killed ? 'natychmiastowa ?mier? bez obra?e?' : 'Death Ward neguje efekt i ko?czy si?'}.`);
+        targets.splice(index, 1);
+      }
+      if (!targets.length) return true;
     }
     if (spec.mode === 'restore-condition') {
       for (const target of targets) endCondition(db, target, body.conditionChoice);
@@ -215,8 +231,27 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
       check(cha != null, 'Agonizing Blast: uzupełnij Charyzmę.');
       spec.bonus += Math.floor((cha - 10) / 2);
     }
+    if (c.spell.druidCantrip && c.stats.spells?.choices?.elementalFury === 'potent' && c.character.level >= 7 && ['attack', 'save'].includes(spec.mode)) {
+      check(c.ability != null, 'Potent Spellcasting requires Wisdom.');
+      spec.bonus += c.ability;
+    }
+    const cleric = clericResources(c.character, {}, c.stats.spells?.choices);
+    const damageCantrip = c.spell.level === 0 && c.spell.classes.includes('cleric') &&
+      c.stats.spells?.selections?.cantrips?.includes(c.spell.id) && ['attack', 'save'].includes(spec.mode);
+    if (cleric?.strikes === 'potent' && damageCantrip) {
+      check(c.ability != null, 'Potent Spellcasting wymaga M?dro?ci.');
+      spec.bonus += c.ability;
+      if (c.character.level >= 14) spec.clericVitality = Math.max(0, 2 * c.ability);
+    }
+    if (cleric && spec.mode === 'heal') {
+      spec.supremeHealing = cleric.supremeHealing;
+      if (c.character.subclass === 'Life Domain' && body.source === 'slot') {
+        spec.bonus += 2 + body.level;
+        if (c.character.level >= 6) spec.blessedHealer = 2 + body.level;
+      }
+    }
     spec.repelling = c.stats.traits?.invocations?.includes(`repelling-blast:${c.spell.id}`) === true;
-    check(spec.bonus !== null && (spec.mode !== 'attack' || c.attack !== null) && (spec.mode !== 'save' || c.dc !== null), 'Uzupełnij cechę czarowania postaci.');
+    check(spec.bonus !== null && (spec.mode !== 'attack' || c.attack !== null) && (spec.mode !== 'save' || !spec.save || c.dc !== null), 'Uzupełnij cechę czarowania postaci.');
     if (spec.save && ['save', 'condition', 'timed-save'].includes(spec.mode)) check(c.dc !== null && targets.filter(t => spec.binding !== 'entangle' || t.id !== caster.id).every(t => automaticSaveFailure(t, spec.save) || t.saves?.[spec.save] != null), 'Uzupełnij ST czaru i modyfikator rzutu obronnego celów.');
     if (spec.zone) {
       syncSpellZones(db, b);
@@ -251,7 +286,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
   }
   if (body.kind === 'concentration') {
     check(controlled(caster) && caster.hp > 0 && caster.concentrationDC, 'Brak testu koncentracji do wykonania.');
-    const success = barbarianSaveTotal(db, b, caster, 'con', body) >= caster.concentrationDC;
+    const success = barbarianSaveTotal(db, b, caster, 'con', body, 0, null, null, { dc: caster.concentrationDC, log }) >= caster.concentrationDC;
     log(b, `${caster.name}: koncentracja — ${success ? 'utrzymana' : 'przerwana'}.`);
     if (!success) endConcentration(db, caster);
     else caster.concentrationChecks = (caster.concentrationChecks ?? [caster.concentrationDC]).slice(1);
@@ -267,7 +302,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     check(p.stage === 'heat-save', 'Brak rzutu po obrażeniach Heat Metal.');
     const t = p.heatSaves.find(t => t.id === body.targetId && !t.resolved), target = b.fighters.find(f => f.id === t?.id);
     check(t && controlled(target), 'CON wykonuje właściciel celu lub MG dla potwora.');
-    const success = barbarianSaveTotal(db, b, target, 'con', body) >= p.dc;
+    const success = barbarianSaveTotal(db, b, target, 'con', body, 0, null, null, { dc: p.dc, log }) >= p.dc;
     const dropped = t.canDrop && (!success || body.dropObject === true);
     if (dropped) {
       const effect = b.repeatSpells?.find(e => e.id === p.repeatSpellId);
@@ -286,7 +321,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     const types = [...new Set((p.spec.components ?? [p.spec]).map(c => c.type))];
     const type = p.spec.components ? body.damageType : p.spec.type;
     check(types.includes(type), 'Wybierz typ obrażeń tego czaru.');
-    const resistance = hasCondition(fighter, 'petrified') || timedResistance(fighter, damageTypeName(type)) || barbarianResistance(fighter, type) || warlockResistance(fighter, type) || fighter.damageResistance === damageTypeName(type) || fighter.damageResistances?.includes(damageTypeName(type));
+    const resistance = hasCondition(fighter, 'petrified') || timedResistance(fighter, damageTypeName(type)) || barbarianResistance(fighter, type) || warlockResistance(fighter, type) || fighter.damageResistance === damageTypeName(type) || fighter.damageResistances?.includes(damageTypeName(type)) || fighter.natureSanctuaryResistances?.includes(damageTypeName(type));
     target.defenses ??= {};
     target.defenses[type] = { immune: body.multiplier === 0, resistant: Boolean(resistance || body.multiplier === 0.5), vulnerable: body.multiplier === 2 };
     target.multiplier = resistance && body.multiplier !== 0.5 ? body.multiplier * 0.5 : body.multiplier;
@@ -314,7 +349,9 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
       t.rerollDisadvantage = Boolean(body.disadvantage || brutalSaveDisadvantage(target) || conditionSaveDisadvantage(target, p.spec.save) || hexDisadvantage(b, target, p.spec.save) || hasSpellCondition(target, 'enfeebled') && p.spec.save === 'str');
       const roll = d20({ ...body, speciesSubject: target, advantage: t.rerollAdvantage, disadvantage: t.rerollDisadvantage });
       t.rerollModifier = -exhaustionPenalty(target) + target.saves[p.spec.save] + timedSaveModifier(target, p.spec.save) + timedRollModifier(target, body) + (target.characterId ? luckBonus(db, target.characterId, body.luckRoll) : 0) - consumeSavePenalty(target, body.mindSliverRoll);
-      t.total = indomitableTotal(target, p.spec.save, roll + t.rerollModifier); t.saved = t.total >= p.dc;
+      t.total = fighterIndomitable(db, target, body, indomitableTotal(target, p.spec.save, roll + t.rerollModifier),
+        p.dc, t.rerollModifier, t.rerollAdvantage, t.rerollDisadvantage, message => log(b, message));
+      t.saved = t.total >= p.dc;
       consumeBrutalSave(target);
     }
     b.lastRoll = { kind: 'spell-save', actorId: target.id, targetId: target.id, total: t.total ?? -Infinity, dc: p.dc, pending: structuredClone(p) };
@@ -333,16 +370,20 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     const target = b.fighters.find(f => f.id === p.targets[0].id);
     check(!cannotHarm(actor, target), 'Charmed: nie możesz atakować sprawcy.');
     const conditions = conditionAttackModifiers(actor, target, body);
+    const master = masteryAttackFlags(actor, target);
     endProtectiveSpell(db, actor, 'sanctuary');
     recordAttackRoll(b, actor, body, log); endSpeciesHide(db, actor);
-    const roll = d20({ ...body, speciesSubject: actor, advantage: body.advantage || conditions.advantage || hasSpellCondition(target, 'guiding-bolt') || bondAdvantage(actor, target) || vowAttackAdvantage(actor, target) || barbarianAttackAdvantage(actor, target) || wolfAttackAdvantage(b, actor, target) }, conditions.disadvantage || spellDisadvantage(actor) || bondAdvantage(target, actor) || target.dodge || target.attackDisadvantage || lionDisadvantage(b, actor, target) || Boolean(actor.mockery));
+    const roll = d20({ ...body, speciesSubject: actor, advantage: body.advantage || master.advantage || studiedAdvantage(actor, target) || actor.id === b.fighters[b.turn].id && actor.moonlightStepAdvantage || conditions.advantage || hasSpellCondition(target, 'guiding-bolt') || bondAdvantage(actor, target) || vowAttackAdvantage(actor, target) || barbarianAttackAdvantage(actor, target) || wolfAttackAdvantage(b, actor, target) }, master.disadvantage || conditions.disadvantage || spellDisadvantage(actor) || bondAdvantage(target, actor) || target.dodge || target.attackDisadvantage || lionDisadvantage(b, actor, target) || Boolean(actor.mockery));
+    if (actor.id === b.fighters[b.turn].id) actor.moonlightStepAdvantage = false;
     target.spellConditions = (target.spellConditions ?? []).filter(e => e.kind !== 'guiding-bolt');
     consumeSpellAttack(actor);
+    consumeMasteryAttack(actor, target);
     actor.mockery = null;
     const sundering = target.brutalEffects?.find(e => e.kind === 'sundering' && e.sourceId !== actor.id);
     const attackModifier = timedRollModifier(actor, body) + (sundering ? 5 : 0);
     if (sundering) target.brutalEffects = target.brutalEffects.filter(e => e !== sundering);
     const hit = roll !== 1 && (roll === 20 || roll - exhaustionPenalty(actor) + p.attackBonus + attackModifier >= timedAc(target));
+    studiedResult(b, actor, target, hit);
     log(b, `${actor.name} → ${target.name}: ${p.spellName} — ${hit ? roll === 20 ? 'trafienie krytyczne' : 'trafienie' : 'pudło'}.`);
     const hitSnapshot = structuredClone(p);
     Object.assign(hitSnapshot, { stage: 'effect', attackTotal: roll - exhaustionPenalty(actor) + p.attackBonus + attackModifier, missed: false, critical: roll === 20 || conditions.criticalOnHit, hexDice: hexActive(actor, target) ? (roll === 20 || conditions.criticalOnHit ? 2 : 1) : 0 });
@@ -354,13 +395,18 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     return true;
   }
   check(p.stage === 'effect', 'Najpierw wykonaj atak lub rzuty obronne.');
-  check(['heal', 'temp-hp'].includes(p.spec.mode) || p.targets.every(t => t.saved && !p.spec.half && !p.spec.successRider || t.defenseReady), 'GM musi zatwierdzić odporności, niewrażliwości i podatności celów.');
+  check(['heal', 'temp-hp'].includes(p.spec.mode) || p.targets.every(t => t.saved && !p.spec.half && !p.spec.successRider || p.spec.turnUndead && !p.spec.searDamage || p.spec.weaponTopple || t.defenseReady), 'GM musi zatwierdzić odporności, niewrażliwości i podatności celów.');
   const dice = spellDamageDice(p.spec, p.critical);
+  if (p.spec.supremeHealing) body = { ...body, rolls: dice.map(d => d.sides) };
   check(Array.isArray(body.rolls) && body.rolls.length === dice.length && body.rolls.every((n, i) => die(n, dice[i].sides)), 'Podaj wynik każdej kości czaru.');
   check(!p.hexDice || Array.isArray(body.hexRolls) && body.hexRolls.length === p.hexDice && body.hexRolls.every(n => die(n, 6)), 'Hex: podaj dodatkowe k6 (dwie przy trafieniu krytycznym).');
   const damageMode = ['attack', 'save'].includes(p.spec.mode);
   check(!damageMode || !hasSpellCondition(actor, 'enfeebled') || die(body.enfeeblementRoll, 8), 'Ray of Enfeeblement: podaj k8 odejmowane od obrażeń.');
-  const total = Math.max(0, body.rolls.reduce((a, n) => a + n, 0) + p.spec.bonus - (damageMode && hasSpellCondition(actor, 'enfeebled') ? body.enfeeblementRoll : 0));
+  const total = Math.max(0, body.rolls.reduce((a, n) => a + n, 0) + p.spec.bonus - (p.cuttingWordsReduction ?? 0) - (damageMode && hasSpellCondition(actor, 'enfeebled') ? body.enfeeblementRoll : 0));
+  const vitality = body.clericVitalityTargetId == null ? null : b.fighters.find(f => f.id === body.clericVitalityTargetId);
+  if (body.clericVitalityTargetId != null) check(p.spec.clericVitality > 0 && vitality && vitality.deathFailures < 3 &&
+    (vitality.id === actor.id || body.confirmedClericVitality === true), 'Improved Potent Spellcasting: wybierz cel w 60 stopach.');
+  let healedOther = false, dealtDamage = false;
   for (const t of p.targets) {
     const target = b.fighters.find(f => f.id === t.id);
     if ((p.spec.concentrationRounds || timedSpellDefinitions[p.spellId]?.concentration) && (!actor.concentration || actor.concentrationKey !== p.concentrationKey)) continue;
@@ -370,6 +416,24 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
     } else if (['timed-save', 'timed-condition'].includes(p.spec.mode)) {
       if (!t.saved && !t.conditionImmune) applyTimedEffect(db, b, actor, target, { id: p.spellId, level: p.spellLevel, name: p.spellName }, p.castingLevel, p.castingId, { condition: p.conditionChoice, effectChoice: p.effectChoice, dc: p.dc });
     } else if (p.spec.mode === 'condition') {
+      if (p.spec.weaponTopple) {
+        if (!t.saved) {
+          target.prone = true;
+          persistConditionState(db, target);
+          log(b, `${target.name}: Topple, Prone.`);
+        }
+        continue;
+      }
+      if (p.spec.turnUndead) {
+        if (!t.saved) {
+          const [sear] = defendSpellDamage([{ type: 'Radiant', amount: p.spec.searDamage }], false, false, t.defenses ?? {});
+          const amount = sear.amount;
+          if (amount > 0) damage(db, target, amount, false, 'Radiant', true);
+          if (target.deathFailures < 3) applyTurnUndead(b, actor, target, t.conditionImmune);
+          log(b, `${target.name}: Turn Undead ? pora?ka, cel ma oddala? si? od kleryka${amount ? `, Sear Undead ${amount} obra?e?` : ''}.`);
+        }
+        continue;
+      }
       if (p.spec.barbarianFeature && !t.conditionImmune && !t.saved) applyBarbarianSaveEffect(db, b, actor, target, p);
       if (p.spec.speciesShroud && !t.conditionImmune && !t.saved) applySpeciesFear(db, b, actor, target);
       if (!p.spec.barbarianFeature && !p.spec.speciesShroud && !t.conditionImmune && (!t.saved || p.spec.successRider)) addSpellCondition(b, target, actor, t.saved ? 'enfeebled-miss' : p.spec.rider, { spellId: p.spellId, level: p.castingLevel, castingId: p.castingId, ...(t.saved ? {} : { concentrationKey: actor.concentrationKey, expiresRound: b.round + 10, dc: p.dc, save: p.spec.save }) });
@@ -381,6 +445,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
       check(!healingBlocked(target), 'Cel nie może teraz odzyskiwać PW.');
       const restored = Math.min(p.spec.fullHeal ? target.maxHp : total, Math.max(0, target.maxHp - target.hp));
       target.hp += restored;
+      healedOther ||= restored > 0 && target.id !== actor.id;
       for (const kind of p.spec.endsConditions ?? []) endCondition(db, target, kind);
       if (target.hp > 0) { target.deathFailures = 0; target.deathSuccesses = 0; }
       persistVitals(db, target); log(b, `${p.spellName} → ${target.name}: odzyskano ${restored} PW.`);
@@ -395,6 +460,7 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
       queueRetaliations(b, target, actor, p.hit);
       if (amount > 0) endProtectiveSpell(db, actor, 'sanctuary');
       damage(db, target, amount, p.critical, null, true);
+      dealtDamage ||= target.lastDamage.amount > 0;
       if (body.speciesTargetId === target.id) speciesHit({ db, b, actor, target, body, damage, log, attackRoll: p.spec.mode === 'attack', critical: p.critical, dealt: amount });
       if (p.spec.heatMetal) t.heatDamaged = amount > 0 && t.heatHolder && target.deathFailures < 3 && (target.characterId || target.hp > 0);
       if (p.spec.rider === 'moonbeam' && !t.saved && (target.wildShape || t.shapeShifted)) {
@@ -427,6 +493,16 @@ export function handleCombatSpell({ db, user, gm, b, body, canControl, activeMem
       }
       log(b, `${p.spellName} → ${target.name}: ${amount} obrażeń (${parts.map(part => `${part.amount} ${part.type}`).join(' + ')}).`);
     }
+  }
+  if (p.spec.landAidHealing) {
+    const target = b.fighters.find(f => f.id === p.spec.landAidHealing.targetId);
+    if (target) healTarget(db, target, p.spec.landAidHealing.amount, persistVitals);
+  }
+  if (healedOther && p.spec.blessedHealer) healTarget(db, actor, p.spec.blessedHealer, persistVitals);
+  if (vitality && dealtDamage) {
+    vitality.tempHp = Math.max(vitality.tempHp ?? 0, p.spec.clericVitality);
+    persistVitals(db, vitality);
+    log(b, `${vitality.name}: Improved Potent Spellcasting ? ${vitality.tempHp} tymczasowych PW.`);
   }
   if (p.spec.gmNote) log(b, `${p.spellName}: ${p.spec.gmNote}`);
   if (p.spec.heatMetal && p.targets.some(t => t.heatDamaged)) { p.heatSaves = p.targets.filter(t => t.heatDamaged).map(t => ({ id: t.id, canDrop: t.canDrop })); p.stage = 'heat-save'; return true; }

@@ -1278,3 +1278,144 @@ test('Animal Speaker exposes Wisdom rituals, rejects combat casting and uses no 
     assert.equal(call('act', { kind: 'cast', slot: 'action', spellId: 'speak-with-animals', level: 1, source: 'slot' }, player).status, 409);
   } finally { db.close(); }
 });
+
+test('Fighter 17 has two Action Surges, with one activation per turn', () => {
+  const { db, call, start, player } = fixture();
+  try {
+    db.exec('UPDATE characters SET level = 17 WHERE id = 1');
+    assert.equal(start().battle.fighters[0].actionSurgeUses, 2);
+    assert.equal(call('act', { kind: 'action-surge' }, player).battle.fighters[0].actionSurgeUses, 1);
+    assert.equal(call('act', { kind: 'action-surge' }, player).status, 409);
+    for (let i = 0; i < 3; i++) assert.equal(call('next').status, 200);
+    assert.equal(call('act', { kind: 'action-surge' }, player).battle.fighters[0].actionSurgeUses, 0);
+  } finally { db.close(); }
+});
+
+test('Tactical Shift moves with Second Wind at full HP and does not consume normal movement', () => {
+  const { db, call, start, player } = fixture();
+  try {
+    start();
+    const wind = { kind: 'second-wind', slot: 'bonus', roll: 5, confirmedMovement: true };
+    assert.equal(call('act', { ...wind, shiftFeet: 16 }, player).status, 409);
+    const result = call('act', { ...wind, shiftFeet: 15 }, player);
+    assert.equal(result.status, 200, result.error);
+    const fighter = result.battle.fighters[0];
+    assert.deepEqual(fighter.lastFreeMovement, { feet: 15, opportunityAttacks: false, source: 'Tactical Shift' });
+    assert.equal(fighter.moved, 0);
+    assert.equal(fighter.secondWindUses, 2);
+  } finally { db.close(); }
+});
+
+test('Indomitable rerolls only a failed save, adds Fighter level and recovers only on a long rest', () => {
+  const { db, call, start, gm, player } = fixture();
+  try {
+    db.exec('UPDATE characters SET level = 9 WHERE id = 1');
+    const [fighter] = start().battle.fighters;
+    const save = { kind: 'saving-throw', actorId: fighter.id, ability: 'wis', dc: 15, indomitableRoll: 6 };
+    assert.equal(call('act', { ...save, roll: 20 }, player).status, 409);
+    const result = call('act', { ...save, roll: 1 }, player);
+    assert.equal(result.status, 200, result.error);
+    assert.equal(result.battle.fighters[0].lastSavingThrow.total, 15);
+    assert.equal(call('act', { ...save, roll: 1 }, player).status, 409);
+    assert.equal(call('end').status, 200);
+    const rest = kind => handleSpellResources(db, gm, '/api/games/1/spell-rest', 'POST', { rest: kind }, status => assert.equal(status, 200));
+    rest('short');
+    assert.equal(resourceState(db, 1).fighterIndomitableSpent, 1);
+    rest('long');
+    assert.equal(resourceState(db, 1).fighterIndomitableSpent, 0);
+  } finally { db.close(); }
+});
+
+test('Tactical Master replaces a mastered weapon property and Studied Attacks applies on the next roll only', () => {
+  const { db, call, start, player } = fixture();
+  try {
+    db.exec(`UPDATE characters SET level = 13 WHERE id = 1;
+      UPDATE character_statistics SET data = json_set(data, '$.choices.weaponMastery', json('["longsword"]')) WHERE character_id = 1;`);
+    const [, enemy] = start().battle.fighters;
+    const attack = { kind: 'attack', slot: 'action', attackId: '1', targetId: enemy.id };
+    assert.equal(call('act', { ...attack, roll: 20, mastery: 'Vex' }, player).status, 409);
+    assert.equal(call('act', { ...attack, roll: 1 }, player).status, 200);
+    assert.equal(call('act', { ...attack, roll: 12, mastery: 'Slow' }, player).status, 409);
+    const hit = call('act', { ...attack, roll: 1, roll2: 12, mastery: 'Slow' }, player);
+    assert.equal(hit.status, 200, hit.error);
+    assert.equal(hit.battle.pending.attack.mastery, 'Slow');
+    assert.equal(call('act', { kind: 'damage', rolls: [4] }, player).status, 200);
+    assert.equal(call().battle.fighters[1].speed, 20);
+    assert.equal(call('act', { ...attack, roll: 12 }, player).status, 200);
+  } finally { db.close(); }
+});
+
+test('Champion critical, Remarkable Athlete, Heroic Warrior and Survivor work through battle turns', () => {
+  const { db, call, player } = fixture();
+  try {
+    db.exec(`UPDATE characters SET level = 18, subclass = 'Champion' WHERE id = 1;
+      UPDATE character_statistics SET data = json_set(data, '$.values.hp', 12, '$.values.tempHp', 0) WHERE character_id = 1;
+      UPDATE game_monster_entries SET ac = 40 WHERE id = 'ogre';`);
+    const involved = [{ memberId: 1, initiative: 20, initiativeRoll: 2 }, { enemyId: 'ogre', initiative: 10 }];
+    assert.equal(call('start', { fighters: involved }).status, 409);
+    const start = call('start', { fighters: [{ ...involved[0], initiativeRoll2: 17 }, involved[1]] });
+    assert.equal(start.status, 200, start.error);
+    const [fighter, enemy] = start.battle.fighters;
+    assert.equal(fighter.hp, 19);
+    assert.equal(resourceState(db, 1).heroicInspirationAvailable, true);
+    assert.equal(call('act', { kind: 'ability-check', skill: 'athletics', roll: 3 }, player).status, 409);
+    assert.equal(call('act', { kind: 'ability-check', skill: 'athletics', roll: 3, roll2: 10 }, player).status, 200);
+    const hit = call('act', { kind: 'attack', slot: 'action', attackId: '1', targetId: enemy.id, roll: 18 }, player);
+    assert.equal(hit.battle.pending.critical, true);
+    assert.equal(call('act', { kind: 'damage', rolls: [1, 1], criticalMoveFeet: 15, confirmedMovement: true }, player).status, 200);
+    assert.equal(call('act', { kind: 'resolve', targetId: fighter.id, effect: 'damage', amount: 19, note: 'Knocked down' }).status, 200);
+    assert.equal(call('next').status, 200);
+    assert.equal(call('next').status, 200);
+    assert.equal(call('act', { kind: 'death', roll: 18 }, player).status, 409);
+    const death = call('act', { kind: 'death', roll: 2, roll2: 18 }, player);
+    assert.equal(death.status, 200, death.error);
+    assert.equal(death.battle.fighters[0].hp, 1);
+  } finally { db.close(); }
+});
+
+test('Champion can choose a distinct second Fighting Style at level 7', () => {
+  const { db, start, player } = fixture();
+  try {
+    db.exec("UPDATE characters SET level = 7, subclass = 'Champion' WHERE id = 1");
+    const save = additionalFightingStyle => {
+      let response;
+      handleStatistics(db, player, '/api/characters/1/choices', 'POST', {
+        fightingStyle: 'archery', additionalFightingStyle, weaponMastery: [],
+      }, (status, data) => { response = { status, ...data }; });
+      return response;
+    };
+    assert.equal(save('archery').status, 400);
+    assert.equal(save('dueling').status, 200);
+    assert.equal(start().battle.fighters[0].attacks.find(attack => attack.id === '1').damageBonus, 5);
+  } finally { db.close(); }
+});
+
+test('Topple reuses CON saves and Cleave attacks another target without spending an Attack action attack', () => {
+  for (const [weapon, property] of [['quarterstaff', 'Topple'], ['greataxe', 'Cleave']]) {
+    const { db, call, start, gm, player, other } = fixture();
+    try {
+      db.prepare('UPDATE character_items SET weapon_id = ? WHERE id = 1').run(weapon);
+      db.prepare("UPDATE character_statistics SET data = json_set(data, '$.choices.weaponMastery', json(?)) WHERE character_id = 1").run(JSON.stringify([weapon]));
+      const [fighter, enemy, alternate] = start().battle.fighters;
+      const attack = { kind: 'attack', slot: 'action', attackId: '1', targetId: enemy.id, roll: 15 };
+      assert.equal(call('act', attack, player).status, 200);
+      const damage = call('act', { kind: 'damage', rolls: [4], topple: property === 'Topple' }, player);
+      assert.equal(damage.status, 200, damage.error);
+      if (property === 'Topple') {
+        assert.equal(damage.battle.pending.spellName, 'Topple');
+        assert.equal(call('act', { kind: 'spell-save', targetId: enemy.id, roll: 1 }, gm).status, 200);
+        assert.equal(call('act', { kind: 'spell-effect', rolls: [] }, player).status, 200);
+        assert.equal(call().battle.fighters[1].prone, true);
+      } else {
+        const followup = { ...attack, targetId: alternate.id, cleave: true, confirmedCleave: true };
+        assert.equal(call('act', followup, other).status, 409);
+        const cleave = call('act', followup, player);
+        assert.equal(cleave.status, 200, cleave.error);
+        assert.equal(cleave.battle.fighters.find(f => f.id === fighter.id).attacksLeft, 1);
+        assert.equal(cleave.battle.pending.attack.damageBonus, 0);
+        assert.equal(call('act', { kind: 'damage', rolls: [4] }, player).status, 200);
+        assert.equal(call('act', followup, player).status, 409);
+      }
+    } finally { db.close(); }
+  }
+});

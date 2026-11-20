@@ -1,3 +1,4 @@
+import { fighterIndomitable } from './fighter.mjs';
 import { barbarianRageStarted, barbarianSaveTotal } from './barbarian-features.mjs';
 import { indomitableTotal, brutalSaveDisadvantage, consumeBrutalSave } from '../shared/barbarian.mjs';
 import { speciesSaveAdvantage, speciesD20 } from '../shared/species.mjs';
@@ -112,12 +113,17 @@ export function handleBarbarian({ db, b, body, gm, canControl, activeMember, per
       bonus = s.abilities.str.modifier + s.proficiency * traits.effectiveSkills[skill.id] + extra;
     }
     check(bonus != null, 'Uzupełnij cechę postaci.');
-    const automaticAdvantage = body.kind === 'saving-throw' ? (speciesSaveAdvantage(f, ability, body.condition) || barbarianSaveAdvantage(f, ability) || conditionSaveAdvantage(f, ability)) : (Boolean((f.rage || f.speciesEffects?.large) && ability === 'str') || f.species === 'Goliat (Goliath)' && body.kind === 'ability-check' && body.escapeGrapple === true || conditionCheckAdvantage(f, ability)) || body.kind === 'ability-check' && socialAdvantage(f, b.fighters.find(t => t.id === body.socialTargetId));
+    const automaticAdvantage = body.kind === 'saving-throw' ? (speciesSaveAdvantage(f, ability, body.condition) || barbarianSaveAdvantage(f, ability) || conditionSaveAdvantage(f, ability)) : (Boolean((f.rage || f.speciesEffects?.large) && ability === 'str') || f.species === 'Goliat (Goliath)' && body.kind === 'ability-check' && body.escapeGrapple === true || conditionCheckAdvantage(f, ability) || f.fighter?.athlete && skill?.id === 'athletics' && ability === 'str') || body.kind === 'ability-check' && socialAdvantage(f, b.fighters.find(t => t.id === body.socialTargetId));
     body = { ...body, hexDisadvantage: hexDisadvantage(b, f, ability, body.kind === 'saving-throw') || hasSpellCondition(f, 'enfeebled') && ability === 'str' || body.kind === 'ability-check' && (conditionCheckDisadvantage(f, ability) || body.skill === 'perception' && body.requiresSight && body.lightlyObscured === true) || body.kind === 'saving-throw' && (brutalSaveDisadvantage(f) || conditionSaveDisadvantage(f, ability)) };
     const selectedRoll = d20(automaticAdvantage);
     const rawTotal = selectedRoll - exhaustionPenalty(f) + (body.kind === 'saving-throw' ? timedSaveModifier(f, ability) : 0) + bonus + luckBonus(db, f.characterId, body.luckRoll) + (body.kind === 'saving-throw' ? timedRollModifier(f, body) : 0) - (body.kind === 'saving-throw' ? consumeSavePenalty(f, body.mindSliverRoll) : 0);
-    const total = indomitableTotal(f, ability, rawTotal);
-    b.lastRoll = { kind: body.kind, actorId: f.id, total, dc: body.dc ?? null };
+    const original = indomitableTotal(f, ability, rawTotal);
+    const total = body.kind === 'saving-throw' ? fighterIndomitable(db, f, body, original, body.dc, rawTotal - selectedRoll,
+      Boolean(automaticAdvantage || body.advantage), Boolean(body.disadvantage || body.hexDisadvantage), message => log(b, message)) : original;
+    check(body.dc == null || Number.isInteger(body.dc) && body.dc >= 1 && body.dc <= 100, 'Podaj poprawne ST testu.');
+    b.lastRoll = { kind: body.kind, actorId: f.id, targetId: f.id, total, dc: body.dc ?? null,
+      condition: body.kind === 'saving-throw' ? body.condition : undefined,
+      rerollModifier: rawTotal - selectedRoll, rerollDisadvantage: Boolean(body.disadvantage || body.hexDisadvantage) };
     if (body.kind === 'saving-throw') f.lastSavingThrow = { ability, total, modifier: rawTotal - selectedRoll, advantage: Boolean(automaticAdvantage || body.advantage), disadvantage: Boolean(body.disadvantage || body.hexDisadvantage), round: b.round, turn: b.turn };
     if (body.kind === 'saving-throw') consumeBrutalSave(f);
     if (body.kind === 'ability-check') {

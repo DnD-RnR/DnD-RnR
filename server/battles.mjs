@@ -1,3 +1,5 @@
+import { clericResources, handleCleric, syncTurnUndead, validDice } from './cleric.mjs';
+import { bardResources, handleBard, restoreInitiativeInspiration } from './bard.mjs';
 import { handleEpicBoons, endEpicInvisible } from './epic-boons.mjs';
 import { rageDamageTypes } from '../shared/barbarian.mjs';
 import { handleBarbarianFeatures, syncBarbarianFeatures, barbarianHit } from './barbarian-features.mjs';
@@ -24,18 +26,18 @@ import { handleWarlock, syncHex, reflectThoughtShield, luckBonus } from './warlo
 import { warlockProfile, warlockResistance, bondAdvantage, hexActive, damageTypeName } from '../shared/warlock.mjs';
 import { psiResources, handlePsi, psionicStrike } from './psi-warrior.mjs';
 import { handlePaladin, syncDivineSense, activateVow, syncVows, vowAttackAdvantage } from './paladin.mjs';
-import { handleDruid, syncWildShapes, applyWildShape } from './druid.mjs';
+import { handleDruid, syncWildShapes, applyWildShape, restoreEvergreen, syncNatureSanctuary, wildShapeUses } from './druid.mjs';
 import { handleFiend, recordFiendDefeats } from './warlock.mjs';
-import { druidProfile, druidForms, eligibleDruidForms } from '../shared/druid.mjs';
-import { handleFighter, prepareSurgeAction, finishSurgeAction } from './fighter.mjs';
+import { druidProfile, druidForms, eligibleDruidForms, landWard, isDruid, isMoonDruid } from '../shared/druid.mjs';
+import { handleFighter, prepareSurgeAction, finishSurgeAction, fighterIndomitable, fighterProfile, fighterShift, startFighterTurn, endFighterTurn, studiedAdvantage, studiedResult, selectMastery, masteryAttackFlags, consumeMasteryAttack, clearMasterySource, applyWeaponMastery } from './fighter.mjs';
 import { rageProfile, barbarianResistance, barbarianAttackAdvantage, wolfAttackAdvantage, frenzyDice } from '../shared/barbarian.mjs';
 import { handleBarbarian, syncRage, extendRage, endRage, recordAttackRoll } from './barbarian.mjs';
 import { randomUUID } from 'node:crypto';
 import { statisticsSummary } from './statistics-summary.mjs';
 import { emptyStatistics } from './statistics.mjs';
 import { characterTraits } from '../shared/character-traits.mjs';
-import { fightingStyleAttackBonus, fightingStyleDamageBonus, unarmedStrikeProfile } from '../shared/fighting-style.mjs';
-import { publicCaster, resourceState, saveResources, secondWindMaximum, speciesResourceState, proficiencyBonus } from './spell-resources.mjs';
+import { fightingStyleAttackBonus, fightingStyleDamageBonus, selectedFightingStyles, unarmedStrikeProfile } from '../shared/fighting-style.mjs';
+import { casterData, publicCaster, resourceState, saveResources, secondWindMaximum, speciesResourceState, proficiencyBonus } from './spell-resources.mjs';
 import { handleCombatSpell } from './spell-combat.mjs';
 import { beginDelayedSpellDamage, dueSpellDamage, syncDelayedSpellDamage } from './delayed-spells.mjs';
 import { dueStartZoneEvents, beginStartZoneEvent, beginZoneDamage, dueZoneDamage, handleSpellZone, restoreSpellZones, syncSpellZones, zoneMovementDue } from './spell-zones.mjs';
@@ -45,7 +47,7 @@ const int = (n, min, max) => Number.isInteger(n) && n >= min && n <= max;
 const requireValue = (ok, message) => { if (!ok) throw new Error(message); };
 const fresh = f => {
   if (f.shieldAC) { f.ac -= f.shieldAC; f.shieldAC = 0; }
-  return Object.assign(f, { action: '', bonus: '', reaction: '', reactionDeferred: false, moved: 0, pounceMoved: 0, extraMove: 0, attacksLeft: 0, usedWeapons: [], lightExtraUsed: false, dodge: false, attackRollMade: false, recklessActive: false, frenzyUsed: false, disengaged: false, psiStrikeUsed: false, psiReduction: 0, hasteActionUsed: false, extraFlyMove: 0, extraClimbMove: 0, actionSurgeUsedThisTurn: false, surgeAction: null, surgeAttacksLeft: 0, lastAbilityCheck: null, brutalStrikeUsed: false, divineFuryUsed: false, epicProwessUsed: false });
+  return Object.assign(f, { action: '', bonus: '', reaction: '', reactionDeferred: false, moved: 0, pounceMoved: 0, extraMove: 0, attacksLeft: 0, usedWeapons: [], lightExtraUsed: false, dodge: false, attackRollMade: false, recklessActive: false, frenzyUsed: false, disengaged: false, psiStrikeUsed: false, psiReduction: 0, hasteActionUsed: false, extraFlyMove: 0, extraClimbMove: 0, actionSurgeUsedThisTurn: false, surgeAction: null, surgeAttacksLeft: 0, lastAbilityCheck: null, brutalStrikeUsed: false, divineFuryUsed: false, divineStrikeUsed: false, primalStrikeUsed: false, wildResurgenceUsed: false, epicProwessUsed: false });
 };
 const clearProtection = (b, protectorId) => b.fighters.forEach(f => {
   if (Array.isArray(f.protectedBy)) {
@@ -67,6 +69,7 @@ function characterFighter(db, sessionId, memberId) {
   const s = statisticsSummary(c, stats, equipment);
   requireValue(s.hp !== null && s.maxHp !== null && s.ac !== null, `Uzupełnij PW i KP postaci ${c.name} przed walką.`);
   const traits = characterTraits(c, stats);
+  const styles = selectedFightingStyles(stats.choices);
   const attacks = [];
   const equippedWeapons = db.prepare(`SELECT i.id AS itemId, i.slot, i.grip, w.* FROM character_items i JOIN weapon_catalog w ON w.id = i.weapon_id WHERE i.character_id = ? AND i.equipped = 1`).all(c.id)
     .map(item => ({ ...item, properties: JSON.parse(item.properties) }));
@@ -85,13 +88,15 @@ function characterFighter(db, sessionId, memberId) {
     const dice = versatile ?? item.damage.match(/(\d+)d(\d+)/);
     const offHand = item.slot === 'off-hand';
     const weapon = { ...item, properties };
+    const greatWeaponFighting = item.type !== 'dystansowa' && styles.includes('great-weapon-fighting') &&
+      (properties.some(property => property.startsWith('dwuręczna')) || Boolean(versatile));
     const weaponDamageBonus = offHand ? Math.min(0, mod) + (dice ? 0 : Number(item.damage) || 0) : mod + (dice ? 0 : Number(item.damage) || 0);
-    attacks.push({ reach: properties.includes('zasięg') ? 10 : 5, roots: item.type !== 'dystansowa' && (properties.some(p => p.startsWith('ciężka')) || properties.some(p => p.startsWith('wszechstronna'))), melee: item.type !== 'dystansowa', ability: finesse ? (strength >= dex ? 'str' : 'dex') : item.type === 'dystansowa' ? 'dex' : 'str', finesse, strengthBonus: strength == null ? null : strength + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(stats.choices?.fightingStyle, weapon), strengthDamageBonus: (offHand ? Math.min(0, strength) : strength) + (dice ? 0 : Number(item.damage) || 0) + fightingStyleDamageBonus(stats.choices?.fightingStyle, weapon, equippedWeapons, strength ?? 0), id: String(item.itemId), name: item.name, bonus: mod + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(stats.choices?.fightingStyle, weapon), dice: dice ? Number(dice[1]) : 0,
-      sides: dice ? Number(dice[2]) : 0, damageBonus: weaponDamageBonus + fightingStyleDamageBonus(stats.choices?.fightingStyle, weapon, equippedWeapons, mod), type: item.damage_type,
-      light: properties.includes('lekka'), offHand, nick: item.mastery === 'Nick' && (stats.choices?.weaponMastery ?? []).includes(item.id), disadvantage: Boolean(s.d20StrengthDexDisadvantage || (properties.includes('ciężka') && (stats.values[item.type === 'dystansowa' ? 'dex' : 'str'] ?? 0) < 13)) });
+    attacks.push({ greatWeaponFighting, reach: properties.includes('zasięg') ? 10 : 5, roots: item.type !== 'dystansowa' && (properties.some(p => p.startsWith('ciężka')) || properties.some(p => p.startsWith('wszechstronna'))), melee: item.type !== 'dystansowa', ability: finesse ? (strength >= dex ? 'str' : 'dex') : item.type === 'dystansowa' ? 'dex' : 'str', finesse, strengthBonus: strength == null ? null : strength + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(styles, weapon), strengthDamageBonus: (offHand ? Math.min(0, strength) : strength) + (dice ? 0 : Number(item.damage) || 0) + fightingStyleDamageBonus(styles, weapon, equippedWeapons, strength ?? 0), id: String(item.itemId), name: item.name, bonus: mod + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(styles, weapon), dice: dice ? Number(dice[1]) : 0,
+      sides: dice ? Number(dice[2]) : 0, damageBonus: weaponDamageBonus + fightingStyleDamageBonus(styles, weapon, equippedWeapons, mod), type: item.damage_type,
+      light: properties.includes('lekka'), offHand, mastery: (stats.choices?.weaponMastery ?? []).includes(item.id) ? item.mastery : null, nick: item.mastery === 'Nick' && (stats.choices?.weaponMastery ?? []).includes(item.id), disadvantage: Boolean(s.d20StrengthDexDisadvantage || (properties.includes('ciężka') && (stats.values[item.type === 'dystansowa' ? 'dex' : 'str'] ?? 0) < 13)) });
   }
   if (s.abilities.str.modifier !== null) {
-    const unarmed = unarmedStrikeProfile(stats.choices?.fightingStyle, equippedWeapons, equipment.some(item => item.equipped && item.armorCategory === 'shield'), s.abilities.str.modifier, traits.feats.includes('Tavern Brawler'));
+    const unarmed = unarmedStrikeProfile(styles, equippedWeapons, equipment.some(item => item.equipped && item.armorCategory === 'shield'), s.abilities.str.modifier, traits.feats.includes('Tavern Brawler'));
     attacks.push({ melee: true, id: 'unarmed', ability: 'str', name: 'Cios bez broni', bonus: s.abilities.str.modifier + s.proficiency, ...unarmed, type: 'obuchowe', light: false });
   }
   const baseClass = c.class.split(' ')[0];
@@ -104,11 +109,13 @@ function characterFighter(db, sessionId, memberId) {
     dexModifier: s.abilities.dex.modifier, wearingArmor: equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'), equipmentShieldBonus: s.untrainedShield ? 0 : Number.parseInt(equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0,
     conditionSources: resources.conditionSources ?? [], exhaustion: resources.exhaustion ?? 0, seenInvisibleIds: [], manualConditions: resources.manualConditions ?? [], prone: resources.prone === true, concentrationKey: resources.concentrationKey ?? null, ac: s.ac, speed: s.speed ?? 0, saves: s.savingThrows, notes: '', attacks, maxAttacks, concentration: resourceState(db, c.id).concentration ?? null,
     divineSense: resources.divineSense?.expiresAt > Date.now() ? resources.divineSense : null,
-    wildShapeUses: Math.min(druidProfile(c).max, resources.wildShapeUses ?? druidProfile(c).max), wildCompanion: resources.wildCompanion ?? null,
+    wildShapeUses: wildShapeUses(c, resources), wildCompanion: resources.wildCompanion ?? null,
+    bard: bardResources(c, s.abilities.cha.modifier, resources),
     epicBoons: traits.feats.filter(name => name.startsWith('Boon of ')), epicOffense: traits.feats.includes('Boon of Irresistible Offense'), epicOffenseScore: stats.values[(stats.levelFeats ?? []).find(f => f.name === 'Boon of Irresistible Offense')?.ability ?? 'str'], epicNightSpirit: traits.feats.includes('Boon of the Night Spirit'), proficiency: s.proficiency, strengthScore: stats.values.str, strengthModifier: s.abilities.str.modifier, attackAbilityModifiers: Object.fromEntries(Object.entries(s.abilities).map(([id, a]) => [id, a.modifier])), climbSpeed: traits.climbSpeed == null ? 0 : s.speed, swimSpeed: traits.swimSpeed == null ? 0 : s.speed, wearingAnyArmor: equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'), zealotDiceSpent: resources.zealotDiceSpent ?? 0, rageProfile: rageProfile(c), rageUses: Math.min(rageProfile(c).max, resources.rageUses ?? rageProfile(c).max), relentlessRageDC: resources.relentlessRageDC ?? 10, rageRecoveryOffered: rageProfile(c).persistent && resources.persistentRageAvailable !== false,
     ...psiResources(c, resources), psiInt: s.abilities.int.modifier,
     secondWindUses: secondWindMax ? Math.min(secondWindMax, resources.secondWindUses ?? secondWindMax) : 0, secondWindMax,
-    actionSurgeMax: secondWindMax && c.level >= 2 ? 1 : 0, actionSurgeUses: secondWindMax && c.level >= 2 ? Math.min(1, resources.actionSurgeUses ?? 1) : 0,
+    fighter: fighterProfile(c, resources), constitutionModifier: s.abilities.con.modifier,
+    actionSurgeMax: fighterProfile(c).surgeMax, actionSurgeUses: fighterProfile(c, resources).surgeUses,
     adrenalineRushUses: speciesResources.adrenalineRushUses, adrenalineRushMax: speciesResources.maxAdrenalineRush,
     relentlessEnduranceAvailable: speciesResources.relentlessEnduranceAvailable,
     breathWeaponUses: speciesResources.breathWeaponUses, breathWeaponMax: speciesResources.maxBreathWeapon,
@@ -118,10 +125,11 @@ function characterFighter(db, sessionId, memberId) {
     largeFormAvailable: speciesResources.largeFormAvailable,
     warlockResistance: warlockProfile(c, stats.values.cha, resources).resistance, thoughtShield: warlockProfile(c, stats.values.cha, resources).thoughtShield, warlockBond: warlockProfile(c, stats.values.cha, resources).awakenedMind, hex: resources.hex?.expiresAt > Date.now() && resources.concentration === resources.hex.name ? { ...resources.hex, defeatedRound: resources.hex.targetDefeated ? 0 : resources.hex.defeatedRound } : null,
     damageResistance: traits.ancestry?.damageType ?? traits.fiendishLegacy?.damageType ?? null,
-    sleepImmune: traits.sleepImmune, carryingCapacity: traits.carryingCapacity, species: c.species, speciesCon: s.abilities.con.modifier, speciesCha: s.abilities.cha.modifier, damageResistances: traits.damageResistances, speciesEffects: resources.speciesEffects ?? {},
+    sleepImmune: traits.sleepImmune, carryingCapacity: traits.carryingCapacity, species: c.species, speciesCon: s.abilities.con.modifier, speciesCha: s.abilities.cha.modifier, damageResistances: traits.damageResistances, poisonConditionImmune: Boolean(landWard(c, stats.spells.choices)), speciesEffects: resources.speciesEffects ?? {},
     creatureType: traits.creatureType, darkvision: traits.darkvision, size: traits.size,
     draconicFlightAvailable: speciesResources.draconicFlightAvailable,
-    protectionAvailable: stats.choices?.fightingStyle === 'protection' && equipment.some(item => item.equipped && item.armorCategory === 'shield'),
+    proneFighting: styles.includes('prone-fighting'),
+    protectionAvailable: styles.includes('protection') && equipment.some(item => item.equipped && item.armorCategory === 'shield'),
     deathSuccesses: s.deathSuccesses ?? 0, deathFailures: s.deathFailures ?? 0 });
   const form = druidForms.find(form => form.id === resources.wildShape?.formId);
   if (druidProfile(c).max && form && eligibleDruidForms(c).some(f => f.id === form.id) && resources.wildShape.expiresAt > Date.now()) applyWildShape(fighter, form, c, stats, resources.wildShape);
@@ -134,10 +142,33 @@ function persistVitals(db, f) {
   db.prepare(`INSERT INTO character_statistics (character_id, data) VALUES (?, ?)
     ON CONFLICT(character_id) DO UPDATE SET data = excluded.data`).run(f.characterId, JSON.stringify(stats));
 }
-function damage(db, f, amount, critical = false, damageType = null, resistanceResolved = false) {
+function resistedDamage(f, amount, type, resistanceResolved = false) {
+  const petrified = hasCondition(f, 'petrified');
+  return !resistanceResolved && (petrified || type && (timedResistance(f, type) || f.damageResistance === type ||
+    f.damageResistances?.includes(type) || f.natureSanctuaryResistances?.includes(type) || warlockResistance(f, type) || barbarianResistance(f, type)))
+    ? Math.floor(amount / 2) : amount;
+}
+
+function damage(db, f, amount, critical = false, damageType = null, resistanceResolved = false, extraDamage = null) {
   damageType = damageTypeName(damageType);
-  amount = Math.max(0, amount - (f.psiReduction ?? 0) - (f.speciesReduction ?? 0)); f.psiReduction = 0; f.speciesReduction = 0;
-  if (!resistanceResolved && (damageType || hasCondition(f, 'petrified')) && (hasCondition(f, 'petrified') || timedResistance(f, damageType) || f.damageResistance === damageType || f.damageResistances?.includes(damageType) || warlockResistance(f, damageType) || barbarianResistance(f, damageType))) amount = Math.floor(amount / 2);
+  const reduction = (f.psiReduction ?? 0) + (f.speciesReduction ?? 0);
+  f.psiReduction = 0;
+  f.speciesReduction = 0;
+  const primary = { type: damageType, amount: Math.max(0, amount), resistanceResolved };
+  const parts = [primary];
+  for (const extra of extraDamage ?? []) {
+    const type = damageTypeName(extra.type);
+    const existing = parts.find(part => part.type === type);
+    if (existing) existing.amount += extra.amount;
+    else parts.push({ type, amount: extra.amount, resistanceResolved: false });
+  }
+  let reductionLeft = reduction;
+  amount = parts.reduce((total, part) => {
+    const used = Math.min(part.amount, reductionLeft);
+    reductionLeft -= used;
+    return total + resistedDamage(f, part.amount - used, part.type, part.resistanceResolved);
+  }, 0);
+  if (amount > 0) f.conditionSources = (f.conditionSources ?? []).filter(effect => !effect.turnUndead);
   f.damageTaken = (f.damageTaken ?? Math.max(0, f.maxHp - f.hp)) + amount;
   const before = f.hp;
   const absorbed = Math.min(f.tempHp, amount);
@@ -231,7 +262,26 @@ export function handleBattles(db, user, path, method, body, send) {
     const c = db.prepare('SELECT * FROM characters WHERE id = ?').get(f.characterId);
     if (!c) continue;
     const stats = statsFor(db, f.characterId), traits = characterTraits(c, stats);
-    Object.assign(f, { species: c.species, speciesCon: stats.values.con == null ? null : Math.floor((stats.values.con - 10) / 2), speciesCha: stats.values.cha == null ? null : Math.floor((stats.values.cha - 10) / 2), damageResistances: traits.damageResistances, sleepImmune: traits.sleepImmune, carryingCapacity: traits.carryingCapacity, creatureType: traits.creatureType, speciesEffects: resourceState(db, f.characterId).speciesEffects ?? {} });
+    Object.assign(f, { species: c.species, speciesCon: stats.values.con == null ? null : Math.floor((stats.values.con - 10) / 2), speciesCha: stats.values.cha == null ? null : Math.floor((stats.values.cha - 10) / 2), damageResistances: traits.damageResistances, poisonConditionImmune: Boolean(landWard(c, stats.spells.choices)), sleepImmune: traits.sleepImmune, carryingCapacity: traits.carryingCapacity, creatureType: traits.creatureType, speciesEffects: resourceState(db, f.characterId).speciesEffects ?? {} });
+  }
+  for (const f of battle?.fighters ?? []) if (f.characterId && !Object.hasOwn(f, 'bard')) {
+    const c = db.prepare('SELECT class, subclass, level FROM characters WHERE id = ?').get(f.characterId);
+    const stats = statsFor(db, f.characterId);
+    f.bard = bardResources(c, statisticsSummary(c, stats).abilities.cha.modifier, resourceState(db, f.characterId));
+  }
+  for (const f of battle?.fighters ?? []) if (f.characterId && !f.fighter) {
+    const character = db.prepare('SELECT class, level, subclass FROM characters WHERE id = ?').get(f.characterId);
+    const ability = statsFor(db, f.characterId).values.con;
+    const stats = statsFor(db, f.characterId);
+    for (const attack of f.attacks ?? []) if (!Object.hasOwn(attack, 'mastery') && /^[1-9]\d*$/.test(attack.id)) {
+      const weapon = db.prepare('SELECT w.id, w.mastery FROM character_items i JOIN weapon_catalog w ON w.id = i.weapon_id WHERE i.id = ? AND i.character_id = ?').get(Number(attack.id), f.characterId);
+      attack.mastery = weapon && stats.choices?.weaponMastery?.includes(weapon.id) ? weapon.mastery : null;
+    }
+    const profile = fighterProfile(character, resourceState(db, f.characterId));
+    f.fighter = profile;
+    f.constitutionModifier = ability == null ? null : Math.floor((ability - 10) / 2);
+    f.actionSurgeMax = profile.surgeMax;
+    f.actionSurgeUses = profile.surgeUses;
   }
   const canControl = f => f.characterId ? f.ownerId === user.id : gm;
   const response = () => ({
@@ -246,6 +296,7 @@ export function handleBattles(db, user, path, method, body, send) {
       pending: battle.pending?.kind === 'casting' ? castingProjection(battle.pending) : battle.pending?.fanaticalTargetId && battle.fighters.find(f => f.id === battle.pending.fanaticalTargetId)?.ownerId === user.id ? { kind: 'spell', actorId: battle.pending.actorId, spellName: battle.pending.spellName, stage: 'save', fanaticalTargetId: battle.pending.fanaticalTargetId, dc: battle.pending.dc, attackBonus: 0, spec: { mode: 'save', save: battle.pending.spec.save, dice: 0, sides: 0 }, targets: [{ id: battle.pending.fanaticalTargetId, saved: false }] } : !gm && battle.pending && !(battle.pending.reactive && battle.fighters.find(f => f.id === battle.pending.sourceId)?.ownerId === user.id) && !battle.fighters.find(f => f.id === battle.pending.actorId)?.characterId
         ? { kind: 'waiting', actorId: battle.pending.actorId } : battle.pending?.kind === 'sanctuary' ? { kind: 'sanctuary', actorId: battle.pending.actorId, targetId: battle.pending.targetId, dc: battle.pending.dc, stage: battle.pending.stage, visited: battle.pending.visited } : !gm && battle.pending?.kind === 'spell'
           ? { ...battle.pending, targets: battle.pending.targets.map(({ multiplier, ...target }) => target) } : battle.pending,
+      bardRoll: battle.lastRoll && { kind: battle.lastRoll.kind, actorId: battle.lastRoll.actorId, targetId: battle.lastRoll.targetId, failed: battle.lastRoll.hit === undefined ? Number.isFinite(battle.lastRoll.dc) && battle.lastRoll.total < battle.lastRoll.dc : !battle.lastRoll.hit },
       lastRoll: undefined, suspendedAction: undefined, retaliations: undefined, retaliationSuspended: undefined,
       // Also hide armor classes in log entries saved by earlier versions.
       log: battle.log.map(entry => {
@@ -263,7 +314,8 @@ export function handleBattles(db, user, path, method, body, send) {
   try {
     if (battle) syncSpecies(db, battle);
     const damageBefore = new Map((battle?.fighters ?? []).map(f => [f.id, f.damageTaken ?? 0]));
-    if (battle && !['epic-fate', 'epic-prowess'].includes(body.kind)) battle.lastRoll = null;
+    if (battle && !['epic-fate', 'epic-prowess', 'bard-use', 'bard-peerless', 'bard-cutting', 'bard-countercharm'].includes(body.kind)) battle.lastRoll = null;
+    if (battle && !(action === 'act' && body.kind === 'attack' && body.cleave === true)) battle.cleave = null;
     const slotsBefore = new Map((battle?.fighters ?? []).map(f => [f.id, [f.action, f.bonus, f.reaction]]));
     if (battle && body.kind !== 'species-storm') battle.fighters.forEach(f => { f.speciesDamageEvent = null; });
     if (battle && (action === 'next' || action === 'act' && !(body.kind === 'attack' && body.slot === 'reaction') && !['concentration', 'relentless-rage', 'barb-fanatical', 'barb-fanatical-check'].includes(body.kind))) battle.fighters.forEach(f => { f.barbarianDamageEvent = null; });
@@ -288,15 +340,21 @@ export function handleBattles(db, user, path, method, body, send) {
           f = fresh({ id: randomUUID(), name: m.name, hp: m.hp, maxHp: m.hp, tempHp: 0, ac: m.ac, speed: m.speed, saves: JSON.parse(m.saves), notes: m.notes, attacks: [], maxAttacks: 1, deathSuccesses: 0, deathFailures: 0 });
         }
         if (entry.initiativeRoll != null) {
-          requireValue(int(entry.initiativeRoll, 1, 20) && (!f.rageProfile?.feralInstinct || int(entry.initiativeRoll2, 1, 20)), 'Feral Instinct: podaj dwie ko?ci k20 inicjatywy.');
+          const advantage = f.rageProfile?.feralInstinct || f.fighter?.athlete;
+          requireValue(int(entry.initiativeRoll, 1, 20) && (!advantage || int(entry.initiativeRoll2, 1, 20)), 'Initiative requires two d20s when rolled with Advantage.');
           const score = f.characterId ? statisticsSummary(db.prepare('SELECT * FROM characters WHERE id = ?').get(f.characterId), statsFor(db, f.characterId)).initiative : 0;
           requireValue(score != null, 'Uzupe?nij Zr?czno??.');
-          return { ...f, initiative: (f.rageProfile?.feralInstinct ? Math.max(entry.initiativeRoll, entry.initiativeRoll2) : entry.initiativeRoll) + score - exhaustionPenalty(f) };
+          return { ...f, initiative: (advantage ? Math.max(entry.initiativeRoll, entry.initiativeRoll2) : entry.initiativeRoll) + score - exhaustionPenalty(f) };
         }
         return { ...f, initiative: entry.initiative };
       }).sort((a, b) => b.initiative - a.initiative);
       battle = { sessionId: session.id, startedAt: Date.now(), version: battle?.version ?? 0, active: true, round: 1, turn: 0, fighters, pending: null, log: ['Walka rozpoczęta.'] };
-      for (const f of battle.fighters.filter(f => f.characterId)) { const state = resourceState(db, f.characterId); state.epicFateUsed = false; saveResources(db, f.characterId, state); }
+      for (const f of battle.fighters.filter(f => f.characterId)) { const state = resourceState(db, f.characterId); state.epicFateUsed = false; restoreInitiativeInspiration(f, state);
+        const character = db.prepare('SELECT class, level, subclass FROM characters WHERE id = ?').get(f.characterId);
+        restoreEvergreen(character, state);
+        f.wildShapeUses = wildShapeUses(character, state);
+        saveResources(db, f.characterId, state); }
+      startFighterTurn(db, battle, battle.fighters[battle.turn], persistVitals, log);
       bindSpecies(db, battle);
       bindConditionSources(battle);
       bindTimedEffects(db, battle);
@@ -305,6 +363,8 @@ export function handleBattles(db, user, path, method, body, send) {
     } else {
       requireValue(battle?.active, 'Walka nie trwa.');
       const b = battle, current = b.fighters[b.turn];
+      syncTurnUndead(b);
+      syncNatureSanctuary(b);
       syncSourceConditions(db, b);
       syncRage(db, b); syncBarbarianFeatures(db, b, persistVitals);
       syncSpellConditions(b, db);
@@ -344,6 +404,8 @@ export function handleBattles(db, user, path, method, body, send) {
         } else {
           endSpeciesTurn({ db, b, f: current, damage, log });
           endSpellTurn(b, current);
+          endFighterTurn(current);
+          current.moonlightStepAdvantage = false;
           b.pending = null;
           b.suspendedAction = null;
           if (current.mockery && current.mockery.expiresRound <= b.round) current.mockery = null;
@@ -353,6 +415,8 @@ export function handleBattles(db, user, path, method, body, send) {
           if (++b.turn === b.fighters.length) { b.turn = 0; b.round++; }
           startSpellTurn(b, b.fighters[b.turn]);
           clearProtection(b, b.fighters[b.turn].id);
+          clearMasterySource(b, b.fighters[b.turn]);
+          startFighterTurn(db, b, b.fighters[b.turn], persistVitals, log);
           fresh(b.fighters[b.turn]); log(b, `Runda ${b.round}: tura ${b.fighters[b.turn].name}.`);
         }
       } else {
@@ -364,11 +428,11 @@ export function handleBattles(db, user, path, method, body, send) {
         requireValue(!dueStartZoneEvents(b, current).length || ['zone-start', 'zone-place', 'zone-leave', 'zone-end', 'zone-free', 'zone-fire-members', 'spell-save', 'spell-defense', 'spell-effect', 'condition', 'condition-source', 'condition-sight', 'exhaustion', 'flight-state', 'base-size', 'concentration', 'end-concentration', 'death', 'relentless-rage', 'resolve'].includes(kind), 'Najpierw rozlicz wyzwalacze początku tury w Web.');
         requireValue(!zoneMovementDue(b) || ['flight-state', 'base-size', 'condition-source', 'condition-sight', 'exhaustion', 'zone-move', 'zone-place', 'zone-end', 'end-concentration', 'concentration', 'spell-defense', 'spell-save', 'spell-effect', 'relentless-rage', 'condition', 'resolve'].includes(kind), 'MG musi odtworzyć położenie stref lub potwierdzić przesunięcie chmury na początku tury.');
         const acting = b.fighters.find(f => f.id === (body.actorId ?? (['spell-effect', 'spell-attack'].includes(kind) ? b.pending?.actorId : null) ?? current.id));
-        if (!(kind === 'spell-effect' && (b.pending?.delayedDamageId || b.pending?.zoneEvent || b.pending?.reactive)) && !['zone-start', 'zone-free', 'zone-fire', 'zone-fire-members', 'flight-state', 'fall-start', 'fall-stop', 'fall-land', 'fall-water', 'base-size', 'condition-source', 'condition-sight', 'exhaustion', 'heat-save', 'repeat-contacts', 'repeat-end', 'zone-update', 'zone-wall-enter', 'zone-wall-leave', 'zone-enter', 'zone-leave', 'zone-move', 'zone-place', 'zone-end', 'zone-end-turn', 'delayed-spell', 'condition-save', 'spell-save', 'casting-pass', 'casting-continue', 'counterspell-save', 'dispel-check', 'concentration', 'saving-throw', 'condition', 'resolve', 'spell-defense', 'death', 'end-concentration', 'dismiss-effect', 'relentless-rage'].includes(kind)) requireValue(!acting || (!isIncapacitated(acting) || ['move', 'stand-up'].includes(kind)) && (acting.id !== current.id || acting.spellTurnEnded !== b.round), 'Paraliż lub zakończenie tury uniemożliwia działanie.');
+        if (!(kind === 'spell-effect' && (b.pending?.delayedDamageId || b.pending?.zoneEvent || b.pending?.reactive)) && !['zone-start', 'zone-free', 'zone-fire', 'zone-fire-members', 'flight-state', 'fall-start', 'fall-stop', 'fall-land', 'fall-water', 'base-size', 'condition-source', 'condition-sight', 'exhaustion', 'heat-save', 'repeat-contacts', 'repeat-end', 'zone-update', 'zone-wall-enter', 'zone-wall-leave', 'zone-enter', 'zone-leave', 'zone-move', 'zone-place', 'zone-end', 'zone-end-turn', 'delayed-spell', 'condition-save', 'spell-save', 'casting-pass', 'casting-continue', 'counterspell-save', 'dispel-check', 'concentration', 'saving-throw', 'condition', 'resolve', 'spell-defense', 'death', 'bard-use', 'bard-font', 'end-concentration', 'dismiss-effect', 'relentless-rage'].includes(kind)) requireValue(!acting || (!isIncapacitated(acting) || ['move', 'stand-up'].includes(kind)) && (acting.id !== current.id || acting.spellTurnEnded !== b.round), 'Paraliż lub zakończenie tury uniemożliwia działanie.');
         if (kind === 'attack') requireValue(!cannotHarm(acting, b.fighters.find(f => f.id === body.targetId)), 'Charmed: nie możesz atakować sprawcy.');
         if (kind === 'move' && conditionSourcesOf(acting, 'frightened').length) requireValue(body.confirmedFearSafe === true, 'Frightened: MG musi potwierdzić, że dobrowolny ruch nie zbliża do żadnego źródła strachu.');
         syncVows(b);
-        if (kind !== 'tactical-mind') b.fighters.forEach(f => { f.lastAbilityCheck = null; });
+        if (!['tactical-mind', 'bard-use', 'bard-cutting', 'bard-peerless'].includes(kind)) b.fighters.forEach(f => { f.lastAbilityCheck = null; });
         if (acting && (body.slot === 'reaction' || ['protection', 'protective-field'].includes(kind)) && hasSpellCondition(acting, 'no-reactions')) throw new Error('Arms of Hadar: reakcje są zablokowane.');
         if (acting && body.kind === 'request' && body.slot === 'reaction' && hasSpellCondition(acting, 'shocking-grasp') && body.opportunityAttack) throw new Error('Shocking Grasp: brak ataków okazyjnych.');
         if (acting && hasTimedModifier(acting, 'slow') && ['action-surge'].includes(kind)) throw new Error('Slow blokuje dodatkowe akcje.');
@@ -393,8 +457,10 @@ export function handleBattles(db, user, path, method, body, send) {
           // Fighter resources use the same transaction as the battle.
         } else if (handlePaladin({ db, b, body, canControl, activeMember, persistVitals, log })) {
           // Paladin resources share the battle transaction.
-        } else if (handleDruid({ db, b, body, canControl, activeMember, persistVitals, log })) {
+        } else if (handleDruid({ db, b, body, canControl, activeMember, persistVitals, gm, log })) {
           // Druid resources share the battle transaction.
+        } else if (handleCleric({ db, b, body, canControl, activeMember, casterData, persistVitals, log })) {
+        } else if (handleBard({ db, b, body, canControl, activeMember, casterData, log })) {
         } else if (handleEpicBoons({ db, b, body, canControl, activeMember, log })) {
         } else if (handleBarbarianFeatures({ db, b, body, gm, canControl, activeMember, persistVitals, damage, log })) {
         } else if (handleBarbarian({ db, b, body, gm, canControl, activeMember, persistVitals, log })) {
@@ -429,12 +495,20 @@ export function handleBattles(db, user, path, method, body, send) {
           if (kind === 'death') {
             requireValue(!b.pending && actor.characterId && actor.hp === 0 && actor.deathFailures < 3 && actor.deathSuccesses < 3 && !actor.action, 'Rzut przeciw śmierci jest teraz niedostępny.');
             requireValue(int(body.roll, 1, 20), 'Podaj wynik k20 (1–20).');
-            body = { ...body, roll: speciesD20(actor, body.roll, body.halflingRoll) };
-            const luck = luckBonus(db, actor.characterId, body.luckRoll);
-            if (body.roll === 20) { actor.hp = 1; actor.deathSuccesses = 0; actor.deathFailures = 0; }
-            else if (body.roll !== 1 && body.roll + luck - exhaustionPenalty(actor) >= 10) actor.deathSuccesses = Math.min(3, actor.deathSuccesses + 1);
+            const survivor = actor.fighter?.survivor;
+            requireValue(!survivor || int(body.roll2, 1, 20), 'Defy Death wymaga dwoch kosci k20.');
+            const first = speciesD20(actor, body.roll, body.halflingRoll);
+            body = { ...body, roll: survivor ? Math.max(first, speciesD20(actor, body.roll2, body.halflingRoll2)) : first };
+            const modifier = luckBonus(db, actor.characterId, body.luckRoll) - exhaustionPenalty(actor);
+            const revivalRoll = survivor ? 18 : 20;
+            const captured = {};
+            const original = body.roll >= revivalRoll ? Math.max(10, body.roll + modifier) : body.roll === 1 ? Math.min(9, body.roll + modifier) : body.roll + modifier;
+            const total = fighterIndomitable(db, actor, body, original, 10, modifier, Boolean(survivor), false, message => log(b, message), captured);
+            body = { ...body, roll: captured.roll ?? body.roll };
+            if (body.roll >= revivalRoll) { actor.hp = 1; actor.deathSuccesses = 0; actor.deathFailures = 0; }
+            else if (body.roll !== 1 && total >= 10) actor.deathSuccesses = Math.min(3, actor.deathSuccesses + 1);
             else actor.deathFailures = Math.min(3, actor.deathFailures + (body.roll === 1 ? 2 : 1));
-            actor.action = body.roll === 20 ? '' : 'Rzut przeciw śmierci'; persistVitals(db, actor); log(b, `${actor.name}: rzut przeciw śmierci ${body.roll}.`);
+            actor.action = actor.hp > 0 ? '' : 'Rzut przeciw śmierci'; persistVitals(db, actor); log(b, `${actor.name}: rzut przeciw śmierci ${body.roll}.`);
           } else {
             requireValue(actor.hp > 0 && actor.deathFailures < 3 && (!isIncapacitated(actor) || ['move', 'stand-up'].includes(kind)), 'Ten uczestnik nie może teraz działać.');
             if (kind === 'protection') {
@@ -454,17 +528,52 @@ export function handleBattles(db, user, path, method, body, send) {
               requireValue(!frenzyCount || Array.isArray(body.frenzyRolls) && body.frenzyRolls.length === frenzyCount && body.frenzyRolls.every(n => int(n, 1, 6)), 'Podaj wyniki wszystkich kosci k6 Frenzy.');
               const frenzyDamage = frenzyCount ? body.frenzyRolls.reduce((sum, n) => sum + n, 0) : 0;
               requireValue(!hasSpellCondition(actor, 'enfeebled') || int(body.enfeeblementRoll, 1, 8), 'Ray of Enfeeblement: podaj k8 odejmowane od obrażeń.');
-              let amount = Math.max(0, frenzyDamage + body.rolls.reduce((sum, n) => sum + n, 0) + p.attack.damageBonus - (hasSpellCondition(actor, 'enfeebled') ? body.enfeeblementRoll : 0));
+              let amount = Math.max(0, frenzyDamage + body.rolls.reduce((sum, n) => sum + (p.attack.greatWeaponFighting && p.hit?.melee ? Math.max(3, n) : n), 0) + p.attack.damageBonus - (hasSpellCondition(actor, 'enfeebled') ? body.enfeeblementRoll : 0));
               if (p.sizeModifier) {
                 const count = p.sizeModifier > 0 && p.critical ? 2 : 1;
                 requireValue(Array.isArray(body.sizeRolls) && body.sizeRolls.length === count && body.sizeRolls.every(n => int(n, 1, 4)), 'Enlarge/Reduce: podaj poprawne kości k4 modyfikatora broni / ciosu.');
                 amount = Math.max(p.sizeModifier < 0 ? 1 : 0, amount + Math.sign(p.sizeModifier) * body.sizeRolls.reduce((sum, n) => sum + n, 0));
               }
               const target = b.fighters.find(f => f.id === p.targetId);
+              const extraStrike = [];
+              if (body.divineStrikeRolls != null) {
+                const caster = actor.characterId && casterData(db, actor.characterId);
+                const profile = caster && clericResources(caster.character, caster.state, caster.stats.spells.choices);
+                const dice = (actor.level >= 14 ? 2 : 1) * (p.critical ? 2 : 1);
+                requireValue(profile?.strikes === 'strike' && actor.id === current.id && !actor.divineStrikeUsed &&
+                  p.attack.id !== 'unarmed' && !p.attack.id.startsWith('beast:') && ['Necrotic', 'Radiant'].includes(body.divineStrikeType) &&
+                  validDice(body.divineStrikeRolls, dice, 8), 'Divine Strike wymaga trafienia broni? we w?asnej turze, w?a?ciwych ko?ci i typu obra?e?.');
+                actor.divineStrikeUsed = true;
+                extraStrike.push({ amount: body.divineStrikeRolls.reduce((sum, roll) => sum + roll, 0), type: body.divineStrikeType });
+              }
+              if (body.primalStrikeRolls != null) {
+                const caster = actor.characterId && casterData(db, actor.characterId);
+                const dice = (actor.level >= 15 ? 2 : 1) * (p.critical ? 2 : 1);
+                requireValue(isDruid(caster?.character) && actor.level >= 7 && caster.stats.spells.choices.elementalFury === 'strike' &&
+                  actor.id === current.id && !actor.primalStrikeUsed && p.attack.id !== 'unarmed' &&
+                  (!p.attack.id.startsWith('beast:') || actor.wildShape) && ['Cold', 'Fire', 'Lightning', 'Thunder'].includes(body.primalStrikeType) &&
+                  validDice(body.primalStrikeRolls, dice, 8), 'Primal Strike requires a weapon or Wild Shape hit on your turn and valid dice.');
+                actor.primalStrikeUsed = true;
+                extraStrike.push({ amount: body.primalStrikeRolls.reduce((sum, roll) => sum + roll, 0), type: body.primalStrikeType });
+              }
+              let attackType = p.attack.type;
+              if (body.lunarRadiance === true || body.improvedLunarRolls != null) {
+                const character = actor.characterId && db.prepare('SELECT class, level, subclass FROM characters WHERE id = ?').get(actor.characterId);
+                requireValue(isMoonDruid(character) && actor.level >= 6 && actor.wildShape && p.attack.id.startsWith('beast:'),
+                  'Lunar Radiance requires a Moon Druid in Wild Shape.');
+                if (body.lunarRadiance === true) attackType = 'Radiant';
+                if (body.improvedLunarRolls != null) {
+                  const turn = `${b.round}:${current.id}`;
+                  requireValue(actor.level >= 14 && actor.improvedLunarTurn !== turn && validDice(body.improvedLunarRolls, p.critical ? 4 : 2, 10),
+                    'Improved Lunar Radiance requires level 14 and is available once per turn.');
+                  actor.improvedLunarTurn = turn;
+                  extraStrike.push({ amount: body.improvedLunarRolls.reduce((sum, roll) => sum + roll, 0), type: 'Radiant' });
+                }
+              }
               queueRetaliations(b, target, actor, p.hit);
               if (amount > 0) endProtectiveSpell(db, actor, 'sanctuary');
-              damage(db, target, amount + (p.epicOverwhelming ? actor.epicOffenseScore ?? 0 : 0), p.critical, p.attack.type, Boolean(actor.epicOffense && rageDamageTypes.includes(p.attack.type?.toLowerCase())));
-              reflectThoughtShield(db, b, target, actor, p.attack.type, target.lastDamage.amount, damage, log);
+              damage(db, target, Math.max(0, amount + (p.epicOverwhelming ? actor.epicOffenseScore ?? 0 : 0) - (p.cuttingWordsReduction ?? 0)), p.critical, attackType, Boolean(actor.epicOffense && rageDamageTypes.includes(attackType?.toLowerCase())), extraStrike);
+              reflectThoughtShield(db, b, target, actor, attackType, target.lastDamage.amount, damage, log);
               if (hexActive(actor, target)) {
                 const hexCount = p.critical ? 2 : 1;
                 requireValue(Array.isArray(body.hexRolls) && body.hexRolls.length === hexCount && body.hexRolls.every(n => int(n, 1, 6)), 'Hex: podaj dodatkowe k6 (dwie przy trafieniu krytycznym).');
@@ -473,7 +582,14 @@ export function handleBattles(db, user, path, method, body, send) {
               }
               barbarianHit({ db, b, actor, target, p, body, damage, persistVitals, log });
               speciesHit({ db, b, actor, target, body, damage, log, attackRoll: true, critical: p.critical, dealt: target.lastDamage?.amount ?? amount });
-              psionicStrike(db, b, actor, body, amount, damage, target, log); log(b, `${actor.name} → ${target.name}: ${amount} obrażeń (${p.attack.type}).`); b.pending = null;
+              if (body.criticalMoveFeet != null) {
+                requireValue(actor.fighter?.athlete && p.critical && body.confirmedMovement === true, 'Remarkable Athlete requires a critical hit and confirmed movement.');
+                fighterShift(b, actor, body.criticalMoveFeet, log, 'Remarkable Athlete');
+              }
+              const masteryPending = applyWeaponMastery(b, actor, target, p, body, target.lastDamage?.amount ?? 0, log);
+              if (p.attack.mastery === 'Cleave' && p.hit?.melee && actor.id === current.id && actor.cleaveTurn !== `${b.round}:${current.id}`)
+                b.cleave = { actorId: actor.id, attackId: p.attack.id, targetId: target.id };
+              psionicStrike(db, b, actor, body, amount, damage, target, log); log(b, `${actor.name} → ${target.name}: ${amount} obrażeń (${p.attack.type}).`); b.pending = masteryPending;
             } else {
               requireValue(!b.pending, 'Najpierw rozstrzygnij rozpoczęte działanie.');
               if (kind === 'stand-up') {
@@ -506,11 +622,21 @@ export function handleBattles(db, user, path, method, body, send) {
                   attack = { ...body.attack, type: body.attack.type || 'wg opisu potwora', ability: null, light: false };
                 }
                 requireValue(attack, 'Wybierz dostępną broń.');
+                attack = selectMastery(actor, attack, body.mastery);
                 if (body.ability === 'str') {
                   requireValue(attack.finesse && attack.strengthBonus != null, 'Ta broń nie pozwala wybrać Siły.');
                   attack = { ...attack, ability: 'str', bonus: attack.strengthBonus, damageBonus: attack.strengthDamageBonus };
                 }
-                if (slot === 'reaction') {
+                const cleave = body.cleave === true;
+                if (cleave) {
+                  const offer = b.cleave;
+                  requireValue(offer?.actorId === actor.id && offer.attackId === attack.id && attack.mastery === 'Cleave' &&
+                    body.targetId !== offer.targetId && body.confirmedCleave === true && body.attackRange !== 'ranged' && slot === 'action',
+                    'Cleave requires a different creature within 5 feet of the first target and within reach.');
+                  actor.cleaveTurn = `${b.round}:${current.id}`;
+                  b.cleave = null;
+                  attack = { ...attack, damageBonus: attack.damageBonus - Math.max(0, actor.attackAbilityModifiers?.[attack.ability] ?? 0) };
+                } else if (slot === 'reaction') {
                   requireValue(actor.rageProfile?.berserker && actor.level >= 10 && !actor.reaction && !actor.reactionDeferred && actor.barbarianDamageEvent?.sourceId === body.targetId && actor.barbarianDamageEvent.amount > 0 && body.within5Feet === true && attack.melee, 'Retaliation wymaga reakcji, obra?e? od istoty w 5 stopach i ataku wr?cz.');
                   actor.reaction = 'Retaliation'; actor.barbarianDamageEvent = null;
                 } else if (slot === 'bonus') {
@@ -540,39 +666,54 @@ export function handleBattles(db, user, path, method, body, send) {
                 if (Boolean(actor.characterId) !== Boolean(target.characterId)) extendRage(b, actor);
                 if (body.sanctuaryLost) { log(b, `${actor.name}: Sanctuary — traci ten atak.`); } else {
                 const conditionModifiers = conditionAttackModifiers(actor, target, body);
-                const disadvantage = Boolean(conditionModifiers.disadvantage || spellDisadvantage(actor, attack.ability) || attack.disadvantage || bondAdvantage(target, actor) || target.dodge || target.attackDisadvantage || body.disadvantage || lionDisadvantage(b, actor, target) || actor.mockery);
+                const master = masteryAttackFlags(actor, target);
+                const disadvantage = Boolean(master.disadvantage || conditionModifiers.disadvantage || spellDisadvantage(actor, attack.ability) || attack.disadvantage || bondAdvantage(target, actor) || target.dodge || target.attackDisadvantage || body.disadvantage || lionDisadvantage(b, actor, target) || actor.mockery);
                 endProtectiveSpell(db, actor, 'sanctuary');
                 recordAttackRoll(b, actor, body, log); endSpeciesHide(db, actor);
-                let advantage = Boolean(conditionModifiers.advantage || body.advantage || hasSpellCondition(target, 'guiding-bolt') || hasSpellCondition(target, 'paralyzed') || bondAdvantage(actor, target) || vowAttackAdvantage(actor, target) || barbarianAttackAdvantage(actor, target, attack.ability) || wolfAttackAdvantage(b, actor, target));
+                let advantage = Boolean(master.advantage || studiedAdvantage(actor, target) || actor.id === current.id && actor.moonlightStepAdvantage || conditionModifiers.advantage || body.advantage || hasSpellCondition(target, 'guiding-bolt') || hasSpellCondition(target, 'paralyzed') || bondAdvantage(actor, target) || vowAttackAdvantage(actor, target) || barbarianAttackAdvantage(actor, target, attack.ability) || wolfAttackAdvantage(b, actor, target));
                 if (body.brutal) { requireValue(actor.rageProfile?.brutalDice && actor.recklessActive && attack.ability === 'str' && actor.id === current.id && !actor.brutalStrikeUsed && advantage && !disadvantage, 'Brutal Strike wymaga Reckless Attack, ataku STR z u?atwieniem, bez utrudnienia; raz na tur?.'); advantage = false; actor.brutalStrikeUsed = true; }
                 requireValue(int(body.roll, 1, 20) && (disadvantage === advantage || int(body.roll2, 1, 20)), 'Podaj wynik k20; przy ułatwieniu lub utrudnieniu podaj dwie kości.');
                 const first = speciesD20(actor, body.roll, body.halflingRoll), second = speciesD20(actor, body.roll2, body.halflingRoll2);
                 const roll = disadvantage === advantage ? first : disadvantage ? Math.min(first, second) : Math.max(first, second);
                 actor.mockery = null;
+                if (actor.id === current.id) actor.moonlightStepAdvantage = false;
                 consumeSpellAttack(actor);
+                consumeMasteryAttack(actor, target);
                 target.spellConditions = (target.spellConditions ?? []).filter(e => e.kind !== 'guiding-bolt');
                 const sundering = target.brutalEffects?.find(e => e.kind === 'sundering' && e.sourceId !== actor.id);
                 const attackModifier = timedRollModifier(actor, body) + (sundering ? 5 : 0);
                 if (sundering) target.brutalEffects = target.brutalEffects.filter(e => e !== sundering);
-                const hit = roll !== 1 && (roll === 20 || roll + attack.bonus + attackModifier - exhaustionPenalty(actor) >= timedAc(target));
-                log(b, `${actor.name} → ${target.name}: ${roll} + ${attack.bonus}: ${hit ? roll === 20 ? 'trafienie krytyczne' : 'trafienie' : 'pudło'}.`);
+                const critThreshold = attack.id === 'unarmed' || !attack.id?.startsWith('beast:') ? actor.fighter?.criticalThreshold ?? 20 : 20;
+                const naturalCritical = roll >= critThreshold;
+                const hit = roll !== 1 && (naturalCritical || roll + attack.bonus + attackModifier - exhaustionPenalty(actor) >= timedAc(target));
+                log(b, `${actor.name} → ${target.name}: ${roll} + ${attack.bonus}: ${hit ? naturalCritical ? 'trafienie krytyczne' : 'trafienie' : 'pudło'}.`);
                 const frenzy = hit ? frenzyDice(b, actor, attack.ability) : 0;
                 if (frenzy) actor.frenzyUsed = true;
                 const divineFury = hit && actor.rageProfile?.zealot && actor.rage && !actor.divineFuryUsed && actor.id === current.id;
                 if (divineFury) actor.divineFuryUsed = true;
-                const attackPending = { epicOverwhelming: actor.epicOffense && roll === 20, brutal: body.brutal === true, divineFury: Boolean(divineFury), hit: { melee: body.attackRange === 'melee' || body.attackRange !== 'ranged' && attack.melee === true, within5Feet: body.within5Feet === true }, sizeModifier: weaponSizeModifier(actor) && (attack.id === 'unarmed' || actor.characterId && !attack.id.startsWith('beast:') || body.sizeWeaponConfirmed === true) ? weaponSizeModifier(actor) : 0, kind: 'damage', actorId: actor.id, targetId: target.id, attack, frenzyDice: frenzy, critical: roll === 20 || conditionModifiers.criticalOnHit, attackTotal: roll + attack.bonus + attackModifier - exhaustionPenalty(actor) };
-                b.lastRoll = { kind: 'attack', actorId: actor.id, targetId: target.id, natural: roll, total: roll + attack.bonus + attackModifier - exhaustionPenalty(actor), dc: timedAc(target), hit, pending: attackPending };
+                const attackPending = { epicOverwhelming: actor.epicOffense && roll === 20, brutal: body.brutal === true, divineFury: Boolean(divineFury), hit: { melee: body.attackRange === 'melee' || body.attackRange !== 'ranged' && attack.melee === true, within5Feet: body.within5Feet === true }, sizeModifier: weaponSizeModifier(actor) && (attack.id === 'unarmed' || actor.characterId && !attack.id.startsWith('beast:') || body.sizeWeaponConfirmed === true) ? weaponSizeModifier(actor) : 0, kind: 'damage', actorId: actor.id, targetId: target.id, attack, frenzyDice: frenzy, critical: naturalCritical || conditionModifiers.criticalOnHit, attackTotal: roll + attack.bonus + attackModifier - exhaustionPenalty(actor) };
+                b.lastRoll = { kind: 'attack', actorId: actor.id, targetId: target.id, natural: roll, total: roll + attack.bonus + attackModifier - exhaustionPenalty(actor), dc: timedAc(target), hit, critThreshold, pending: attackPending };
+                studiedResult(b, actor, target, hit);
                 if (hit) b.pending = attackPending;
+                else if (attack.mastery === 'Graze' && body.graze === true) {
+                  const modifier = Math.max(0, actor.attackAbilityModifiers?.[attack.ability] ?? 0);
+                  damage(db, target, modifier, false, attack.type);
+                  b.lastRoll = null;
+                  log(b, `${actor.name}: Graze, ${target.lastDamage.amount} obrazen.`);
+                }
                 }
               } else if (kind === 'second-wind') {
-                requireValue(!healingBlocked(actor), 'Cel nie może odzyskiwać PW.');
                 requireValue(actor.characterId && actor.secondWindMax > 0, 'Drugi oddech jest dostępny tylko dla wojownika.');
                 requireValue(body.slot === 'bonus', 'Drugi oddech wymaga akcji bonusowej.');
                 requireValue(!actor.bonus, 'Akcja bonusowa została już wykorzystana.');
-                requireValue(actor.hp > 0 && actor.hp < actor.maxHp, 'Drugi oddech nie jest teraz potrzebny.');
+                requireValue((actor.hp < actor.maxHp || actor.fighter?.tacticalShift && body.shiftFeet != null), 'Drugi oddech nie jest teraz potrzebny.');
                 requireValue(actor.secondWindUses > 0, 'Brak dostępnych użyć Drugiego oddechu.');
                 requireValue(int(body.roll, 1, 10), 'Podaj wynik k10 (1–10).');
-                const healed = Math.min(actor.maxHp - actor.hp, body.roll + actor.level);
+                if (body.shiftFeet != null) {
+                  requireValue(actor.fighter?.tacticalShift && body.confirmedMovement === true, 'Tactical Shift requires confirmed movement at Fighter level 5.');
+                  fighterShift(b, actor, body.shiftFeet, log, 'Tactical Shift');
+                }
+                const healed = healingBlocked(actor) ? 0 : Math.min(actor.maxHp - actor.hp, body.roll + actor.level);
                 actor.hp += healed;
                 actor.bonus = 'Drugi oddech';
                 actor.secondWindUses--;
@@ -677,8 +818,16 @@ export function handleBattles(db, user, path, method, body, send) {
     syncTimedEffects(db, battle, persistVitals);
     if (syncConditionConsequences(db, battle)) { syncSpellConditions(battle, db); syncTimedEffects(db, battle, persistVitals); }
     if (!battle.active) { for (const f of battle.fighters) { f.rage = null; f.divineForm = null; } syncBarbarianFeatures(db, battle, persistVitals); releaseTimedEffects(db, battle); releaseSpecies(db, battle); }
+    syncTurnUndead(battle);
+    syncNatureSanctuary(battle);
     advanceRetaliations(battle);
+    const previousCurrent = battle.fighters[battle.turn]?.id;
     removeDeadMonsters(battle);
+    const newCurrent = battle.fighters[battle.turn];
+    if (battle.active && newCurrent.id !== previousCurrent) {
+      clearMasterySource(battle, newCurrent);
+      startFighterTurn(db, battle, newCurrent, persistVitals, log);
+    }
     syncDelayedSpellDamage(battle);
     syncSpellZones(db, battle);
     syncRepeatSpells(db, battle);

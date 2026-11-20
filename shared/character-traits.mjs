@@ -1,7 +1,7 @@
 import { barbarianFeatureDescriptions } from './barbarian.mjs';
 import { epicBoons } from './epic-boons.mjs';
 import { warlockDescriptions } from './warlock.mjs';
-import { eligibleDruidForms } from './druid.mjs';
+import { druidProfile, eligibleDruidForms, landWard } from './druid.mjs';
 import data from './trait-data.json' with { type: 'json' };
 import options from './trait-options.json' with { type: 'json' };
 import definitions from './statistics.json' with { type: 'json' };
@@ -100,7 +100,7 @@ export function characterTraits(character, stats) {
     }
   };
   const skillGroup = (id, label, limit, ids = definitions.skills.map(skill => skill.id)) => group(id, label, limit, skillOptions.filter(skill => ids.includes(skill.id) && !skills[skill.id]), 'skill');
-  if (classId === 'druid' && level >= 2) group('druidForms', 'Wild Shape — znane formy', 4, eligibleDruidForms(character).map(f => ({ id: f.id, label: f.name })), 'form');
+  if (classId === 'druid' && level >= 2) group('druidForms', 'Wild Shape — znane formy', druidProfile(character).knownForms, eligibleDruidForms(character).map(f => ({ id: f.id, label: f.name })), 'form');
   if (classId === 'warlock') group('invocations', 'Eldritch Invocations', invocationCount(character), invocationOptions(character, stats), 'invocation');
   if (invocationIds.has('pact-of-the-tome')) {
     const spells = tomeOptions(character, stats);
@@ -309,6 +309,7 @@ export function characterTraits(character, stats) {
   if (classId === 'paladin') resources.push({ name: 'Lay On Hands — pula leczenia', value: String(5 * level) });
   if (classId === 'bard') resources.push({ name: 'Bardic Inspiration — użycia', value: abilityMod(stats, 'cha') === null ? '—' : String(Math.max(1, abilityMod(stats, 'cha'))) });
   const speciesSpeed = species ? (species === 'Goliat (Goliath)' || species === 'Elf' && chosen.elfLineage?.[0] === 'wood' ? 35 : 30) + (feats.has('Transmuted Anatomy') ? 5 : 0) : null;
+  const natureWardResistance = landWard(character, stats.spells?.choices)?.resistance;
   const naturalSpeed = (stats.values?.speed ?? speciesSpeed ?? 30) + (classId === 'barbarian' && level >= 5 ? 10 : 0);
   return {
     originFeatEntries: originFeatSheet([...feats], character, stats),
@@ -319,7 +320,7 @@ export function characterTraits(character, stats) {
     skillSources: sourceLabels, skillBonuses, languages: options.languages.filter(language => languages.has(language.id)),
     tools: [...tools], armor: armor.filter(Boolean), weapons: weapons.filter(Boolean), feats: [...feats], originFeatDescriptions, features,
     hitDie: die, hitDiceTotal: level,
-    damageResistances: [...speciesResistances(species), ...(ancestry && species === 'Smokowiec (Dragonborn)' ? [ancestry.damageType] : []), ...(fiendishLegacy && species === 'Diabelstwo (Tiefling)' ? [fiendishLegacy.damageType] : [])],
+    damageResistances: [...speciesResistances(species), ...(natureWardResistance ? [natureWardResistance] : []), ...(ancestry && species === 'Smokowiec (Dragonborn)' ? [ancestry.damageType] : []), ...(fiendishLegacy && species === 'Diabelstwo (Tiefling)' ? [fiendishLegacy.damageType] : [])],
     creatureType: species ? 'Humanoid' : null,
     sleepImmune: species === 'Elf',
     longRestHours: species === 'Elf' ? 4 : 8,

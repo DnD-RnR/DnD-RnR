@@ -41,12 +41,12 @@ export function timedAc(fighter) {
   let base = fighter.ac;
   if (!fighter.wearingArmor && fighter.dexModifier != null && effects.some(e => e.modifiers.mageArmor)) base = Math.max(base, 13 + fighter.dexModifier + (fighter.equipmentShieldBonus ?? 0) + (fighter.shieldAC ?? 0));
   base += effects.reduce((n, e) => n + (e.modifiers.acBonus ?? 0), 0);
-  return Math.max(base, ...effects.map(e => e.modifiers.minimumAc ?? 0));
+  return Math.max(base, ...effects.map(e => e.modifiers.minimumAc ?? 0)) + (fighter.natureSanctuaryCover ? 2 : 0);
 }
 export const timedSpeedBonus = fighter => (fighter.speciesEffects?.large ? 10 : 0) - (fighter.brutalEffects?.some(e => e.kind === 'hamstring') ? 15 : 0) - (fighter.speciesFrost ? 10 : 0) + strongestEffects(fighter.timedEffects).reduce((n, e) => n + (e.modifiers.speedBonus ?? 0), 0);
 export const timedSpeedMultiplier = fighter => strongestEffects(fighter.timedEffects).reduce((n, e) => n * (e.modifiers.speedMultiplier ?? 1), 1);
 export const hasTimedModifier = (fighter, key) => strongestEffects(fighter?.timedEffects).some(e => e.modifiers[key]);
-export const timedSaveModifier = (fighter, ability) => ability === 'dex' && hasTimedModifier(fighter, 'slow') ? -2 : 0;
+export const timedSaveModifier = (fighter, ability) => ability === 'dex' ? (fighter.natureSanctuaryCover ? 2 : 0) - (hasTimedModifier(fighter, 'slow') ? 2 : 0) : 0;
 export const timedFlySpeed = fighter => Math.max(fighter.divineForm || fighter.rage?.power === 'falcon' && !fighter.wearingAnyArmor ? fighter.speed ?? 0 : 0, fighter.speciesEffects?.flight || fighter.speciesEffects?.revelation?.form === 'wings' ? fighter.speed ?? 0 : 0, fighter.flySpeed ?? 0, ...strongestEffects(fighter.timedEffects).map(e => e.modifiers.flySpeed ?? 0));
 export const timedDarkvision = fighter => Math.max(fighter.darkvision ?? 0, ...strongestEffects(fighter.timedEffects).map(e => e.modifiers.darkvision ?? 0));
 export const weaponSizeModifier = fighter => strongestEffects(fighter?.timedEffects).find(e => e.modifiers.sizeDelta)?.modifiers.sizeDelta ?? 0;

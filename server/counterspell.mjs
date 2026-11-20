@@ -1,3 +1,4 @@
+import { fighterIndomitable } from './fighter.mjs';
 import { brutalSaveDisadvantage, consumeBrutalSave } from '../shared/barbarian.mjs';
 import { randomUUID } from 'node:crypto';
 import { casterData, resourceState, saveResources } from './spell-resources.mjs';
@@ -34,7 +35,7 @@ export function beginCasting(db, b, caster, c, body, spentSlot, parent = null) {
   if (!responders.length && c.spell.id !== 'counterspell') return false;
   // Keep only data required to resolve this cast, not the caster's spell catalog
   // and selection groups (which can exceed the battle document size limit).
-  const cast = { spell: c.spell, character: { class: c.character.class, subclass: c.character.subclass, level: c.character.level }, stats: { values: c.stats.values, traits: c.stats.traits }, state: {}, profile: { automatic: c.profile?.automatic.map(s => ({ id: s.id, reason: s.reason })) ?? [] }, ability: c.ability, attack: c.attack, dc: c.dc };
+  const cast = { spell: c.spell, character: { class: c.character.class, subclass: c.character.subclass, level: c.character.level }, stats: { values: c.stats.values, traits: c.stats.traits, spells: c.stats.spells }, state: {}, profile: { automatic: c.profile?.automatic.map(s => ({ id: s.id, reason: s.reason })) ?? [] }, ability: c.ability, attack: c.attack, dc: c.dc };
   b.pending = { kind: 'casting', id: randomUUID(), actorId: caster.id, cast, attempt: { ...body }, spentSlot, concentrationKey: caster.concentrationKey, stage: 'window', components: actualComponents, responders, passed: [], parent };
   if (!c.spell.duration?.includes('Koncentracja')) b.pending.concentrationKey = null;
   return true;
@@ -125,7 +126,8 @@ export function handleCasting({ db, b, body, gm, canControl, activeMember, log }
   const roll = adv === dis ? body.roll : adv ? Math.max(body.roll, body.roll2) : Math.min(body.roll, body.roll2);
   consumeBrutalSave(caster);
   const penalty = consumeSavePenalty(caster, autoFail ? 1 : body.mindSliverRoll);
-  const total = autoFail ? -Infinity : roll + caster.saves.con - exhaustionPenalty(caster) + timedSaveModifier(caster, 'con') + timedRollModifier(caster, body) + (caster.characterId ? luckBonus(db, caster.characterId, body.luckRoll) : 0) - penalty;
+  const modifier = caster.saves.con - exhaustionPenalty(caster) + timedSaveModifier(caster, 'con') + timedRollModifier(caster, body) + (caster.characterId ? luckBonus(db, caster.characterId, body.luckRoll) : 0) - penalty;
+  const total = autoFail ? -Infinity : fighterIndomitable(db, caster, body, roll + modifier, p.counterDC, modifier, adv, dis, message => log(b, message));
   const success = total >= p.counterDC;
   log(b, `${caster.name}: CON przeciw Counterspell — ${success ? 'sukces, czar trwa' : 'porażka, czar przerwany'}.`);
   if (success) {

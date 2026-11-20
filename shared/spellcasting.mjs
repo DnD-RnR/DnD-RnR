@@ -89,6 +89,8 @@ export function spellcastingProfile(character, selection = emptySpellSelection()
     choice('order', isCleric ? 'Boski porządek' : 'Pierwotny porządek', [{ id: '', label: 'Nie wybrano' }, { id: 'martial', label: isCleric ? 'Protector' : 'Warden' }, { id: 'magic', label: isCleric ? 'Thaumaturge (+1 sztuczka)' : 'Magician (+1 sztuczka)' }]);
     if (choices.order === 'magic') cantrips++;
   }
+  if (classId === 'druid' && level >= 7) choice('elementalFury', 'Elemental Fury', [{ id: '', label: 'Wybierz zdolno??' }, { id: 'strike', label: 'Primal Strike' }, { id: 'potent', label: 'Potent Spellcasting' }]);
+  if (classId === 'cleric' && level >= 7) choice('blessedStrikes', 'Blessed Strikes', [{ id: '', label: 'Wybierz zdolno??' }, { id: 'strike', label: 'Divine Strike' }, { id: 'potent', label: 'Potent Spellcasting' }]);
   if (['paladin', 'ranger'].includes(classId) && level >= 2) {
     choice('style', 'Styl walki', [{ id: '', label: 'Inny styl / nie wybrano' }, { id: 'magic', label: classId === 'paladin' ? 'Blessed Warrior (2 sztuczki kleryka)' : 'Druidic Warrior (2 sztuczki druida)' }]);
     if (choices.style === 'magic') group('styleCantrips', 'Sztuczki ze stylu walki', 2, fromLists([classId === 'paladin' ? 'cleric' : 'druid'], 0, 0));

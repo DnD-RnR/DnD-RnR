@@ -4,7 +4,7 @@ import { conditionDefinitions, hasCondition, isIncapacitated, conditionSpeedZero
 // Effects are separate from manually assigned conditions and never overwrite them.
 export const hasSpellCondition = (fighter, kind) => conditionDefinitions[kind] ? hasCondition(fighter, kind) : (fighter.spellConditions ?? []).some(effect => effect.kind === kind);
 export const healingBlocked = fighter => fighter.healingBlocked || hasSpellCondition(fighter, 'chill-touch');
-export const spellSpeed = fighter => conditionSpeedZero(fighter) ? 0 : Math.floor(Math.max(0, fighter.speed + timedSpeedBonus(fighter) - 5 * (fighter.exhaustion ?? 0) - (hasSpellCondition(fighter, 'ray-of-frost') ? 10 : 0) - (hasSpellCondition(fighter, 'wrath') ? 10 : 0)) * timedSpeedMultiplier(fighter) / (fighter.zoneSpeedHalved ? 2 : 1));
+export const spellSpeed = fighter => conditionSpeedZero(fighter) ? 0 : Math.floor(Math.max(0, fighter.speed + timedSpeedBonus(fighter) - 5 * (fighter.exhaustion ?? 0) - (fighter.masterySlow?.length ? 10 : 0) - (hasSpellCondition(fighter, 'ray-of-frost') ? 10 : 0) - (hasSpellCondition(fighter, 'wrath') ? 10 : 0)) * timedSpeedMultiplier(fighter) / (fighter.zoneSpeedHalved ? 2 : 1));
 export const spellFlySpeed = fighter => conditionSpeedZero(fighter) || timedFlySpeed(fighter) <= 0 ? 0 : spellSpeed({ ...fighter, speed: timedFlySpeed(fighter) });
 export const spellClimbSpeed = fighter => Math.max(fighter.climbSpeed > 0 ? spellSpeed({ ...fighter, speed: fighter.climbSpeed }) : 0, (fighter.timedEffects ?? []).some(e => e.modifiers.spiderClimb) ? spellSpeed(fighter) : 0);
 export function consumeSavePenalty(fighter, roll) {

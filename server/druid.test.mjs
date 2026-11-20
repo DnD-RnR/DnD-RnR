@@ -102,3 +102,22 @@ test('Moon form uses the higher AC and restores original statistics on exit', ()
     endWildShape(f); assert.equal(f.ac, 18);
   }
 });
+
+test('Wild Shape progression unlocks additional forms, higher CR and flying', () => {
+  const { knownForms: known4, maxCR: cr4, max: uses4 } = druidProfile(hero(4));
+  assert.deepEqual([known4, cr4, uses4], [6, 0.5, 2]);
+  assert.equal(druidProfile(hero(6)).max, 3);
+  assert.equal(druidProfile(hero(17)).max, 4);
+  const stats = emptyStatistics();
+  stats.traits.druidForms = ['rat', 'riding-horse', 'spider', 'wolf', 'cat', 'crocodile'];
+  assert.ok(druidChoiceUpdate(hero(4), stats, null, {}, false, true).history);
+  stats.traits.druidForms[5] = 'eagle';
+  assert.ok(druidChoiceUpdate(hero(4), stats, null, {}, false, true).error);
+  stats.traits.druidForms.push('deer', 'dire-wolf');
+  assert.ok(druidChoiceUpdate(hero(8), stats, null, {}, false, true).history);
+  const fighter = { ac: 11, speed: 30, flySpeed: 0, attacks: [] };
+  applyWildShape(fighter, druidForms.find(form => form.id === 'eagle'), hero(8), stats, {});
+  assert.equal(fighter.flySpeed, 60);
+  endWildShape(fighter);
+  assert.equal(fighter.flySpeed, 0);
+});

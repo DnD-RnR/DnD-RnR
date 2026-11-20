@@ -135,7 +135,7 @@ export function handleSpecies({ db, b, body, gm, canControl, activeMember, damag
     check(!b.pending && ['flight', 'large', 'revelation'].includes(body.effect) && f.speciesEffects?.[body.effect], 'Brak efektu do zakończenia.');
     delete f.speciesEffects[body.effect]; state.speciesEffects = f.speciesEffects;
   } else if (body.kind === 'species-inspiration') {
-    check(f.species === 'Człowiek (Human)' && state.heroicInspirationAvailable !== false && die(body.roll, 20), 'Brak inspiracji albo wyniku przerzutu k20.');
+    check((state.heroicInspirationAvailable ?? f.species === 'Człowiek (Human)') && die(body.roll, 20), 'Brak inspiracji albo wyniku przerzutu k20.');
     state.heroicInspirationAvailable = false;
     log(b, `${f.name}: Heroic Inspiration — nowy wynik k20: ${body.roll}; użyj go w rozstrzyganym teście.`);
   } else if (body.kind === 'species-stonecunning') {

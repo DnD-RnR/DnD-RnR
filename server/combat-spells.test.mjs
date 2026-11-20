@@ -3382,3 +3382,354 @@ test('multiple damage sources require separate concentration saves and Vicious M
     assert.equal(roll.battle.fighters[1].mockery, null);
   } finally { db.close(); }
 });
+
+test('Bardic Inspiration consumes one grant, modifies a failed check and Font spends an available slot', () => {
+  const { db, call, start, gm, ally, rest } = setup('bard', 5);
+  try {
+    const [bard, , recipient] = start().battle.fighters;
+    const grant = { kind: 'bard-inspire', actorId: bard.id, targetId: recipient.id, confirmed: true };
+    assert.equal(call('act', grant, ally).status, 409);
+    assert.equal(call('act', grant).status, 200);
+    assert.equal(resourceState(db, 1).bardicSpent, 1);
+    assert.equal(resourceState(db, 2).bardicInspiration.die, 8);
+    assert.equal(call('act', { kind: 'ability-check', actorId: recipient.id, ability: 'str', roll: 5, dc: 10 }, ally).status, 200);
+    assert.equal(call('act', { kind: 'bard-use', actorId: recipient.id, roll: 9 }, ally).status, 409);
+    const used = call('act', { kind: 'bard-use', actorId: recipient.id, roll: 5 }, ally);
+    assert.equal(used.status, 200);
+    assert.equal(used.battle.bardRoll.failed, false);
+    assert.equal(resourceState(db, 2).bardicInspiration, undefined);
+    assert.equal(call('act', { kind: 'bard-font', level: 1 }).status, 200);
+    assert.equal(resourceState(db, 1).bardicSpent, 0);
+    assert.equal(resourceState(db, 1).spent[0], 1);
+    assert.equal(call('act', { kind: 'bard-font', level: 1 }).status, 409);
+    assert.equal(call('end', {}, gm).status, 200);
+    const depleted = resourceState(db, 1);
+    depleted.bardicSpent = 3;
+    saveResources(db, 1, depleted);
+    assert.equal(rest('short').status, 200);
+    assert.equal(resourceState(db, 1).bardicSpent, 0);
+    assert.equal(resourceState(db, 1).spent[0], 1);
+  } finally { db.close(); }
+});
+
+test('Superior Inspiration restores up to two and Countercharm uses a reaction on a failed save', () => {
+  const { db, call, start, ally } = setup('bard', 18);
+  try {
+    const state = resourceState(db, 1);
+    state.bardicSpent = 3;
+    saveResources(db, 1, state);
+    const [bard, , recipient] = start().battle.fighters;
+    assert.equal(resourceState(db, 1).bardicSpent, 1);
+    assert.equal(call('act', { kind: 'saving-throw', actorId: recipient.id, ability: 'wis', condition: 'frightened', roll: 2, dc: 12 }, ally).status, 200);
+    const charm = { kind: 'bard-countercharm', actorId: bard.id, roll: 2, roll2: 15, confirmed: true };
+    const result = call('act', charm);
+    assert.equal(result.status, 200);
+    assert.equal(result.battle.bardRoll.failed, false);
+    assert.equal(result.battle.fighters[0].reaction, 'Countercharm');
+    assert.equal(call('act', charm).status, 409);
+  } finally { db.close(); }
+});
+
+test('Words of Creation heals two distinct nearby targets with one slot', () => {
+  const { db, call, start } = setup('bard', 20);
+  try {
+    const [bard, , ally] = start().battle.fighters;
+    const cast = { kind: 'cast', slot: 'action', spellId: 'power-word-heal', source: 'slot', level: 9, targetIds: [bard.id, ally.id] };
+    assert.equal(call('act', cast).status, 409);
+    assert.equal(resourceState(db, 1).spent[8], 0);
+    assert.equal(call('act', { ...cast, confirmedSecondTarget: true }).status, 200);
+    const healed = call('act', { kind: 'spell-effect', rolls: [] });
+    assert.equal(healed.status, 200);
+    assert.deepEqual(healed.battle.fighters.filter(f => f.characterId).map(f => f.hp), [20, 20]);
+    assert.equal(resourceState(db, 1).spent[8], 1);
+  } finally { db.close(); }
+});
+
+test('Words of Creation resolves Power Word Kill separately for each target', () => {
+  const { db, call, start, gm } = setup('bard', 20);
+  try {
+    db.prepare("UPDATE game_monster_entries SET hp = 160 WHERE id = 'enemy'").run();
+    const [, enemy, ally] = start().battle.fighters;
+    const cast = { kind: 'cast', slot: 'action', spellId: 'power-word-kill', source: 'slot', level: 9,
+      targetIds: [enemy.id, ally.id], confirmedSecondTarget: true };
+    const result = call('act', cast);
+    assert.equal(result.status, 200);
+    assert.equal(result.battle.fighters.find(f => f.id === ally.id).deathFailures, 3);
+    assert.deepEqual(result.battle.pending.targets.map(t => t.id), [enemy.id]);
+    assert.equal(call('act', { kind: 'spell-defense', targetId: enemy.id, multiplier: 1 }, gm).status, 200);
+    const damaged = call('act', { kind: 'spell-effect', rolls: Array(12).fill(1) });
+    assert.equal(damaged.status, 200);
+    assert.equal(damaged.battle.fighters.find(f => f.id === enemy.id).damageTaken, 12);
+    assert.equal(resourceState(db, 1).spent[8], 1);
+  } finally { db.close(); }
+});
+
+test('Peerless Skill does not spend inspiration on failure or allow a second attempt', () => {
+  const { db, call, start } = setup('bard', 14);
+  try {
+    db.exec("UPDATE characters SET subclass = 'College of Lore' WHERE id = 1");
+    start();
+    const check = { kind: 'ability-check', ability: 'str', roll: 2, dc: 15 };
+    assert.equal(call('act', check).status, 200);
+    assert.equal(call('act', { kind: 'bard-peerless', roll: 10 }).status, 200);
+    assert.equal(resourceState(db, 1).bardicSpent, undefined);
+    assert.equal(call('act', { kind: 'bard-peerless', roll: 10 }).status, 409);
+    assert.equal(call('act', { ...check, roll: 10 }).status, 200);
+    assert.equal(call('act', { kind: 'bard-peerless', roll: 5 }).battle.bardRoll.failed, false);
+    assert.equal(resourceState(db, 1).bardicSpent, 1);
+  } finally { db.close(); }
+});
+
+test('Cutting Words changes a successful check and spends a reaction and inspiration', () => {
+  const { db, call, start, ally } = setup('bard', 5);
+  try {
+    db.exec("UPDATE characters SET subclass = 'College of Lore' WHERE id = 1");
+    const [bard, , recipient] = start().battle.fighters;
+    assert.equal(call('act', { kind: 'ability-check', actorId: recipient.id, ability: 'str', roll: 12, dc: 10 }, ally).status, 200);
+    const cutting = { kind: 'bard-cutting', actorId: bard.id, roll: 4, confirmed: true };
+    assert.equal(call('act', { ...cutting, confirmed: false }).status, 409);
+    const result = call('act', cutting);
+    assert.equal(result.status, 200);
+    assert.equal(result.battle.bardRoll.failed, true);
+    assert.equal(result.battle.fighters[0].reaction, 'Cutting Words');
+    assert.equal(resourceState(db, 1).bardicSpent, 1);
+  } finally { db.close(); }
+});
+
+test('Cleric Channel Divinity shares uses between Divine Spark and Turn Undead and restores one on a short rest', () => {
+  const { db, call, start, rest, gm } = setup('cleric', 7);
+  try {
+    const [cleric, enemy, ally] = start().battle.fighters;
+    const turn = { kind: 'cleric-turn-undead', targetIds: [enemy.id], searRolls: [1, 2, 3], confirmed: true };
+    assert.equal(call('act', turn).status, 409);
+    assert.equal(resourceState(db, 1).clericChannelSpent, undefined);
+    assert.equal(call('act', { ...turn, confirmedUndead: true }).status, 200);
+    assert.equal(call('act', { kind: 'spell-save', targetId: enemy.id, roll: 2 }, gm).status, 200);
+    assert.equal(call('act', { kind: 'spell-defense', targetId: enemy.id, multiplier: 1 }, gm).status, 200);
+    assert.equal(call('act', { kind: 'spell-effect', rolls: [] }).status, 200);
+    const turned = call('', {}, gm).battle.fighters.find(f => f.id === enemy.id);
+    assert.equal(turned.hp, 94);
+    assert.deepEqual(turned.conditionSources.map(effect => effect.kind).sort(), ['frightened', 'incapacitated']);
+    const hit = call('act', { kind: 'resolve', targetId: enemy.id, effect: 'damage', amount: 1, note: 'Hit' }, gm);
+    assert.deepEqual(hit.battle.fighters.find(f => f.id === enemy.id).conditionSources, []);
+    assert.equal(call('end', {}, gm).status, 200);
+    const restarted = start().battle;
+    const spark = call('act', { kind: 'cleric-spark', mode: 'heal', rolls: [1, 1], targetIds: [restarted.fighters[2].id], confirmed: true });
+    assert.equal(spark.status, 200, spark.error);
+    assert.equal(spark.battle.fighters[2].hp, 20);
+    assert.equal(publicCaster(db, 1).cleric.channelRemaining, 1);
+    assert.equal(call('end', {}, gm).status, 200);
+    assert.equal(rest('short').status, 200);
+    assert.equal(publicCaster(db, 1).cleric.channelRemaining, 2);
+  } finally { db.close(); }
+});
+
+test('Divine Intervention casts an unprepared bonus-action spell as an action without a slot', () => {
+  const { db, call, start, rest, gm } = setup('cleric', 20);
+  try {
+    const [cleric] = start().battle.fighters;
+    const cast = { kind: 'cast', slot: 'action', source: 'divine-intervention', spellId: 'healing-word', level: 1, targetIds: [cleric.id] };
+    assert.equal(call('act', { ...cast, slot: 'bonus' }).status, 409);
+    assert.equal(publicCaster(db, 1).cleric.interventionAvailable, true);
+    assert.equal(call('act', cast).status, 200);
+    assert.equal(call('act', { kind: 'spell-effect', rolls: [1, 1] }).status, 200);
+    assert.equal(resourceState(db, 1).spent[0], 0);
+    assert.equal(publicCaster(db, 1).cleric.interventionAvailable, false);
+    assert.equal(call('end', {}, gm).status, 200);
+    assert.equal(rest('long').status, 200);
+    assert.throws(() => spendSpell(db, 1, 'wish', 9, 'divine-intervention', { interventionRolls: [1, 5] }));
+    spendSpell(db, 1, 'wish', 9, 'divine-intervention', { interventionRolls: [1, 2] });
+    assert.equal(publicCaster(db, 1).cleric.interventionRests, 3);
+    assert.equal(rest('short').status, 200);
+    assert.equal(publicCaster(db, 1).cleric.interventionRests, 3);
+    for (let i = 0; i < 3; i++) assert.equal(rest('long').status, 200);
+    assert.equal(publicCaster(db, 1).cleric.interventionAvailable, true);
+  } finally { db.close(); }
+});
+
+test('Life Domain maximizes healing dice, adds Disciple of Life and heals the caster once', () => {
+  const { db, call, start } = setup('cleric', 17);
+  try {
+    db.exec("UPDATE characters SET subclass = 'Life Domain' WHERE id = 1");
+    for (const id of [1, 2]) {
+      const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(id).data);
+      stats.values.hp = 1;
+      if (id === 2) stats.values.maxHp = 40;
+      db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = ?').run(JSON.stringify(stats), id);
+    }
+    const [, , target] = start().battle.fighters;
+    const cast = call('act', { kind: 'cast', slot: 'action', source: 'slot', spellId: 'cure-wounds', level: 1, targetIds: [target.id] });
+    assert.equal(cast.status, 200, cast.error);
+    const healed = call('act', { kind: 'spell-effect' });
+    assert.equal(healed.status, 200, healed.error);
+    assert.equal(healed.battle.fighters[0].hp, 4);
+    assert.equal(healed.battle.fighters[2].hp, 23);
+  } finally { db.close(); }
+});
+
+test('Improved Potent Spellcasting adds Wisdom damage and can grant temporary HP only when damage is dealt', () => {
+  const { db, call, start, gm } = setup('cleric', 14);
+  try {
+    const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 1').get().data);
+    stats.spells = { choices: { blessedStrikes: 'potent' }, selections: { cantrips: ['sacred-flame'] } };
+    db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = 1').run(JSON.stringify(stats));
+    const [caster, enemy] = start().battle.fighters;
+    const cast = call('act', { kind: 'cast', slot: 'action', source: 'slot', spellId: 'sacred-flame', level: 0, targetIds: [enemy.id] });
+    assert.equal(cast.status, 200, cast.error);
+    assert.equal(call('act', { kind: 'spell-save', targetId: enemy.id, roll: 2 }, gm).status, 200);
+    assert.equal(call('act', { kind: 'spell-defense', targetId: enemy.id, multiplier: 1 }, gm).status, 200);
+    const result = call('act', { kind: 'spell-effect', rolls: [1, 1, 1], clericVitalityTargetId: caster.id });
+    assert.equal(result.status, 200, result.error);
+    assert.equal(result.battle.fighters[0].tempHp, 6);
+    assert.equal(result.battle.fighters[1].damageTaken, 6);
+  } finally { db.close(); }
+});
+
+test('Preserve Life caps targets at half HP and spends the same Channel Divinity pool', () => {
+  const { db, call, start } = setup('cleric', 3);
+  try {
+    db.exec("UPDATE characters SET subclass = 'Life Domain' WHERE id = 1");
+    for (const id of [1, 2]) {
+      const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(id).data);
+      stats.values.hp = 1;
+      db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = ?').run(JSON.stringify(stats), id);
+    }
+    const [self, , ally] = start().battle.fighters;
+    const action = { kind: 'cleric-preserve-life', targetIds: [self.id, ally.id], confirmed: true };
+    assert.equal(call('act', { ...action, amounts: [10, 1] }).status, 409);
+    assert.equal(call('act', { ...action, amounts: [8, 8] }).status, 409);
+    assert.equal(publicCaster(db, 1).cleric.channelRemaining, 2);
+    const result = call('act', { ...action, amounts: [9, 6] });
+    assert.equal(result.status, 200, result.error);
+    assert.deepEqual(result.battle.fighters.filter(f => f.characterId).map(f => f.hp), [10, 7]);
+    assert.equal(publicCaster(db, 1).cleric.channelRemaining, 1);
+  } finally { db.close(); }
+});
+
+test('Improved Divine Strike adds two dice to a weapon hit and rejects an invalid attempt atomically', () => {
+  const { db, call, start } = setup('cleric', 14);
+  try {
+    const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 1').get().data);
+    stats.spells.choices.blessedStrikes = 'strike';
+    db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = 1').run(JSON.stringify(stats));
+    db.exec("INSERT INTO character_items (id, character_id, name, quantity, slot, equipped, weapon_id) VALUES (1, 1, 'Mace', 1, 'main-hand', 1, 'mace')");
+    const [caster, enemy] = start().battle.fighters;
+    const weapon = caster.attacks.find(attack => attack.id !== 'unarmed');
+    assert.ok(weapon);
+    const hit = call('act', { kind: 'attack', slot: 'action', attackId: weapon.id, targetId: enemy.id, roll: 19 });
+    assert.equal(hit.status, 200, hit.error);
+    const damage = { kind: 'damage', rolls: [2], divineStrikeType: 'Radiant' };
+    assert.equal(call('act', { ...damage, divineStrikeRolls: [3] }).status, 409);
+    const result = call('act', { ...damage, divineStrikeRolls: [3, 4] });
+    assert.equal(result.status, 200, result.error);
+    assert.equal(result.battle.fighters[1].damageTaken, 9);
+  } finally { db.close(); }
+});
+
+test('Archdruid restores an empty Wild Shape pool on initiative and creates a real extra spell slot', () => {
+  const { db, call, start, rest, gm } = setup('druid', 20);
+  try {
+    const state = resourceState(db, 1);
+    state.wildShapeUses = 0;
+    saveResources(db, 1, state);
+    const battle = start().battle;
+    assert.equal(battle.fighters[0].wildShapeUses, 1);
+    const conversion = call('act', { kind: 'nature-magician', uses: 1 });
+    assert.equal(conversion.status, 200, conversion.error);
+    assert.equal(publicCaster(db, 1).slots.find(slot => slot.level === 2).remaining, 4);
+    assert.equal(call('act', { kind: 'wild-resurgence-shape', level: 2 }).status, 200);
+    assert.equal(call('act', { kind: 'wild-resurgence-slot' }).status, 200);
+    assert.equal(publicCaster(db, 1).slots.find(slot => slot.level === 1).total, 5);
+    assert.equal(call('act', { kind: 'wild-resurgence-shape', level: 2 }).status, 409);
+    assert.equal(call('end', {}, gm).status, 200);
+    assert.equal(rest('long').status, 200);
+    const resources = publicCaster(db, 1);
+    assert.equal(resources.druid.uses, 4);
+    assert.equal(resources.slots.find(slot => slot.level === 1).total, 4);
+    assert.equal(resources.druid.natureMagicianAvailable, true);
+  } finally { db.close(); }
+});
+
+test('Beast Spells gates costly components without consuming the slot and allows ordinary materials', () => {
+  const { db, start, call } = setup('druid', 18);
+  try {
+    const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 1').get().data);
+    stats.traits.druidForms = ['wolf'];
+    stats.spells.selections.prepared = ['revivify', 'longstrider'];
+    db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = 1').run(JSON.stringify(stats));
+    const [druid] = start().battle.fighters;
+    assert.equal(call('act', { kind: 'wild-shape', formId: 'wolf', equipment: 'merge' }).status, 200);
+    const cast = { kind: 'cast', slot: 'action', source: 'slot', targetIds: [druid.id] };
+    assert.equal(call('act', { ...cast, spellId: 'revivify', level: 3 }).status, 409);
+    assert.equal(resourceState(db, 1).spent[2], 0);
+    const result = call('act', { ...cast, spellId: 'longstrider', level: 1 });
+    assert.equal(result.status, 200, result.error);
+    assert.equal(result.battle.fighters[0].speed, 50);
+  } finally { db.close(); }
+});
+
+test('Natural Recovery keeps the free Circle spell and short-rest recovery independent', () => {
+  const { db, player, gm, call, start } = setup('druid', 6);
+  try {
+    db.exec("UPDATE characters SET subclass = 'Circle of the Land' WHERE id = 1");
+    const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 1').get().data);
+    stats.spells.choices.land = 'temperate';
+    db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = 1').run(JSON.stringify(stats));
+    const state = resourceState(db, 1);
+    state.spent[0] = 1; state.spent[1] = 1;
+    saveResources(db, 1, state);
+    start();
+    const cast = call('act', { kind: 'cast', slot: 'bonus', spellId: 'misty-step', source: 'natural-recovery', level: 2 }, player);
+    assert.equal(cast.status, 200, cast.error);
+    assert.equal(resourceState(db, 1).spent[1], 1);
+    assert.equal(call('end', {}, gm).status, 200);
+    const recover = slots => {
+      let status;
+      handleSpellResources(db, gm, '/api/games/1/spell-rest', 'POST', { rest: 'short', naturalRecovery: { 1: slots } }, code => { status = code; });
+      return status;
+    };
+    assert.equal(recover([2, 2]), 409);
+    assert.equal(recover([1, 2]), 200);
+    assert.equal(resourceState(db, 1).spent[0] + resourceState(db, 1).spent[1], 0);
+    assert.equal(publicCaster(db, 1).druid.naturalRecoveryCastAvailable, false);
+    assert.equal(publicCaster(db, 1).druid.naturalRecoverySlotsAvailable, false);
+  } finally { db.close(); }
+});
+
+test('Improved Elemental Fury extends a Druid cantrip range and adds Wisdom to damage', () => {
+  const { db, call, start, gm } = setup('druid', 15);
+  try {
+    const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 1').get().data);
+    stats.spells = { choices: { elementalFury: 'potent' }, selections: { cantrips: ['poison-spray'] } };
+    db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = 1').run(JSON.stringify(stats));
+    const [, enemy] = start().battle.fighters;
+    assert.equal(publicCaster(db, 1).spells.find(spell => spell.id === 'poison-spray').range, '330 feet');
+    const cast = call('act', { kind: 'cast', slot: 'action', source: 'slot', level: 0, spellId: 'poison-spray', targetIds: [enemy.id] });
+    assert.equal(cast.status, 200, cast.error);
+    assert.equal(call('act', { kind: 'spell-attack', roll: 19 }).status, 200);
+    assert.equal(call('act', { kind: 'spell-defense', targetId: enemy.id, multiplier: 1 }, gm).status, 200);
+    const result = call('act', { kind: 'spell-effect', rolls: [1, 1, 1] });
+    assert.equal(result.status, 200, result.error);
+    assert.equal(result.battle.fighters[1].damageTaken, 6);
+  } finally { db.close(); }
+});
+
+test("Nature's Sanctuary grants half cover and terrain resistance while a target stays inside", () => {
+  const { db, call, start, gm } = setup('druid', 14);
+  try {
+    db.exec("UPDATE characters SET subclass = 'Circle of the Land' WHERE id = 1");
+    const stats = JSON.parse(db.prepare('SELECT data FROM character_statistics WHERE character_id = 1').get().data);
+    stats.spells.choices.land = 'polar';
+    db.prepare('UPDATE character_statistics SET data = ? WHERE character_id = 1').run(JSON.stringify(stats));
+    const [druid, , ally] = start().battle.fighters;
+    const result = call('act', { kind: 'nature-sanctuary', targetIds: [ally.id], confirmed: true });
+    assert.equal(result.status, 200, result.error);
+    assert.equal(result.battle.fighters[2].ac, ally.ac + 2);
+    const hit = call('act', { kind: 'resolve', effect: 'damage', amount: 4, damageType: 'Cold', targetId: ally.id, note: 'Cold' }, gm);
+    assert.equal(hit.status, 200, hit.error);
+    assert.equal(hit.battle.fighters[2].hp, ally.hp - 2);
+    const update = call('act', { kind: 'nature-sanctuary-members', actorId: druid.id, targetIds: [] }, gm);
+    assert.equal(update.status, 200, update.error);
+    assert.equal(update.battle.fighters[2].ac, ally.ac);
+  } finally { db.close(); }
+});

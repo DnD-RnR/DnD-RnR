@@ -32,7 +32,7 @@ export function conditionsOf(fighter) {
   if (result.has('unconscious')) result.add('prone');
   if (['paralyzed', 'petrified', 'stunned', 'unconscious'].some(c => result.has(c))) result.add('incapacitated');
   if (fighter.rage && fighter.rageProfile?.berserker && fighter.level >= 6) { result.delete('charmed'); result.delete('frightened'); }
-  if (result.has('petrified')) result.delete('poisoned');
+  if (result.has('petrified') || fighter.poisonConditionImmune) result.delete('poisoned');
   return result;
 }
 export const hasCondition = (fighter, kind) => conditionsOf(fighter).has(kind);
@@ -56,8 +56,8 @@ export const conditionCheckDisadvantage = (fighter, ability) => Boolean(hasCondi
 export function conditionAttackModifiers(attacker, target, context = {}) {
   const attacking = conditionsOf(attacker), defending = conditionsOf(target);
   return {
-    advantage: ['blinded', 'paralyzed', 'petrified', 'restrained', 'stunned', 'unconscious'].some(c => defending.has(c)) || defending.has('prone') && context.within5Feet === true || invisibleBenefits(attacker) && !canSeeConditionTarget(target, attacker),
-    disadvantage: ['blinded', 'poisoned', 'prone', 'restrained'].some(c => attacking.has(c)) || conditionSourcesOf(attacker, 'frightened').some(e => e.visible !== false) || conditionSourcesOf(attacker, 'grappled').some(e => e.sourceId !== target?.id) || invisibleBenefits(target) && !canSeeConditionTarget(attacker, target) || attacker?.spellConditions?.some(e => e.kind === 'heated-metal') || defending.has('prone') && context.within5Feet !== true,
+    advantage: ['blinded', 'paralyzed', 'petrified', 'restrained', 'stunned', 'unconscious'].some(c => defending.has(c)) || !target?.proneFighting && defending.has('prone') && context.within5Feet === true || invisibleBenefits(attacker) && !canSeeConditionTarget(target, attacker),
+    disadvantage: ['blinded', 'poisoned', 'restrained'].some(c => attacking.has(c)) || !attacker?.proneFighting && attacking.has('prone') || conditionSourcesOf(attacker, 'frightened').some(e => e.visible !== false) || conditionSourcesOf(attacker, 'grappled').some(e => e.sourceId !== target?.id) || invisibleBenefits(target) && !canSeeConditionTarget(attacker, target) || attacker?.spellConditions?.some(e => e.kind === 'heated-metal') || !target?.proneFighting && defending.has('prone') && context.within5Feet !== true,
     criticalOnHit: context.within5Feet === true && (defending.has('paralyzed') || defending.has('unconscious')),
   };
 }

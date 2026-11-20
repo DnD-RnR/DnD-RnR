@@ -7,7 +7,7 @@ export function persistConditionState(db, fighter) {
   const state = resourceState(db, fighter.characterId);
   state.manualConditions = fighter.manualConditions ?? [];
   state.prone = fighter.prone === true;
-  state.conditionSources = fighter.conditionSources ?? [];
+  state.conditionSources = (fighter.conditionSources ?? []).filter(effect => !effect.turnUndead);
   state.exhaustion = fighter.exhaustion ?? 0;
   saveResources(db, fighter.characterId, state);
 }
@@ -31,10 +31,10 @@ export function endCondition(db, fighter, kind) {
     const state = resourceState(db, fighter.characterId);
     state.activeEffects = (state.activeEffects ?? []).filter(e => e.modifiers.condition !== kind);
     state.manualConditions = fighter.manualConditions;
-    state.conditionSources = fighter.conditionSources;
+    state.conditionSources = fighter.conditionSources.filter(effect => !effect.turnUndead);
     state.exhaustion = fighter.exhaustion ?? 0;
     state.prone = fighter.prone === true;
-  state.conditionSources = fighter.conditionSources ?? [];
+  state.conditionSources = (fighter.conditionSources ?? []).filter(effect => !effect.turnUndead);
   state.exhaustion = fighter.exhaustion ?? 0;
     saveResources(db, fighter.characterId, state);
   }

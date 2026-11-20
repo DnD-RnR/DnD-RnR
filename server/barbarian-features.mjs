@@ -1,3 +1,4 @@
+import { fighterIndomitable } from './fighter.mjs';
 import { randomUUID } from 'node:crypto';
 import { resourceState, saveResources } from './spell-resources.mjs';
 import { endCondition, persistConditionState } from './conditions.mjs';
@@ -13,7 +14,7 @@ const check = (ok, message) => { if (!ok) throw new Error(message); };
 const die = (n, sides) => Number.isInteger(n) && n >= 1 && n <= sides;
 const turnKey = b => `${b.round}:${b.turn}`;
 const untilNext = (b, f) => b.round + (b.fighters.indexOf(f) <= b.turn ? 1 : 0);
-export function barbarianSaveTotal(db, b, f, ability, body, extra = 0, fixedModifier = null, capture = null) {
+export function barbarianSaveTotal(db, b, f, ability, body, extra = 0, fixedModifier = null, capture = null, intervention = null) {
   if (automaticSaveFailure(f, ability)) { consumeBrutalSave(f); return -Infinity; }
   const adv = Boolean(body.advantage || barbarianSaveAdvantage(f, ability) || speciesSaveAdvantage(f, ability, body.condition) || conditionSaveAdvantage(f, ability));
   const dis = Boolean(body.disadvantage || brutalSaveDisadvantage(f) || conditionSaveDisadvantage(f, ability) || hexDisadvantage(b, f, ability));
@@ -23,7 +24,8 @@ export function barbarianSaveTotal(db, b, f, ability, body, extra = 0, fixedModi
   consumeBrutalSave(f);
   const modifier = fixedModifier ?? (f.saves[ability] - exhaustionPenalty(f) + timedSaveModifier(f, ability) + timedRollModifier(f, body) - consumeSavePenalty(f, body.mindSliverRoll) + (f.characterId ? luckBonus(db, f.characterId, body.luckRoll) : 0));
   if (capture) Object.assign(capture, { roll, modifier, advantage: adv, disadvantage: dis });
-  return indomitableTotal(f, ability, roll + modifier + extra);
+  const original = indomitableTotal(f, ability, roll + modifier + extra);
+  return intervention ? fighterIndomitable(db, f, body, original, intervention.dc, modifier, adv, dis, message => intervention.log(b, message)) : original;
 }
 export function barbarianRageStarted(db, b, f, body, persistVitals) {
   if (f.rageProfile.berserker && f.level >= 6) {

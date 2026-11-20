@@ -38,6 +38,7 @@ function draftShape(draft) {
   if (draft.choices !== undefined) {
     const choices = draft.choices;
     if (!choices || Array.isArray(choices) || typeof choices !== 'object' || !Array.isArray(choices.weaponMastery) || choices.weaponMastery.length > 10 || choices.weaponMastery.some(id => typeof id !== 'string') || typeof choices.fightingStyle !== 'string') return false;
+    if (choices.additionalFightingStyle !== undefined && typeof choices.additionalFightingStyle !== 'string') return false;
     if (choices.arcaneWarrior !== undefined && (!choices.arcaneWarrior || typeof choices.arcaneWarrior !== 'object' || !Array.isArray(choices.arcaneWarrior.cantrips) || choices.arcaneWarrior.cantrips.some(id => typeof id !== 'string') || typeof choices.arcaneWarrior.ability !== 'string')) return false;
   }
   return true;
@@ -91,7 +92,7 @@ function validateAdvancement(db, character, previous, draft) {
   const choices = stats.choices;
   if (next.class === 'Paladyn (Paladin)' && stats.spells.choices.style === 'magic' && choices.fightingStyle) return error('Blessed Warrior zastępuje Fighting Style. Wybierz jedną z tych opcji.');
   if (!weaponMasteryChoicesValid(next, choices.weaponMastery) || choices.weaponMastery.length !== weaponMasteryCount(next) || !fightingStyleChoicesValid(next, choices.fightingStyle ?? '') || fightingStyleCount(next) && !choices.fightingStyle && stats.spells.choices.style !== 'magic') return error('Uzupełnij Weapon Mastery i Fighting Style.');
-  if (choices.fightingStyle === 'arcane-warrior' && (!choices.arcaneWarrior || !['int','wis','cha'].includes(choices.arcaneWarrior.ability) || !Array.isArray(choices.arcaneWarrior.cantrips) || new Set(choices.arcaneWarrior.cantrips).size !== 2 || choices.arcaneWarrior.cantrips.length !== 2 || choices.arcaneWarrior.cantrips.some(id => !wizardCantrips.some(s => s.id === id)))) return error('Arcane Warrior: wybierz dwie różne sztuczki i cechę.');
+  if ([choices.fightingStyle, choices.additionalFightingStyle].includes('arcane-warrior') && (!choices.arcaneWarrior || !['int','wis','cha'].includes(choices.arcaneWarrior.ability) || !Array.isArray(choices.arcaneWarrior.cantrips) || new Set(choices.arcaneWarrior.cantrips).size !== 2 || choices.arcaneWarrior.cantrips.length !== 2 || choices.arcaneWarrior.cantrips.some(id => !wizardCantrips.some(s => s.id === id)))) return error('Arcane Warrior: wybierz dwie różne sztuczki i cechę.');
   if (choices.fastCrafting !== previous.choices?.fastCrafting) return error('Wytwarzanie przedmiotów obsługuj w zakładce Wybory.');
   // Establish the previous level even for characters made before progression metadata existed.
   const state = resourceState(db, character.id);

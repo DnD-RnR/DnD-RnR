@@ -1,3 +1,4 @@
+import { selectedFightingStyles } from '../shared/fighting-style.mjs';
 export function armorClassFromEquipment(stats, equipment = [], character = {}) {
   const armor = equipment.find(item => item.armorCategory && item.armorCategory !== 'shield' && item.equipped);
   const shield = equipment.find(item => item.armorCategory === 'shield' && item.equipped);
@@ -19,7 +20,7 @@ export function armorClassFromEquipment(stats, equipment = [], character = {}) {
     ac += armor.armorCategory === 'medium' ? Math.min(dex, 2) : dex;
   }
   if (shield && shield.trained !== false) ac += Number.parseInt(shield.armorClass, 10) || 0;
-  if (armor && stats.choices?.fightingStyle === 'defense' && ['light', 'medium', 'heavy'].includes(armor.armorCategory)) ac += 1;
+  if (armor && selectedFightingStyles(stats.choices).includes('defense') && ['light', 'medium', 'heavy'].includes(armor.armorCategory)) ac += 1;
   return ac;
 }
 

@@ -16,23 +16,32 @@ const styles = [
 ];
 
 export function fightingStyleCount(character) {
-  return Boolean(character.class?.includes('Fighter') || character.class === 'Paladyn (Paladin)' && character.level >= 2) ? 1 : 0;
+  if (character.class?.includes('Fighter')) return character.subclass === 'Champion' && character.level >= 7 ? 2 : 1;
+  return character.class === 'Paladyn (Paladin)' && character.level >= 2 ? 1 : 0;
 }
 
 export function fightingStyleChoicesValid(character, value) {
   return typeof value === 'string' && (value === '' || fightingStyleCount(character) > 0 && styles.some(style => style.id === value));
 }
 
+export function additionalFightingStyleValid(character, primary, additional = '') {
+  return additional === '' || fightingStyleCount(character) === 2 && additional !== primary && fightingStyleChoicesValid(character, additional);
+}
+
+export const selectedFightingStyles = choices => [choices?.fightingStyle, choices?.additionalFightingStyle].filter(Boolean);
+
 export const wizardCantrips = catalog.spells.filter(spell => spell.level === 0 && spell.classes.includes('wizard'));
 
 export function fightingStyleAttackBonus(fightingStyle, weapon) {
-  if (fightingStyle !== 'archery' || !weapon) return 0;
+  if (![fightingStyle].flat().includes('archery') || !weapon) return 0;
   const type = typeof weapon.type === 'string' ? weapon.type.toLowerCase() : '';
   const properties = Array.isArray(weapon.properties) ? weapon.properties : [];
   return type === 'dystansowa' || type === 'ranged' || properties.some(property => property.toLowerCase() === 'ranged') ? 2 : 0;
 }
 
 export function fightingStyleDamageBonus(fightingStyle, weapon, equippedWeapons = [], abilityModifier = 0) {
+  if (Array.isArray(fightingStyle)) return fightingStyle.reduce((total, style) =>
+    total + fightingStyleDamageBonus(style, weapon, equippedWeapons, abilityModifier), 0);
   if (!weapon) return 0;
   const type = typeof weapon.type === 'string' ? weapon.type.toLowerCase() : '';
   const properties = Array.isArray(weapon.properties) ? weapon.properties : [];
@@ -49,7 +58,7 @@ export function fightingStyleDamageBonus(fightingStyle, weapon, equippedWeapons 
 }
 
 export function unarmedStrikeProfile(fightingStyle, equippedWeapons = [], hasShield = false, abilityModifier = 0, tavernBrawler = false) {
-  const enhanced = fightingStyle === 'unarmed-fighting';
+  const enhanced = [fightingStyle].flat().includes('unarmed-fighting');
   const holdingWeaponOrShield = equippedWeapons.length > 0 || hasShield;
   return {
     dice: enhanced || tavernBrawler ? 1 : 0,

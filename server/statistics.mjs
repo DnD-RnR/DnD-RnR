@@ -94,6 +94,7 @@ export function handleStatistics(db, user, path, method, body, send) {
       send(200, { hasCrafter, choices: {
         weaponMastery: choices.weaponMastery ?? [],
         fightingStyle: choices.fightingStyle ?? '',
+        ...(choices.additionalFightingStyle ? { additionalFightingStyle: choices.additionalFightingStyle } : {}),
         arcaneWarrior: choices.arcaneWarrior ?? emptyArcaneWarrior(),
         fastCrafting: choices.fastCrafting ?? '',
       }, fastCraftingOptions: craftingOptions });
@@ -110,10 +111,11 @@ export function handleStatistics(db, user, path, method, body, send) {
       if (!body || !weaponMasteryChoicesValid(character, body.weaponMastery) || !fightingStyleChoicesValid(character, body.fightingStyle ?? '')
         || typeof fastCrafting !== 'string'
         || (fastCrafting !== '' && !availableCrafting.some(option => `${option.kind}:${option.id}` === fastCrafting))
-        || (body.fightingStyle === 'arcane-warrior' && !validArcaneWarrior(arcaneWarrior))) {
+        || ([body.fightingStyle, body.additionalFightingStyle ?? currentStats.choices?.additionalFightingStyle].includes('arcane-warrior') && !validArcaneWarrior(arcaneWarrior ?? currentStats.choices?.arcaneWarrior))) {
         send(400, { error: 'Wybierz poprawne, niepowtarzające się bronie do Weapon Mastery.' }); return true;
       }
-      const fighterUpdate = fighterChoiceUpdate(db, character, currentStats, body);
+      const additionalFightingStyle = body.additionalFightingStyle ?? currentStats.choices?.additionalFightingStyle ?? '';
+      const fighterUpdate = fighterChoiceUpdate(db, character, currentStats, { ...body, additionalFightingStyle });
       if (fighterUpdate.error) { send(400, { error: fighterUpdate.error }); return true; }
       const stats = currentStats;
       if (fighterUpdate.history) stats.fighterChoices = fighterUpdate.history;
@@ -135,7 +137,8 @@ export function handleStatistics(db, user, path, method, body, send) {
       stats.choices = {
         weaponMastery: body.weaponMastery,
         fightingStyle: body.fightingStyle ?? '',
-        arcaneWarrior: body.fightingStyle === 'arcane-warrior' ? arcaneWarrior : emptyArcaneWarrior(),
+        ...(additionalFightingStyle ? { additionalFightingStyle } : {}),
+        arcaneWarrior: [body.fightingStyle, additionalFightingStyle].includes('arcane-warrior') ? arcaneWarrior ?? currentStats.choices?.arcaneWarrior : emptyArcaneWarrior(),
         fastCrafting,
       };
       db.prepare('INSERT INTO character_statistics (character_id, data) VALUES (?, ?) ON CONFLICT(character_id) DO UPDATE SET data = excluded.data').run(characterId, JSON.stringify(stats));
@@ -199,9 +202,12 @@ export function handleStatistics(db, user, path, method, body, send) {
     if (pactMagic.error) { send(400, { error: pactMagic.error }); return true; }
     const invocation = invocationUpdate(character, { spells, traits }, stored ? JSON.parse(stored.data) : null, Object.hasOwn(body, 'traits'));
     if (invocation.error) { send(400, { error: invocation.error }); return true; }
-    const choices = Object.hasOwn(body, 'choices') ? body.choices : (stored ? JSON.parse(stored.data).choices : null) ?? { weaponMastery: [], fightingStyle: '', arcaneWarrior: emptyArcaneWarrior() };
+    const previousChoices = stored ? JSON.parse(stored.data).choices : null;
+    const choices = Object.hasOwn(body, 'choices') ? body.choices && {
+      ...body.choices, additionalFightingStyle: body.choices.additionalFightingStyle ?? previousChoices?.additionalFightingStyle,
+    } : previousChoices ?? { weaponMastery: [], fightingStyle: '', arcaneWarrior: emptyArcaneWarrior() };
     if (!choices || !weaponMasteryChoicesValid(character, choices.weaponMastery ?? []) || !fightingStyleChoicesValid(character, choices.fightingStyle ?? '')
-      || (choices.fightingStyle === 'arcane-warrior' && !validArcaneWarrior(choices.arcaneWarrior))) { send(400, { error: 'Wybierz poprawne wybory Weapon Mastery i Fighting Style.' }); return true; }
+      || ([choices.fightingStyle, choices.additionalFightingStyle].includes('arcane-warrior') && !validArcaneWarrior(choices.arcaneWarrior))) { send(400, { error: 'Wybierz poprawne wybory Weapon Mastery i Fighting Style.' }); return true; }
     if (character.class === 'Paladyn (Paladin)' && spells.choices.style === 'magic' && choices.fightingStyle) { send(400, { error: 'Blessed Warrior zast?puje Fighting Style.' }); return true; }
     const fighterUpdate = fighterChoiceUpdate(db, character, stored ? JSON.parse(stored.data) : null, choices);
     if (fighterUpdate.error) { send(400, { error: fighterUpdate.error }); return true; }
@@ -223,7 +229,8 @@ export function handleStatistics(db, user, path, method, body, send) {
     stats.choices = {
       weaponMastery: choices.weaponMastery,
       fightingStyle: choices.fightingStyle ?? '',
-      arcaneWarrior: choices.fightingStyle === 'arcane-warrior' ? choices.arcaneWarrior : emptyArcaneWarrior(),
+      ...(choices.additionalFightingStyle ? { additionalFightingStyle: choices.additionalFightingStyle } : {}),
+      arcaneWarrior: [choices.fightingStyle, choices.additionalFightingStyle].includes('arcane-warrior') ? choices.arcaneWarrior : emptyArcaneWarrior(),
       fastCrafting: choices.fastCrafting ?? '',
     };
     stats.spellAbility = spellcastingProfile(character, spells, traits).ability || body.spellAbility;
