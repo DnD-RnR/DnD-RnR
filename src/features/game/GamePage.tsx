@@ -65,7 +65,8 @@ export function GamePage({ character: initialCharacter, onBack }: { character: C
     const equipSlot = targetSlot ?? (item.weapon ? item.weapon.type === 'dystansowa' ? 'belt' : 'main-hand' : item.armor?.category === 'shield' ? 'off-hand' : item.armor ? 'armor' : item.slot);
     if (action === 'equip') setSelectedSlot(equipSlot);
     const requestedGrip = item.weapon?.type === 'dystansowa' ? 'none' : grip ?? 'one';
-    void mutate(`${inventoryPath}/${item.id}/${action}`, action === 'equip' ? { grip: requestedGrip, slot: item.weapon?.type === 'wręczna' ? equipSlot : undefined } : {}, action === 'equip' ? 'Przedmiot założony. Poprzedni przedmiot z tego slotu wrócił do plecaka.' : action === 'unequip' ? 'Przedmiot przeniesiony do plecaka.' : 'Przedmiot usunięty.').then(success => { if (success) equipmentDialog.current?.close(); });
+    const canChooseSlot = item.weapon?.type === 'wręczna' || item.slot.startsWith('ring-');
+    void mutate(`${inventoryPath}/${item.id}/${action}`, action === 'equip' ? { grip: requestedGrip, slot: canChooseSlot ? equipSlot : undefined } : {}, action === 'equip' ? 'Przedmiot założony. Poprzedni przedmiot z tego slotu wrócił do plecaka.' : action === 'unequip' ? 'Przedmiot przeniesiony do plecaka.' : 'Przedmiot usunięty.').then(success => { if (success) equipmentDialog.current?.close(); });
   }
   function selectSlot(slotId: string) {
     setSelectedSlot(slotId);
@@ -80,7 +81,8 @@ export function GamePage({ character: initialCharacter, onBack }: { character: C
     ? item.weapon.type === 'dystansowa'
       ? selectedSlot === 'belt'
       : (selectedSlot === 'main-hand' || (selectedSlot === 'off-hand' && item.weapon.properties.includes('lekka') && !item.weapon.properties.some(property => property.startsWith('dwuręczna'))))
-    : item.armor ? (item.armor.category === 'shield' ? selectedSlot === 'off-hand' : selectedSlot === 'armor') : item.slot === selectedSlot);
+    : item.armor ? (item.armor.category === 'shield' ? selectedSlot === 'off-hand' : selectedSlot === 'armor')
+      : item.slot === selectedSlot || (item.slot.startsWith('ring-') && selectedSlot.startsWith('ring-')));
   const slot = slots.find(entry => entry.id === selectedSlot) ?? slots.find(entry => entry.id === 'main-hand')!;
 
   return <>

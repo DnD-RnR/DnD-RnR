@@ -39,7 +39,10 @@ export function timedAc(fighter) {
   if (fighter.ac == null) return null;
   const effects = strongestEffects(fighter.timedEffects);
   let base = fighter.ac;
-  if (!fighter.wearingArmor && fighter.dexModifier != null && effects.some(e => e.modifiers.mageArmor)) base = Math.max(base, 13 + fighter.dexModifier + (fighter.equipmentShieldBonus ?? 0) + (fighter.shieldAC ?? 0));
+  if (!fighter.wearingArmor && fighter.dexModifier != null && effects.some(e => e.modifiers.mageArmor)) {
+    const mageArmorAc = 13 + fighter.dexModifier + (fighter.equipmentShieldBonus ?? 0) + (fighter.equipmentAcBonus ?? 0) + (fighter.shieldAC ?? 0);
+    base = Math.max(base, mageArmorAc);
+  }
   base += effects.reduce((n, e) => n + (e.modifiers.acBonus ?? 0), 0);
   return Math.max(base, ...effects.map(e => e.modifiers.minimumAc ?? 0)) + (fighter.natureSanctuaryCover ? 2 : 0);
 }

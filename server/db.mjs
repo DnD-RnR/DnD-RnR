@@ -139,14 +139,6 @@ export function initializeDatabase(db) {
   if (!catalogItemColumns.has('cost')) db.exec("ALTER TABLE item_catalog ADD COLUMN cost TEXT NOT NULL DEFAULT ''");
   if (!catalogItemColumns.has('source_id')) db.exec('ALTER TABLE item_catalog ADD COLUMN source_id TEXT');
   db.exec('DROP INDEX IF EXISTS one_catalog_entry_per_source; CREATE UNIQUE INDEX one_catalog_entry_per_source ON item_catalog(source_id)');
-  const setItemSource = db.prepare('UPDATE item_catalog SET source_id = ? WHERE name = ? AND source_id IS NULL');
-  for (const item of items) setItemSource.run(item.id, item.name);
-  const addItem = db.prepare(`INSERT INTO item_catalog
-    (name, description, slot, weight, cost, source_id)
-    VALUES (?, ?, ?, ?, ?, ?)
-    ON CONFLICT(source_id) DO UPDATE SET name=excluded.name, description=excluded.description,
-      slot=excluded.slot, weight=excluded.weight, cost=excluded.cost`);
-  for (const item of items) addItem.run(item.name, item.description, item.slot, item.weight, item.cost, item.id);
   db.exec(`CREATE TABLE IF NOT EXISTS weapon_catalog (
     id TEXT PRIMARY KEY CHECK(length(trim(id)) BETWEEN 1 AND 80),
     name TEXT NOT NULL CHECK(length(trim(name)) BETWEEN 1 AND 80),
@@ -257,7 +249,23 @@ export function initializeDatabase(db) {
   db.prepare(`DELETE FROM armor_catalog WHERE id NOT IN (${armors.map(() => '?').join(', ')})`).run(...armors.map(armor => armor.id));
   const catalogColumns = new Set(db.prepare('PRAGMA table_info(item_catalog)').all().map(column => column.name));
   if (!catalogColumns.has('armor_id')) db.exec('ALTER TABLE item_catalog ADD COLUMN armor_id TEXT REFERENCES armor_catalog(id)');
+  if (!catalogColumns.has('weapon_id')) db.exec('ALTER TABLE item_catalog ADD COLUMN weapon_id TEXT REFERENCES weapon_catalog(id)');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS one_catalog_entry_per_armor ON item_catalog(armor_id) WHERE armor_id IS NOT NULL');
+  const setItemSource = db.prepare(`UPDATE item_catalog SET source_id = ?
+    WHERE id = (SELECT id FROM item_catalog WHERE name = ? AND source_id IS NULL ORDER BY id LIMIT 1)
+      AND NOT EXISTS (SELECT 1 FROM item_catalog WHERE source_id = ?)`);
+  const addItem = db.prepare(`INSERT INTO item_catalog
+    (name, description, slot, weight, cost, source_id, weapon_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(source_id) DO UPDATE SET name=excluded.name, description=excluded.description,
+      slot=excluded.slot, weight=excluded.weight, cost=excluded.cost, weapon_id=excluded.weapon_id`);
+  for (const item of items) {
+    setItemSource.run(item.id, item.name, item.id);
+    addItem.run(item.name, item.description, item.slot, item.weight, item.cost, item.id, item.weaponId ?? null);
+  }
+  if (!db.prepare('PRAGMA table_info(character_items)').all().some(column => column.name === 'source_id')) {
+    db.exec('ALTER TABLE character_items ADD COLUMN source_id TEXT');
+  }
   db.prepare(`UPDATE character_items SET weapon_id = (
     SELECT w.id FROM weapon_catalog w WHERE w.name = character_items.name
   ) WHERE weapon_id IS NULL`).run();

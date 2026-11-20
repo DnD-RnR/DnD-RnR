@@ -710,5 +710,24 @@
     "slot": "backpack",
     "weight": null,
     "cost": "50 GP"
+  },
+  {
+    "id": "ring-of-protection",
+    "name": "Ring of Protection",
+    "description": "Rzadki magiczny pierścień wymagający dostrojenia. Gdy go nosisz, zapewnia +1 do KP i rzutów obronnych. Premię do rzutów obronnych i dostrojenie rozlicza MG.",
+    "slot": "ring-left",
+    "weight": null,
+    "cost": "",
+    "armorClassBonus": 1
+  },
+  {
+    "id": "dagger-of-gleaming",
+    "name": "Dagger of Gleaming",
+    "description": "Magiczny sztylet. Zadaje 1k4 obrażeń kłutych jak zwykły sztylet, a przy trafieniu dodatkowe 2k4 obrażeń promienistych.",
+    "slot": "main-hand",
+    "weight": 1,
+    "cost": "",
+    "weaponId": "dagger",
+    "extraDamage": { "dice": 2, "sides": 4, "type": "promieniste" }
   }
 ]

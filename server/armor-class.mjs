@@ -1,4 +1,19 @@
 import { selectedFightingStyles } from '../shared/fighting-style.mjs';
+import { itemDefinition } from './items.mjs';
+
+export function defensiveEquipment(db, characterId) {
+  return db.prepare(`SELECT i.id, i.equipped, i.armor_id AS armorId, i.source_id AS sourceId,
+    a.category AS armorCategory, a.armor_class AS armorClass, a.strength, a.stealth_disadvantage AS stealthDisadvantage
+    FROM character_items i LEFT JOIN armor_catalog a ON a.id = i.armor_id
+    WHERE i.character_id = ? AND (a.id IS NOT NULL OR (i.equipped = 1 AND i.source_id IS NOT NULL))
+    ORDER BY i.id`).all(characterId);
+}
+
+export function equipmentAcBonus(equipment) {
+  const wornSources = new Set(equipment.filter(item => item.equipped).map(item => item.sourceId));
+  return [...wornSources].reduce((bonus, sourceId) => bonus + (itemDefinition(sourceId)?.armorClassBonus ?? 0), 0);
+}
+
 export function armorClassFromEquipment(stats, equipment = [], character = {}) {
   const armor = equipment.find(item => item.armorCategory && item.armorCategory !== 'shield' && item.equipped);
   const shield = equipment.find(item => item.armorCategory === 'shield' && item.equipped);
@@ -21,7 +36,7 @@ export function armorClassFromEquipment(stats, equipment = [], character = {}) {
   }
   if (shield && shield.trained !== false) ac += Number.parseInt(shield.armorClass, 10) || 0;
   if (armor && selectedFightingStyles(stats.choices).includes('defense') && ['light', 'medium', 'heavy'].includes(armor.armorCategory)) ac += 1;
-  return ac;
+  return ac + equipmentAcBonus(equipment);
 }
 
 export function armorSpeedPenalty(stats, equipment = []) {

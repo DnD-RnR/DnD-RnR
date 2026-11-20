@@ -580,6 +580,25 @@ test('attacks use server weapon bonuses, critical dice and do not apply damage t
   } finally { db.close(); }
 });
 
+test('Dagger of Gleaming doubles its radiant dice on a critical and applies resistance only to the radiant damage', () => {
+  const { db, call, start, player } = fixture();
+  try {
+    db.prepare("UPDATE characters SET species = 'Aasimar' WHERE id = 2").run();
+    db.prepare("UPDATE character_items SET weapon_id = 'dagger', source_id = 'dagger-of-gleaming', name = 'Dagger of Gleaming' WHERE id = 1").run();
+    const { battle } = start();
+    const targetId = battle.fighters.find(f => f.characterId === 2).id;
+    const hit = call('act', { kind: 'attack', slot: 'action', attackId: '1', targetId, roll: 20 }, player);
+    assert.equal(hit.battle.pending.critical, true);
+    const damage = { kind: 'damage', rolls: [3, 4], extraDamageRolls: [4, 4, 4, 4] };
+    assert.equal(call('act', { ...damage, extraDamageRolls: [4, 4] }, player).status, 409);
+    const result = call('act', damage, player);
+    assert.equal(result.status, 200);
+    const target = result.battle.fighters.find(f => f.id === targetId);
+    assert.equal(target.lastDamage.amount, 18);
+    assert.equal(target.hp, 15);
+  } finally { db.close(); }
+});
+
 test('Tavern Brawler changes the server unarmed strike to 1d4 plus Strength', () => {
   const { db, start } = fixture();
   try {

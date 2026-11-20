@@ -7,6 +7,7 @@ export type Weapon = {
   id: string; name: string; category: 'simple' | 'martial'; type: 'wręczna' | 'dystansowa';
   damage: string; damageType: string; range: string; weight: number | null; cost: string;
   properties: string[]; mastery: string;
+  extraDamage?: { dice: number; sides: number; type: string };
 };
 export type StatisticsSummary = {
   hp: number | null; maxHp: number | null; tempHp: number | null; ac: number | null;

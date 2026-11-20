@@ -11,7 +11,13 @@ const keys = { character_spell_resources: ['character_id'], session_battles: ['s
 export const rowId = (table, row) => (keys[table] || ['id']).map(key => encodeURIComponent(String(row[key]))).join('~');
 const normalized = value => JSON.stringify(value, Object.keys(value).sort());
 export function exportRows(db) {
-  return Object.fromEntries(tables.map(table => [table, db.prepare(`SELECT * FROM ${table}`).all().map(row => ({ ...row }))]));
+  return Object.fromEntries(tables.map(table => [table, db.prepare(`SELECT * FROM ${table}`).all().map(record => {
+    const row = { ...record };
+    // Keep missing metadata absent on older items to avoid rewriting the entire inventory and catalog.
+    if (table === 'character_items' && row.source_id === null) delete row.source_id;
+    if (table === 'item_catalog' && row.weapon_id === null) delete row.weapon_id;
+    return row;
+  })]));
 }
 export function hydrate(rows) {
   const db = openDatabase(':memory:');

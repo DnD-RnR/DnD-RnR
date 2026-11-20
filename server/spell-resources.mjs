@@ -20,6 +20,7 @@ import { selectedOriginFeats, originSpellGrants } from '../shared/origin-feats.m
 import { spellcastingProfile, spellById, validateSpellSelection } from '../shared/spellcasting.mjs';
 import { spellEffects, spellAction } from '../shared/combat-spells.mjs';
 import { statisticsSummary } from './statistics-summary.mjs';
+import { defensiveEquipment } from './armor-class.mjs';
 import { emptyStatistics } from './statistics.mjs';
 import { characterTraits, dragonbornAncestryProfile, goliathAncestryProfile, tieflingLegacyProfile } from '../shared/character-traits.mjs';
 import { advanceEffectTime, characterTimedEffects, applyTimedEffect, dismissTimedEffect } from './timed-effects.mjs';
@@ -104,7 +105,7 @@ export function casterData(db, id) {
   for (const id of stats.spells.selections.book ?? []) {
     if (!ids.has(id) && profile.groups.find(g => g.id === 'book')?.options.some(s => s.id === id && /\bor Ritual\b/i.test(s.castingTime))) { bookRituals.add(id); ids.add(id); }
   }
-  const equipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.armor_class AS armorClass, a.strength, a.stealth_disadvantage AS stealthDisadvantage FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(id);
+  const equipment = defensiveEquipment(db, id);
   const state = resourceState(db, id), s = statisticsSummary(character, stats, equipment);
   const slots = profile.pactSlotLevel ? [] : profile.slots.map((base, i) => base + (isDruid(character) ? state.druidCreatedSlots?.[i + 1] ?? 0 : 0)).map((total, i) => ({ level: i + 1, total, remaining: Math.max(0, total - (state.spent[i] ?? 0)), source: 'slot' })).filter(s => s.total);
   if (profile.pactSlotLevel) slots.push({ level: profile.pactSlotLevel, total: profile.slots[0], remaining: Math.max(0, profile.slots[0] - state.pactSpent), source: 'pact' });
@@ -139,7 +140,8 @@ export function publicCaster(db, id) {
     maxHp: summary.maxHp == null ? null : summary.maxHp + timedHpBonus(timedEffects),
     ac: timedAc({ ac: baseAc, timedEffects, dexModifier: form ? Math.floor((form.dex - 10) / 2) : summary.abilities.dex.modifier,
       wearingArmor: !form && c.equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'),
-      equipmentShieldBonus: form || summary.untrainedShield ? 0 : Number.parseInt(c.equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0 }),
+      equipmentShieldBonus: form || summary.untrainedShield ? 0 : Number.parseInt(c.equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0,
+      equipmentAcBonus: form ? 0 : summary.equipmentAcBonus }),
     speed: conditionSpeedZero(conditionSubject) ? 0 : walk == null ? null : Math.floor(Math.max(0, walk + timedSpeedBonus(conditionSubject) - 5 * (c.state.exhaustion ?? 0)) * timedSpeedMultiplier(conditionSubject)),
   };
   const flight = timedFlySpeed({ ...conditionSubject, speed: walk ?? 0, flySpeed: form?.fly ?? 0 });

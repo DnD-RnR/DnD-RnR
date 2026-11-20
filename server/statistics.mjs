@@ -9,7 +9,7 @@ import { fighterChoiceUpdate } from './fighter-choices.mjs';
 import definitions from '../shared/statistics.json' with { type: 'json' };
 import { emptySpellSelection, spellcastingProfile, validateSpellSelection } from '../shared/spellcasting.mjs';
 import { characterTraits, emptyTraitSelection, validateTraitSelection } from '../shared/character-traits.mjs';
-import { armorClassFromEquipment, armorSpeedPenalty, armorTrainingEffects, hasArmorTraining, hasStealthDisadvantage, speedFromEquipment } from './armor-class.mjs';
+import { armorClassFromEquipment, armorSpeedPenalty, armorTrainingEffects, defensiveEquipment, equipmentAcBonus, hasArmorTraining, hasStealthDisadvantage, speedFromEquipment } from './armor-class.mjs';
 import { weaponMasteryChoicesValid } from '../shared/weapon-mastery.mjs';
 import { fightingStyleChoicesValid, wizardCantrips } from '../shared/fighting-style.mjs';
 import { fastCraftingOptions } from '../shared/crafter.mjs';
@@ -21,7 +21,13 @@ function effectiveSnapshot(character, stats, equipment, timedEffects, conditionS
   const traits = characterTraits(character, stats);
   const fast = character.class?.includes('Barbarian') && character.level >= 5 && !equipment.some(i => i.equipped && i.armorCategory === 'heavy') ? 10 : 0;
   const speed = (stats.values.speed ?? traits.baseSpeed) == null ? null : (stats.values.speed ?? traits.baseSpeed) + fast, maxHp = stats.values.maxHp ?? traits.firstLevelMaxHp;
-  return { hp: stats.values.hp, maxHp: maxHp == null ? null : maxHp + timedHpBonus(timedEffects), speed: conditionSpeedZero({ hp: stats.values.hp, timedEffects, zoneConditions: conditionState.zoneConditions, conditionSources: conditionState.conditionSources, manualConditions: conditionState.manualConditions }) ? 0 : speed == null ? null : Math.floor(Math.max(0, speed + timedSpeedBonus({ timedEffects }) - 5 * (conditionState.exhaustion ?? 0)) * timedSpeedMultiplier({ timedEffects })), ac: timedAc({ ac: stats.values.ac, timedEffects, dexModifier: stats.values.dex == null ? null : Math.floor((stats.values.dex - 10) / 2), wearingArmor: equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'), equipmentShieldBonus: stats.untrainedShield ? 0 : Number.parseInt(equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0 }) };
+  const ac = timedAc({
+    ac: stats.values.ac, timedEffects, equipmentAcBonus: equipmentAcBonus(equipment),
+    dexModifier: stats.values.dex == null ? null : Math.floor((stats.values.dex - 10) / 2),
+    wearingArmor: equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'),
+    equipmentShieldBonus: stats.untrainedShield ? 0 : Number.parseInt(equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0,
+  });
+  return { hp: stats.values.hp, maxHp: maxHp == null ? null : maxHp + timedHpBonus(timedEffects), speed: conditionSpeedZero({ hp: stats.values.hp, timedEffects, zoneConditions: conditionState.zoneConditions, conditionSources: conditionState.conditionSources, manualConditions: conditionState.manualConditions }) ? 0 : speed == null ? null : Math.floor(Math.max(0, speed + timedSpeedBonus({ timedEffects }) - 5 * (conditionState.exhaustion ?? 0)) * timedSpeedMultiplier({ timedEffects })), ac };
 }
 
 const emptyArcaneWarrior = () => ({ cantrips: [], ability: '' });
@@ -35,8 +41,7 @@ const validArcaneWarrior = value => value && typeof value === 'object' && !Array
 // the request transaction, so a Firestore retry checks the latest state again.
 function statisticsRevision(db, character) {
   const stored = db.prepare('SELECT data FROM character_statistics WHERE character_id = ?').get(character.id);
-  const equipment = db.prepare(`SELECT i.id, i.equipped, i.armor_id, a.category, a.armor_class, a.strength, a.stealth_disadvantage
-    FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ? ORDER BY i.id`).all(character.id);
+  const equipment = defensiveEquipment(db, character.id);
   return createHash('sha256').update(JSON.stringify({ character, stored: stored?.data ?? null, equipment })).digest('hex');
 }
 
@@ -155,9 +160,7 @@ export function handleStatistics(db, user, path, method, body, send) {
     statistics.choices.fastCrafting ??= '';
     statistics.spellAbility = spellcastingProfile(character, statistics.spells, statistics.traits).ability || statistics.spellAbility;
     statistics.proficiency = 2 + Math.floor((character.level - 1) / 4);
-    const equipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.armor_class AS armorClass, a.strength,
-      a.stealth_disadvantage AS stealthDisadvantage
-      FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(characterId);
+    const equipment = defensiveEquipment(db, characterId);
     const trainingEffects = armorTrainingEffects(characterTraits(character, statistics), equipment);
     statistics.values.ac = armorClassFromEquipment(statistics, equipment.map(item => ({ ...item, trained: hasArmorTraining(characterTraits(character, statistics), item.armorCategory) })), character);
     statistics.values.speed = speedFromEquipment(statistics, equipment, statistics.values.speed);
@@ -235,20 +238,16 @@ export function handleStatistics(db, user, path, method, body, send) {
     };
     stats.spellAbility = spellcastingProfile(character, spells, traits).ability || body.spellAbility;
     stats.proficiency = 2 + Math.floor((character.level - 1) / 4);
-    const equipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.strength
-      FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(characterId);
+    const equipment = defensiveEquipment(db, characterId);
     if (stats.values.speed !== null) stats.values.speed += armorSpeedPenalty(stats, equipment);
     db.prepare('INSERT INTO character_statistics (character_id, data) VALUES (?, ?) ON CONFLICT(character_id) DO UPDATE SET data = excluded.data').run(characterId, JSON.stringify(stats));
-    const outputEquipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.armor_class AS armorClass, a.strength,
-      a.stealth_disadvantage AS stealthDisadvantage
-      FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(characterId);
     const outputTraits = characterTraits(character, stats);
-    const outputEffects = armorTrainingEffects(outputTraits, outputEquipment);
-    stats.values.ac = armorClassFromEquipment(stats, outputEquipment.map(item => ({ ...item, trained: hasArmorTraining(outputTraits, item.armorCategory) })), character);
-    stats.values.speed = speedFromEquipment(stats, outputEquipment, stats.values.speed);
-    if (hasStealthDisadvantage(outputEquipment)) stats.stealthDisadvantage = true;
+    const outputEffects = armorTrainingEffects(outputTraits, equipment);
+    stats.values.ac = armorClassFromEquipment(stats, equipment.map(item => ({ ...item, trained: hasArmorTraining(outputTraits, item.armorCategory) })), character);
+    stats.values.speed = speedFromEquipment(stats, equipment, stats.values.speed);
+    if (hasStealthDisadvantage(equipment)) stats.stealthDisadvantage = true;
     Object.entries(outputEffects).forEach(([key, value]) => { if (value) stats[key] = true; });
-    send(200, { statistics: stats, effective: effectiveSnapshot(character, stats, outputEquipment, activeEffects, { ...resourceState(db, characterId), zoneConditions: characterZoneConditions(db, characterId) }), revision: statisticsRevision(db, character) });
+    send(200, { statistics: stats, effective: effectiveSnapshot(character, stats, equipment, activeEffects, { ...resourceState(db, characterId), zoneConditions: characterZoneConditions(db, characterId) }), revision: statisticsRevision(db, character) });
   } else send(405, { error: 'Niedozwolona metoda.' });
   return true;
 }

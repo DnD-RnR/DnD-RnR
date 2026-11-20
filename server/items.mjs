@@ -1,4 +1,8 @@
 import slots from '../shared/equipment-slots.json' with { type: 'json' };
+import itemCatalog from '../shared/item-catalog.json' with { type: 'json' };
+
+const itemsBySourceId = new Map(itemCatalog.map(item => [item.id, item]));
+export const itemDefinition = sourceId => itemsBySourceId.get(sourceId);
 
 export function handleItems(db, user, path, method, body, send) {
   if (path !== '/api/items') return false;

@@ -6,7 +6,7 @@ import { handleBattles } from './battles.mjs';
 import { handleMonsters } from './monsters.mjs';
 import { createGameEvents } from './game-events.mjs';
 import { handleGameSessions } from './game-sessions.mjs';
-import { handleItems } from './items.mjs';
+import { handleItems, itemDefinition } from './items.mjs';
 import { handleWeapons } from './weapons.mjs';
 import { handleArmors } from './armors.mjs';
 import { handleStatistics } from './statistics.mjs';
@@ -196,9 +196,9 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
         const characterId = Number(rawCharacterId);
         if (!db.prepare('SELECT id FROM characters WHERE id = ? AND user_id = ?').get(characterId, user.id)) return send(404, { error: 'Nie znaleziono postaci.' });
         if (!action && req.method === 'GET') {
-          const items = db.prepare(`SELECT i.id, i.name, i.description, i.quantity, i.slot, i.equipped, i.grip, i.weight, i.cost,
+          const items = db.prepare(`SELECT i.id, i.name, i.description, i.quantity, i.slot, i.equipped, i.grip, i.weight, i.cost, i.source_id AS sourceId,
             i.armor_id AS armorId, a.category AS armorCategory,
-            w.id AS weaponId, w.type AS weaponType, w.damage AS weaponDamage, w.damage_type AS weaponDamageType,
+            w.id AS weaponId, w.category AS weaponCategory, w.type AS weaponType, w.damage AS weaponDamage, w.damage_type AS weaponDamageType,
             w.range AS weaponRange, w.properties AS weaponProperties, w.mastery AS weaponMastery
             FROM character_items i LEFT JOIN weapon_catalog w ON w.id = i.weapon_id
             LEFT JOIN armor_catalog a ON a.id = i.armor_id
@@ -209,9 +209,10 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
             ...(item.weight !== null || item.cost ? { weight: item.weight, cost: item.cost } : {}),
             ...(item.armorId ? { armor: { id: item.armorId, category: item.armorCategory } } : {}),
             ...(item.weaponId ? { grip: item.grip, weapon: {
-              id: item.weaponId, type: item.weaponType, damage: item.weaponDamage,
+              id: item.weaponId, category: item.weaponCategory, type: item.weaponType, damage: item.weaponDamage,
               damageType: item.weaponDamageType, range: item.weaponRange,
               properties: JSON.parse(item.weaponProperties), mastery: item.weaponMastery,
+              extraDamage: itemDefinition(item.sourceId)?.extraDamage,
             } } : {}),
           })) });
         }
@@ -240,7 +241,8 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
                 db.prepare('UPDATE character_items SET character_id = ? WHERE id = ?').run(recipientId, itemId);
               } else {
                 db.prepare('UPDATE character_items SET quantity = quantity - ? WHERE id = ?').run(quantity, itemId);
-                db.prepare('INSERT INTO character_items (character_id, name, description, quantity, slot, equipped, weapon_id, armor_id, grip, weight, cost) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)').run(recipientId, source.name, source.description, quantity, source.slot, source.weapon_id, source.armor_id, source.grip, source.weight, source.cost);
+                db.prepare(`INSERT INTO character_items (character_id, name, description, quantity, slot, equipped, weapon_id, armor_id, grip, weight, cost, source_id)
+                  VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`).run(recipientId, source.name, source.description, quantity, source.slot, source.weapon_id, source.armor_id, source.grip, source.weight, source.cost, source.source_id);
               }
               db.exec('COMMIT');
             } catch (error) { db.exec('ROLLBACK'); throw error; }
@@ -302,10 +304,11 @@ export function createApp(db, origin = process.env.APP_ORIGIN || 'http://127.0.0
               return send(200, { ok: true });
             }
             if (item.slot === 'backpack') return send(400, { error: 'Ten przedmiot jest przeznaczony do plecaka.' });
+            const targetSlot = item.slot.startsWith('ring-') && ['ring-left', 'ring-right'].includes(body.slot) ? body.slot : item.slot;
             db.exec('BEGIN');
             try {
-              db.prepare('UPDATE character_items SET equipped = 0 WHERE character_id = ? AND slot = ?').run(characterId, item.slot);
-              db.prepare('UPDATE character_items SET equipped = 1 WHERE id = ? AND character_id = ?').run(itemId, characterId);
+              db.prepare('UPDATE character_items SET equipped = 0 WHERE character_id = ? AND slot = ?').run(characterId, targetSlot);
+              db.prepare('UPDATE character_items SET equipped = 1, slot = ? WHERE id = ? AND character_id = ?').run(targetSlot, itemId, characterId);
               db.exec('COMMIT');
             } catch (error) { db.exec('ROLLBACK'); throw error; }
           }

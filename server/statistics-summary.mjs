@@ -2,7 +2,7 @@ import definitions from '../shared/statistics.json' with { type: 'json' };
 import { characterTraits } from '../shared/character-traits.mjs';
 import { spellcastingProfile } from '../shared/spellcasting.mjs';
 import { emptyStatistics } from './statistics.mjs';
-import { armorClassFromEquipment, armorTrainingEffects, hasArmorTraining, hasStealthDisadvantage, speedFromEquipment } from './armor-class.mjs';
+import { armorClassFromEquipment, armorTrainingEffects, equipmentAcBonus, hasArmorTraining, hasStealthDisadvantage, speedFromEquipment } from './armor-class.mjs';
 
 export function statisticsSummary(character, stored, equipment = []) {
   const defaults = emptyStatistics();
@@ -24,7 +24,8 @@ export function statisticsSummary(character, stored, equipment = []) {
   const dex = modifier('dex');
   return {
     hp: stats.values.hp, maxHp: stats.values.maxHp ?? traits.firstLevelMaxHp, tempHp: stats.values.tempHp,
-    ac: armorClassFromEquipment(stats, trainingEquipment, character), speed: speedFromEquipment(stats, equipment, stats.values.speed ?? traits.baseSpeed, character), stealthDisadvantage: hasStealthDisadvantage(equipment), ...trainingEffects, proficiency,
+    ac: armorClassFromEquipment(stats, trainingEquipment, character), equipmentAcBonus: equipmentAcBonus(equipment),
+    speed: speedFromEquipment(stats, equipment, stats.values.speed ?? traits.baseSpeed, character), stealthDisadvantage: hasStealthDisadvantage(equipment), ...trainingEffects, proficiency,
     initiativeAdvantage: character.class?.includes('Barbarian') && character.level >= 7,
     initiative: dex === null ? null : dex + traits.initiativeBonus,
     passivePerception: skills.perception === null ? null : 10 + skills.perception,

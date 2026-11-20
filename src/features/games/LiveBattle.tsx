@@ -248,13 +248,26 @@ function DamageForm({ controller }: { controller: Controller }) {
   const [hexRolls, setHexRolls] = useState<string[]>([]);
   const p = controller.response!.battle!.pending!;
   const [rolls, setRolls] = useState<string[]>([]);
+  const [extraDamageRolls, setExtraDamageRolls] = useState<string[]>([]);
   const [psiRoll, setPsiRoll] = useState('');
   const [psiConfirmed, setPsiConfirmed] = useState(false);
   const b = controller.response!.battle!;
   if (p.kind !== 'damage') return null;
   const actor = b.fighters.find(f => f.id === p.actorId)!;
   const count = p.attack.dice * (p.critical ? 2 : 1);
-  return <form className="stack-form" onSubmit={e => { e.preventDefault(); void controller.mutate('act', { kind: 'damage', ...speciesDamage, ...barbarianDamage, sizeRolls: sizeRolls.map(Number), hexEnfeeblementRoll: Number(hexEnfeeblementRoll), psiEnfeeblementRoll: Number(psiEnfeeblementRoll), enfeeblementRoll: Number(enfeeblementRoll), hexRolls: hexRolls.map(Number), ...(psiRoll ? { psiRoll: Number(psiRoll), psiConfirmed } : {}), rolls: Array.from({ length: count }, (_, i) => Number(rolls[i])) }); }}>
+  const extraDamage = p.attack.extraDamage;
+  const extraCount = (extraDamage?.dice ?? 0) * (p.critical ? 2 : 1);
+  return <form className="stack-form" onSubmit={e => {
+    e.preventDefault();
+    void controller.mutate('act', {
+      kind: 'damage', ...speciesDamage, ...barbarianDamage,
+      sizeRolls: sizeRolls.map(Number), hexRolls: hexRolls.map(Number),
+      hexEnfeeblementRoll: Number(hexEnfeeblementRoll), psiEnfeeblementRoll: Number(psiEnfeeblementRoll), enfeeblementRoll: Number(enfeeblementRoll),
+      ...(psiRoll ? { psiRoll: Number(psiRoll), psiConfirmed } : {}),
+      rolls: Array.from({ length: count }, (_, i) => Number(rolls[i])),
+      ...(extraDamage && { extraDamageRolls: Array.from({ length: extraCount }, (_, i) => Number(extraDamageRolls[i])) }),
+    });
+  }}>
     <BarbarianDamageInputs actor={actor} p={p} value={barbarianDamage} onChange={setBarbarianDamage} /><SpeciesDamageInputs critical={p.critical} actor={actor} value={speciesDamage} onChange={setSpeciesDamage} />
     {actor.spellConditions?.some(e => e.kind === 'enfeebled') && <>
     {hexActive(actor, b.fighters.find(f => f.id === p.targetId)!) && <label>Redukcja obrażeń Hex: k8<input required type="number" min={1} max={8} value={hexEnfeeblementRoll} onChange={e => setHexEnfeeblementRoll(e.target.value)} /></label>}
@@ -266,6 +279,9 @@ function DamageForm({ controller }: { controller: Controller }) {
     {hexActive(actor, controller.response!.battle!.fighters.find(f => f.id === p.targetId)!) && <div>{Array.from({ length: p.critical ? 2 : 1 }, (_, i) => <label key={i}>Hex k6<input required type="number" min={1} max={6} value={hexRolls[i] ?? ''} onChange={e => setHexRolls(prev => { const next = [...prev]; next[i] = e.target.value; return next; })} /></label>)}</div>}
     {actor.spellConditions?.some(e => e.kind === 'enfeebled') && <label>Ray of Enfeeblement: odejmij k8<input required type="number" min={1} max={8} value={enfeeblementRoll} onChange={e => setEnfeeblementRoll(e.target.value)} /></label>}
     <div className="battle-fields">{Array.from({ length: count }, (_, i) => <label key={i}>Kość {i + 1} (k{p.attack.sides})<input required type="number" min={1} max={p.attack.sides} value={rolls[i] ?? ''} onChange={e => setRolls(previous => { const next = [...previous]; next[i] = e.target.value; return next; })} /></label>)}</div>
+    {extraDamage && <fieldset><legend>Dodatkowe obrażenia ({extraDamage.type})</legend>
+      <div className="battle-fields">{Array.from({ length: extraCount }, (_, i) => <label key={i}>Kość {i + 1} (k{extraDamage.sides})<input required type="number" min={1} max={extraDamage.sides} value={extraDamageRolls[i] ?? ''} onChange={e => setExtraDamageRolls(previous => { const next = [...previous]; next[i] = e.target.value; return next; })} /></label>)}</div>
+    </fieldset>}
     <button className="primary-button" disabled={controller.pending}>Zastosuj obrażenia</button>
   </form>;
 }

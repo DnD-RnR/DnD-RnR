@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { openDatabase, hashPassword } from './db.mjs';
 import { createApp } from './index.mjs';
-import { armorClassFromEquipment, armorTrainingEffects, hasStealthDisadvantage, speedFromEquipment } from './armor-class.mjs';
+import { armorClassFromEquipment, armorTrainingEffects, equipmentAcBonus, hasStealthDisadvantage, speedFromEquipment } from './armor-class.mjs';
+import { timedAc } from '../shared/timed-effects.mjs';
 
 test('AC is derived from one base, abilities and equipped armor rather than stored AC', () => {
   const stats = { values: { ac: 99, dex: 16, con: 14, wis: 18 } };
@@ -20,6 +21,23 @@ test('AC is derived from one base, abilities and equipped armor rather than stor
   assert.equal(armorClassFromEquipment({ values: { dex: null } }), null);
   assert.equal(armorClassFromEquipment({ values: { dex: null } }, [plate]), 18);
   assert.equal(armorClassFromEquipment({ values: { dex: 16 } }, [], { class: 'Barbarian' }), null);
+});
+
+test('one worn Ring of Protection adds one AC across armor and Mage Armor calculations', () => {
+  const stats = { values: { dex: 16 } };
+  const ring = { equipped: 1, sourceId: 'ring-of-protection' };
+  const shield = { equipped: 1, armorCategory: 'shield', armorClass: '+2' };
+  const plate = { equipped: 1, armorCategory: 'heavy', armorClass: '18' };
+  assert.equal(armorClassFromEquipment(stats, [{ ...ring, equipped: 0 }]), 13);
+  assert.equal(armorClassFromEquipment(stats, [ring, ring]), 14);
+  assert.equal(armorClassFromEquipment(stats, [ring, plate, shield]), 21);
+  assert.equal(timedAc({
+    ac: armorClassFromEquipment(stats, [ring, shield]),
+    dexModifier: 3,
+    equipmentShieldBonus: 2,
+    equipmentAcBonus: equipmentAcBonus([ring, shield]),
+    timedEffects: [{ spellId: 'mage-armor', modifiers: { mageArmor: true } }],
+  }), 19);
 });
 
 test('armor catalog is seeded and available to authenticated users', async () => {

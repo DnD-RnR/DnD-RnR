@@ -63,7 +63,7 @@ export function endWildShape(f) {
 }
 export function applyWildShape(f, form, character, stats, shape) {
   endWildShape(f);
-  const original = Object.fromEntries(['ac', 'speed', 'saves', 'attacks', 'maxAttacks', 'notes', 'formSkills', 'formAbilities', 'size', 'climbSpeed', 'flySpeed', 'swimSpeed', 'darkvision', 'wearingArmor', 'wearingAnyArmor', 'equipmentShieldBonus', 'dexModifier'].map(k => [k, f[k] ?? null]));
+  const original = Object.fromEntries(['ac', 'speed', 'saves', 'attacks', 'maxAttacks', 'notes', 'formSkills', 'formAbilities', 'size', 'climbSpeed', 'flySpeed', 'swimSpeed', 'darkvision', 'wearingArmor', 'wearingAnyArmor', 'equipmentShieldBonus', 'equipmentAcBonus', 'dexModifier'].map(k => [k, f[k] ?? null]));
   const traits = characterTraits(character, stats), pb = 2 + Math.floor((character.level - 1) / 4);
   const mod = ability => Math.floor(((form[ability] ?? stats.values[ability]) - 10) / 2);
   const formAbilities = Object.fromEntries(definitions.abilities.map(a => [a.id, mod(a.id)]));
@@ -71,7 +71,7 @@ export function applyWildShape(f, form, character, stats, shape) {
   if (isMoonDruid(character) && character.level >= 6) f.saves.con += mod('wis');
   f.formSkills = Object.fromEntries(definitions.skills.map(s => [s.id, mod(s.ability) + Math.max(pb * Math.max(traits.effectiveSkills[s.id], form.skills?.[s.id] ? 1 : 0), 2 * (form.skills?.[s.id] ?? 0)) + (traits.skillBonuses[s.id] ?? 0)]));
   Object.assign(f, { ac: isMoonDruid(character) ? Math.max(form.ac, 13 + mod('wis')) : form.ac, speed: form.speed, maxAttacks: 1, size: form.size, climbSpeed: form.climb ?? 0, flySpeed: form.fly ?? 0, swimSpeed: form.swim ?? 0,
-    wearingArmor: false, wearingAnyArmor: false, equipmentShieldBonus: 0, dexModifier: formAbilities.dex, darkvision: form.darkvision ?? 0, formAbilities,
+    wearingArmor: false, wearingAnyArmor: false, equipmentShieldBonus: 0, equipmentAcBonus: 0, dexModifier: formAbilities.dex, darkvision: form.darkvision ?? 0, formAbilities,
     attacks: [{ ...form.attack, id: `beast:${form.id}`, ability: form.attack.ability ?? (['riding-horse', 'wolf', 'dire-wolf'].includes(form.id) ? 'str' : 'dex'), light: false, melee: true }], notes: form.notes ?? '',
     wildShape: { ...shape, original } });
 }

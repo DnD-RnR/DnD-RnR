@@ -116,9 +116,11 @@ function WeaponList({ weapons, character, statistics, showMastery = false, group
       const selectedMasteries = statistics.choices?.weaponMastery ?? [];
       const masterySelected = showMastery && item.weapon &&
         selectedMasteries.some(value => value === item.weapon!.id || value === item.weapon!.name);
+      const extraDamage = item.weapon?.extraDamage;
       const weaponDetails = <>
         <strong className={item.slot === 'main-hand' ? 'combat-weapon-main-hand' : 'combat-weapon-off-hand'}>{item.name} <small>{item.slot === 'main-hand' ? 'Główna ręka' : item.slot === 'off-hand' ? 'Druga ręka' : ''}</small></strong>
         <span>{weaponDamage(item)} {damageBonus === null ? '' : `${signed(damageBonus)} obrażeń`} {item.weapon?.damageType ? `· ${item.weapon.damageType}` : ''}</span>
+        {extraDamage && <small>Przy trafieniu dodatkowe {extraDamage.dice}k{extraDamage.sides} obrażeń ({extraDamage.type}).</small>}
         {rageProfile(character).max > 0 && <small>{ability === 'str' ? `W Szale: dodatkowe +${rageProfile(character).damage} obrażeń (również druga ręka i rzut bronią oparty na Sile).` : 'Premia Szału wymaga ataku opartego na Sile.'}</small>}
         <span>Atak: {attackBonus === null ? 'brak danych' : signed(attackBonus)} · {proficient ? 'biegłość' : 'brak biegłości'}</span>
         {opportunity && <small>Trafienie: 1k20 + modyfikator {ability === 'str' ? 'Siły' : 'Zręczności'}{proficient ? ' + premia z biegłości' : ''} przeciwko KP celu. Obrażenia: kości broni + modyfikator cechy{styleDamageBonus ? ' + premia stylu walki' : ''}.</small>}

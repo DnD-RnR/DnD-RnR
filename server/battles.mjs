@@ -1,5 +1,7 @@
 import { clericResources, handleCleric, syncTurnUndead, validDice } from './cleric.mjs';
 import { bardResources, handleBard, restoreInitiativeInspiration } from './bard.mjs';
+import { defensiveEquipment, equipmentAcBonus } from './armor-class.mjs';
+import { itemDefinition } from './items.mjs';
 import { handleEpicBoons, endEpicInvisible } from './epic-boons.mjs';
 import { rageDamageTypes } from '../shared/barbarian.mjs';
 import { handleBarbarianFeatures, syncBarbarianFeatures, barbarianHit } from './barbarian-features.mjs';
@@ -64,14 +66,14 @@ function characterFighter(db, sessionId, memberId) {
   requireValue(c, 'Wybrana postać nie uczestniczy w sesji.');
   const timedEffects = characterTimedEffects(db, c.id);
   const stats = statsFor(db, c.id);
-  const equipment = db.prepare(`SELECT i.equipped, a.category AS armorCategory, a.armor_class AS armorClass, a.strength,
-    a.stealth_disadvantage AS stealthDisadvantage FROM character_items i JOIN armor_catalog a ON a.id = i.armor_id WHERE i.character_id = ?`).all(c.id);
+  const equipment = defensiveEquipment(db, c.id);
   const s = statisticsSummary(c, stats, equipment);
   requireValue(s.hp !== null && s.maxHp !== null && s.ac !== null, `Uzupełnij PW i KP postaci ${c.name} przed walką.`);
   const traits = characterTraits(c, stats);
   const styles = selectedFightingStyles(stats.choices);
   const attacks = [];
-  const equippedWeapons = db.prepare(`SELECT i.id AS itemId, i.slot, i.grip, w.* FROM character_items i JOIN weapon_catalog w ON w.id = i.weapon_id WHERE i.character_id = ? AND i.equipped = 1`).all(c.id)
+  const equippedWeapons = db.prepare(`SELECT i.id AS itemId, i.name AS itemName, i.source_id AS sourceId, i.slot, i.grip, w.*
+    FROM character_items i JOIN weapon_catalog w ON w.id = i.weapon_id WHERE i.character_id = ? AND i.equipped = 1`).all(c.id)
     .map(item => ({ ...item, properties: JSON.parse(item.properties) }));
   for (const item of equippedWeapons) {
     const properties = item.properties;
@@ -91,8 +93,10 @@ function characterFighter(db, sessionId, memberId) {
     const greatWeaponFighting = item.type !== 'dystansowa' && styles.includes('great-weapon-fighting') &&
       (properties.some(property => property.startsWith('dwuręczna')) || Boolean(versatile));
     const weaponDamageBonus = offHand ? Math.min(0, mod) + (dice ? 0 : Number(item.damage) || 0) : mod + (dice ? 0 : Number(item.damage) || 0);
-    attacks.push({ greatWeaponFighting, reach: properties.includes('zasięg') ? 10 : 5, roots: item.type !== 'dystansowa' && (properties.some(p => p.startsWith('ciężka')) || properties.some(p => p.startsWith('wszechstronna'))), melee: item.type !== 'dystansowa', ability: finesse ? (strength >= dex ? 'str' : 'dex') : item.type === 'dystansowa' ? 'dex' : 'str', finesse, strengthBonus: strength == null ? null : strength + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(styles, weapon), strengthDamageBonus: (offHand ? Math.min(0, strength) : strength) + (dice ? 0 : Number(item.damage) || 0) + fightingStyleDamageBonus(styles, weapon, equippedWeapons, strength ?? 0), id: String(item.itemId), name: item.name, bonus: mod + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(styles, weapon), dice: dice ? Number(dice[1]) : 0,
+    const extraDamage = itemDefinition(item.sourceId)?.extraDamage;
+    attacks.push({ greatWeaponFighting, reach: properties.includes('zasięg') ? 10 : 5, roots: item.type !== 'dystansowa' && (properties.some(p => p.startsWith('ciężka')) || properties.some(p => p.startsWith('wszechstronna'))), melee: item.type !== 'dystansowa', ability: finesse ? (strength >= dex ? 'str' : 'dex') : item.type === 'dystansowa' ? 'dex' : 'str', finesse, strengthBonus: strength == null ? null : strength + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(styles, weapon), strengthDamageBonus: (offHand ? Math.min(0, strength) : strength) + (dice ? 0 : Number(item.damage) || 0) + fightingStyleDamageBonus(styles, weapon, equippedWeapons, strength ?? 0), id: String(item.itemId), name: item.sourceId ? item.itemName : item.name, bonus: mod + (proficient ? s.proficiency : 0) + fightingStyleAttackBonus(styles, weapon), dice: dice ? Number(dice[1]) : 0,
       sides: dice ? Number(dice[2]) : 0, damageBonus: weaponDamageBonus + fightingStyleDamageBonus(styles, weapon, equippedWeapons, mod), type: item.damage_type,
+      ...(extraDamage && { extraDamage }),
       light: properties.includes('lekka'), offHand, mastery: (stats.choices?.weaponMastery ?? []).includes(item.id) ? item.mastery : null, nick: item.mastery === 'Nick' && (stats.choices?.weaponMastery ?? []).includes(item.id), disadvantage: Boolean(s.d20StrengthDexDisadvantage || (properties.includes('ciężka') && (stats.values[item.type === 'dystansowa' ? 'dex' : 'str'] ?? 0) < 13)) });
   }
   if (s.abilities.str.modifier !== null) {
@@ -106,7 +110,7 @@ function characterFighter(db, sessionId, memberId) {
   const resources = resourceState(db, c.id);
   const speciesResources = speciesResourceState(db, c.id, c);
   const fighter = fresh({ id: randomUUID(), name: c.name, memberId, characterId: c.id, ownerId: c.user_id, level: c.level, timedEffects, appliedTimedHpBonus: timedHpBonus(timedEffects), hp: s.hp, maxHp: s.maxHp + timedHpBonus(timedEffects), tempHp: s.tempHp ?? 0,
-    dexModifier: s.abilities.dex.modifier, wearingArmor: equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'), equipmentShieldBonus: s.untrainedShield ? 0 : Number.parseInt(equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0,
+    dexModifier: s.abilities.dex.modifier, wearingArmor: equipment.some(i => i.equipped && i.armorCategory && i.armorCategory !== 'shield'), equipmentShieldBonus: s.untrainedShield ? 0 : Number.parseInt(equipment.find(i => i.equipped && i.armorCategory === 'shield')?.armorClass ?? '0', 10) || 0, equipmentAcBonus: s.equipmentAcBonus,
     conditionSources: resources.conditionSources ?? [], exhaustion: resources.exhaustion ?? 0, seenInvisibleIds: [], manualConditions: resources.manualConditions ?? [], prone: resources.prone === true, concentrationKey: resources.concentrationKey ?? null, ac: s.ac, speed: s.speed ?? 0, saves: s.savingThrows, notes: '', attacks, maxAttacks, concentration: resourceState(db, c.id).concentration ?? null,
     divineSense: resources.divineSense?.expiresAt > Date.now() ? resources.divineSense : null,
     wildShapeUses: wildShapeUses(c, resources), wildCompanion: resources.wildCompanion ?? null,
@@ -250,6 +254,14 @@ export function handleBattles(db, user, path, method, body, send) {
   if (!gm && !participating) return reply(404, { error: 'Nie masz dostępu do tej walki.' });
   if ((!action && method !== 'GET') || (action && method !== 'POST')) return reply(405, { error: 'Niedozwolona metoda.' });
   let battle = decode(db.prepare('SELECT data FROM session_battles WHERE session_id = ?').get(session.id));
+  if (battle?.active) for (const f of battle.fighters) if (f.characterId) {
+    const wearer = f.wildShape?.original ?? f;
+    const bonus = equipmentAcBonus(defensiveEquipment(db, f.characterId));
+    const change = bonus - (wearer.equipmentAcBonus ?? 0);
+    if (!change) continue;
+    if (wearer.ac != null) wearer.ac += change;
+    wearer.equipmentAcBonus = bonus;
+  }
   for (const f of battle?.fighters ?? []) if (f.characterId && f.rageProfile?.worldTree === undefined) {
     const c = db.prepare('SELECT * FROM characters WHERE id = ?').get(f.characterId);
     if (!c) continue;
@@ -535,7 +547,15 @@ export function handleBattles(db, user, path, method, body, send) {
                 amount = Math.max(p.sizeModifier < 0 ? 1 : 0, amount + Math.sign(p.sizeModifier) * body.sizeRolls.reduce((sum, n) => sum + n, 0));
               }
               const target = b.fighters.find(f => f.id === p.targetId);
-              const extraStrike = [];
+              const extraDamage = [];
+              const itemDamage = p.attack.extraDamage;
+              let itemDamageAmount = 0;
+              if (itemDamage) {
+                const dice = itemDamage.dice * (p.critical ? 2 : 1);
+                requireValue(validDice(body.extraDamageRolls, dice, itemDamage.sides), `${p.attack.name}: podaj wyniki wszystkich ${dice}k${itemDamage.sides} obrażeń (${itemDamage.type}).`);
+                itemDamageAmount = body.extraDamageRolls.reduce((sum, roll) => sum + roll, 0);
+                extraDamage.push({ amount: itemDamageAmount, type: itemDamage.type });
+              }
               if (body.divineStrikeRolls != null) {
                 const caster = actor.characterId && casterData(db, actor.characterId);
                 const profile = caster && clericResources(caster.character, caster.state, caster.stats.spells.choices);
@@ -544,7 +564,7 @@ export function handleBattles(db, user, path, method, body, send) {
                   p.attack.id !== 'unarmed' && !p.attack.id.startsWith('beast:') && ['Necrotic', 'Radiant'].includes(body.divineStrikeType) &&
                   validDice(body.divineStrikeRolls, dice, 8), 'Divine Strike wymaga trafienia broni? we w?asnej turze, w?a?ciwych ko?ci i typu obra?e?.');
                 actor.divineStrikeUsed = true;
-                extraStrike.push({ amount: body.divineStrikeRolls.reduce((sum, roll) => sum + roll, 0), type: body.divineStrikeType });
+                extraDamage.push({ amount: body.divineStrikeRolls.reduce((sum, roll) => sum + roll, 0), type: body.divineStrikeType });
               }
               if (body.primalStrikeRolls != null) {
                 const caster = actor.characterId && casterData(db, actor.characterId);
@@ -554,7 +574,7 @@ export function handleBattles(db, user, path, method, body, send) {
                   (!p.attack.id.startsWith('beast:') || actor.wildShape) && ['Cold', 'Fire', 'Lightning', 'Thunder'].includes(body.primalStrikeType) &&
                   validDice(body.primalStrikeRolls, dice, 8), 'Primal Strike requires a weapon or Wild Shape hit on your turn and valid dice.');
                 actor.primalStrikeUsed = true;
-                extraStrike.push({ amount: body.primalStrikeRolls.reduce((sum, roll) => sum + roll, 0), type: body.primalStrikeType });
+                extraDamage.push({ amount: body.primalStrikeRolls.reduce((sum, roll) => sum + roll, 0), type: body.primalStrikeType });
               }
               let attackType = p.attack.type;
               if (body.lunarRadiance === true || body.improvedLunarRolls != null) {
@@ -567,12 +587,12 @@ export function handleBattles(db, user, path, method, body, send) {
                   requireValue(actor.level >= 14 && actor.improvedLunarTurn !== turn && validDice(body.improvedLunarRolls, p.critical ? 4 : 2, 10),
                     'Improved Lunar Radiance requires level 14 and is available once per turn.');
                   actor.improvedLunarTurn = turn;
-                  extraStrike.push({ amount: body.improvedLunarRolls.reduce((sum, roll) => sum + roll, 0), type: 'Radiant' });
+                  extraDamage.push({ amount: body.improvedLunarRolls.reduce((sum, roll) => sum + roll, 0), type: 'Radiant' });
                 }
               }
               queueRetaliations(b, target, actor, p.hit);
               if (amount > 0) endProtectiveSpell(db, actor, 'sanctuary');
-              damage(db, target, Math.max(0, amount + (p.epicOverwhelming ? actor.epicOffenseScore ?? 0 : 0) - (p.cuttingWordsReduction ?? 0)), p.critical, attackType, Boolean(actor.epicOffense && rageDamageTypes.includes(attackType?.toLowerCase())), extraStrike);
+              damage(db, target, Math.max(0, amount + (p.epicOverwhelming ? actor.epicOffenseScore ?? 0 : 0) - (p.cuttingWordsReduction ?? 0)), p.critical, attackType, Boolean(actor.epicOffense && rageDamageTypes.includes(attackType?.toLowerCase())), extraDamage);
               reflectThoughtShield(db, b, target, actor, attackType, target.lastDamage.amount, damage, log);
               if (hexActive(actor, target)) {
                 const hexCount = p.critical ? 2 : 1;
@@ -589,7 +609,10 @@ export function handleBattles(db, user, path, method, body, send) {
               const masteryPending = applyWeaponMastery(b, actor, target, p, body, target.lastDamage?.amount ?? 0, log);
               if (p.attack.mastery === 'Cleave' && p.hit?.melee && actor.id === current.id && actor.cleaveTurn !== `${b.round}:${current.id}`)
                 b.cleave = { actorId: actor.id, attackId: p.attack.id, targetId: target.id };
-              psionicStrike(db, b, actor, body, amount, damage, target, log); log(b, `${actor.name} → ${target.name}: ${amount} obrażeń (${p.attack.type}).`); b.pending = masteryPending;
+              psionicStrike(db, b, actor, body, amount, damage, target, log);
+              const itemDamageLog = itemDamage ? ` + ${itemDamageAmount} (${itemDamage.type})` : '';
+              log(b, `${actor.name} → ${target.name}: ${amount} obrażeń (${p.attack.type})${itemDamageLog}.`);
+              b.pending = masteryPending;
             } else {
               requireValue(!b.pending, 'Najpierw rozstrzygnij rozpoczęte działanie.');
               if (kind === 'stand-up') {

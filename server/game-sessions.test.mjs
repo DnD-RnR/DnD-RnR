@@ -62,6 +62,73 @@ function seed(db) {
     INSERT INTO game_members (id, game_id, character_id, status) VALUES (1, 1, 1, 'accepted'), (2, 1, 2, 'pending'), (3, 2, 3, 'accepted'), (4, 1, 5, 'accepted');`);
 }
 
+test('GM can award the ring and dagger, and their effects follow equipment ownership', async () => {
+  const db = openDatabase(':memory:');
+  seed(db);
+  const stats = emptyStatistics();
+  Object.assign(stats.values, { str: 10, dex: 12, con: 14, int: 10, wis: 10, cha: 16, hp: 24, maxHp: 24 });
+  for (const id of [1, 5]) db.prepare('INSERT INTO character_statistics VALUES (?, ?)').run(id, JSON.stringify(stats));
+  db.prepare('INSERT INTO game_monster_entries VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(1, 'dummy', 'Dummy', 30, 11, 30, '', '{}');
+  const app = createApp(db);
+  await new Promise(resolve => app.listen(0, '127.0.0.1', resolve));
+  async function request(path, userId, body) {
+    const response = await fetch(`http://127.0.0.1:${app.address().port}/api${path}`, {
+      method: body === undefined ? 'GET' : 'POST',
+      headers: { Origin: 'http://127.0.0.1:5173', 'Content-Type': 'application/json', Cookie: `session=test-${userId}` },
+      body: JSON.stringify(body),
+    });
+    const data = await response.json();
+    assert.ok(response.ok, `${path}: ${JSON.stringify(data)}`);
+    return data;
+  }
+  try {
+    const { items: catalog } = await request('/items', 1);
+    const ring = catalog.find(item => item.name === 'Ring of Protection');
+    const dagger = catalog.find(item => item.name === 'Dagger of Gleaming');
+    assert.ok(ring && dagger);
+    await request('/games/1/equipment', 1, { characterId: 1, itemId: ring.id, quantity: 1 });
+    await request('/games/1/equipment', 1, { characterId: 1, itemId: dagger.id, quantity: 2 });
+    const { items } = await request('/characters/1/inventory', 3);
+    const ringPath = `/characters/1/inventory/${items.find(item => item.name === ring.name).id}`;
+    assert.equal((await request('/characters/1/statistics', 3)).effective.ac, 11);
+    await request(`${ringPath}/equip`, 3, { slot: 'ring-right' });
+    assert.equal((await request('/characters/1/statistics', 3)).effective.ac, 12);
+    assert.equal((await request('/games/1', 1)).members.find(member => member.characterId === 1).statistics.ac, 12);
+
+    const daggerId = items.find(item => item.name === dagger.name).id;
+    await request(`/characters/1/inventory/${daggerId}/transfer`, 3, { recipientId: 5, quantity: 1 });
+    const { items: received } = await request('/characters/5/inventory', 4);
+    const [receivedDagger] = received;
+    assert.equal(receivedDagger.weapon.id, 'dagger');
+    assert.deepEqual(receivedDagger.weapon.extraDamage, { dice: 2, sides: 4, type: 'promieniste' });
+    await request(`/characters/5/inventory/${receivedDagger.id}/equip`, 4, { slot: 'main-hand' });
+
+    const { sessionId } = await request('/games/1/sessions/start', 1, {});
+    for (const [characterId, userId] of [[1, 3], [5, 4]]) await request(`/characters/${characterId}/session/join`, userId, { sessionId });
+    const { battle: started } = await request('/games/1/battle/start', 1, { sessionId, version: 0, fighters: [
+      { memberId: 4, initiative: 20 }, { memberId: 1, initiative: 10 }, { enemyId: 'dummy', initiative: 5 },
+    ] });
+    assert.equal(started.fighters.find(f => f.characterId === 1).ac, 12);
+    assert.equal(started.fighters[0].attacks[0].name, dagger.name);
+    const enemyId = started.fighters.find(f => !f.characterId).id;
+    const { battle: hit } = await request('/games/1/battle/act', 4, {
+      sessionId, version: started.version, kind: 'attack', slot: 'action', attackId: String(receivedDagger.id), targetId: enemyId, roll: 15,
+    });
+    await request('/games/1/battle/act', 4, { sessionId, version: hit.version, kind: 'damage', rolls: [3], extraDamageRolls: [2, 4] });
+    const { battle: afterDamage } = await request('/games/1/battle', 1);
+    assert.equal(afterDamage.fighters.find(f => f.id === enemyId).hp, 20);
+
+    await request(`${ringPath}/unequip`, 3, {});
+    assert.equal((await request('/characters/1/statistics', 3)).effective.ac, 11);
+    const { battle: afterUnequip } = await request('/games/1/battle', 1);
+    assert.equal(afterUnequip.fighters.find(f => f.characterId === 1).ac, 11);
+  } finally {
+    app.closeAllConnections();
+    await new Promise(resolve => app.close(resolve));
+    db.close();
+  }
+});
+
 test('GM removes selected inventory quantities only from accepted members of their game', async () => {
   const db = openDatabase(':memory:'); seed(db);
   db.exec(`INSERT INTO character_items (id, character_id, name, quantity, slot, equipped) VALUES

@@ -2,7 +2,7 @@ export type TimedEffect = { id: string; castingId: string; dismissible?: boolean
 export const timedSpellDefinitions: Record<string, { willingOnly?: boolean; self?: boolean; ward?: boolean; optionalSave?: boolean; effectOptions?: string[]; sizeChange?: boolean; requiresSight?: boolean; seconds: number | null; concentration?: boolean; hostile?: boolean; targets: number; targetsPerLevel?: number; save?: string; conditionOptions?: string[] }>;
 export function strongestEffects(effects?: TimedEffect[]): TimedEffect[];
 export function timedHpBonus(effects?: TimedEffect[]): number;
-export function timedAc(fighter: { ac: number | null; timedEffects?: TimedEffect[]; wearingArmor?: boolean; dexModifier?: number | null; equipmentShieldBonus?: number; shieldAC?: number }): number | null;
+export function timedAc(fighter: { ac: number | null; timedEffects?: TimedEffect[]; wearingArmor?: boolean; dexModifier?: number | null; equipmentShieldBonus?: number; equipmentAcBonus?: number; shieldAC?: number }): number | null;
 export function timedSpeedBonus(fighter: { timedEffects?: TimedEffect[] }): number;
 export function timedResistance(fighter: { timedEffects?: TimedEffect[] }, type: string): boolean;
 export function timedRollModifier(fighter: { timedEffects?: TimedEffect[] }, body: { blessRoll?: number; baneRoll?: number }): number;
