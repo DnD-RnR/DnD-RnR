@@ -1,3 +1,9 @@
+export function listWeapons(db) {
+  return db.prepare(`SELECT id, name, category, type, damage, damage_type AS damageType,
+    range, weight, cost, properties, mastery FROM weapon_catalog ORDER BY category, type, name, id`).all()
+    .map(weapon => ({ ...weapon, properties: JSON.parse(weapon.properties) }));
+}
+
 export function handleWeapons(db, user, path, method, _body, send) {
   if (path !== '/api/weapons') return false;
   if (method !== 'GET') {
@@ -8,10 +14,6 @@ export function handleWeapons(db, user, path, method, _body, send) {
     send(401, { error: 'Zaloguj się, aby kontynuować.' });
     return true;
   }
-  send(200, {
-    weapons: db.prepare(`SELECT id, name, category, type, damage, damage_type AS damageType,
-      range, weight, cost, properties, mastery FROM weapon_catalog ORDER BY category, type, name, id`).all()
-      .map(weapon => ({ ...weapon, properties: JSON.parse(weapon.properties) })),
-  });
+  send(200, { weapons: listWeapons(db) });
   return true;
 }

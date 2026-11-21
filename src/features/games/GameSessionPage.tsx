@@ -6,24 +6,21 @@ import { MonstersPage } from './MonstersPage';
 import { GameMemberCard, type GameMember as Member } from './GameMemberCard';
 import { GameEditPanel } from './GameEditPanel';
 import { useCallback, useEffect, useState } from 'react';
-import { api, type CatalogItem } from '../../api';
+import { api } from '../../api';
 import { Card } from '../../components/ui/Card';
 
 type Session = { game: { id: number; name: string; description: string }; members: Member[]; activeSession: { id: number; startedAt: number } | null; activeBattle: { sessionId: number } | null };
-type Snapshot = Session & { items: CatalogItem[]; armors: Array<{ id: string; name: string; category: 'light' | 'medium' | 'heavy' | 'shield'; weight: number | null; cost: string }> };
 
 export function GameSessionPage({ gameId, userId }: { gameId: number; userId: number }) {
   const [editing, setEditing] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
-  const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [connectionLost, setConnectionLost] = useState(false);
   const load = useCallback(async () => {
-    const data = await api<Snapshot>(`/games/${gameId}/snapshot`);
-    setSession(data); setCatalog([...data.items, ...data.armors.map((armor, index) => ({ id: -(index + 1), name: armor.name, description: '', slot: armor.category === 'shield' ? 'off-hand' : 'armor', weight: armor.weight, cost: armor.cost, armorId: armor.id, armorCategory: armor.category }))]);
+    setSession(await api<Session>(`/games/${gameId}`));
   }, [gameId]);
   useEffect(() => {
     if (editing) return;
@@ -88,12 +85,12 @@ export function GameSessionPage({ gameId, userId }: { gameId: number; userId: nu
     {connectionLost && <p role="status">Ponowne łączenie z aktualizacjami gry… Możesz użyć „Odśwież drużynę”.</p>}
     {message && <p role="status">{message}</p>}
     {loading ? <p role="status">Wczytywanie gry…</p> : session && <>
-      <div className="battle-toolbar"><a className="primary-button battle-start" href={`?gmGame=${gameId}&monsters=1`}>Potwory</a><a className="primary-button battle-start" href={`?gmGame=${gameId}&levelUp=1`}>Lvl up</a>{session.activeSession && <a className="primary-button battle-start" href={`?gmGame=${gameId}&battle=1`}>{session.activeBattle ? 'Wr\u00f3\u0107 do walki' : 'Rozpocznij walk\u0119'}</a>}</div>
+      <div className="battle-toolbar"><a className="primary-button battle-start" href={`?gmGame=${gameId}&equipment=1`}>Ekwipunek drużyny</a><a className="primary-button battle-start" href={`?gmGame=${gameId}&monsters=1`}>Potwory</a><a className="primary-button battle-start" href={`?gmGame=${gameId}&levelUp=1`}>Lvl up</a>{session.activeSession && <a className="primary-button battle-start" href={`?gmGame=${gameId}&battle=1`}>{session.activeBattle ? 'Wr\u00f3\u0107 do walki' : 'Rozpocznij walk\u0119'}</a>}</div>
       {session.activeSession && !session.activeBattle && <SpellRestControls gameId={gameId} />}<section aria-labelledby="participants-heading"><h2 id="participants-heading">Postacie w bieżącej sesji ({participants.length})</h2>
         <p>Do gry należy {members.length} postaci. Poniżej widać tylko te, które weszły do trwającej sesji. Lista aktualizuje się po zmianach.</p>
-        {participants.length ? <div className="session-characters gm-character-row">{participants.map(m => <GameMemberCard key={m.id} member={m} gameId={gameId} catalog={catalog} pending={pending} onAssigned={load} onKick={() => void kick(m)} />)}</div> : <Card title="Drużyna czeka na bohaterów"><p>{session.activeSession ? 'Żadna postać nie weszła jeszcze do bieżącej sesji.' : 'Rozpocznij sesję, aby gracze mogli dołączyć.'}</p></Card>}
+        {participants.length ? <div className="session-characters gm-character-row">{participants.map(m => <GameMemberCard key={m.id} member={m} gameId={gameId} pending={pending} onRemoved={load} onKick={() => void kick(m)} />)}</div> : <Card title="Drużyna czeka na bohaterów"><p>{session.activeSession ? 'Żadna postać nie weszła jeszcze do bieżącej sesji.' : 'Rozpocznij sesję, aby gracze mogli dołączyć.'}</p></Card>}
       </section>
-      {!!absent.length && <details className="player-list"><summary>{'Postacie nale\u017c\u0105ce do gry poza sesj\u0105'} ({absent.length})</summary><div className="session-characters gm-character-row">{absent.map(m => <GameMemberCard key={m.id} member={m} gameId={gameId} catalog={catalog} pending={pending} onAssigned={load} />)}</div></details>}
+      {!!absent.length && <details className="player-list"><summary>{'Postacie nale\u017c\u0105ce do gry poza sesj\u0105'} ({absent.length})</summary><div className="session-characters gm-character-row">{absent.map(m => <GameMemberCard key={m.id} member={m} gameId={gameId} pending={pending} onRemoved={load} />)}</div></details>}
 
     </>}
   </>;

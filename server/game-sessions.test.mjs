@@ -181,6 +181,65 @@ test('GM snapshot matches separate endpoints and preserves ownership restriction
   } finally { app.closeAllConnections(); await new Promise(resolve => app.close(resolve)); db.close(); }
 });
 
+test('GM awards several catalog entries and splits a gold pool among selected characters', async () => {
+  const db = openDatabase(':memory:'); seed(db);
+  const app = createApp(db);
+  await new Promise(resolve => app.listen(0, '127.0.0.1', resolve));
+  const request = (path, userId = 1, body) => fetch(`http://127.0.0.1:${app.address().port}/api${path}`, {
+    method: body === undefined ? 'GET' : 'POST',
+    headers: { Origin: 'http://127.0.0.1:5173', 'Content-Type': 'application/json', Cookie: `session=test-${userId}` },
+    body: JSON.stringify(body),
+  });
+  const equipmentPath = '/games/1/equipment';
+  const award = (body, userId) => request(`${equipmentPath}/batch`, userId, body);
+  try {
+    const response = await request(equipmentPath);
+    assert.equal(response.status, 200);
+    const catalog = await response.json();
+    assert.deepEqual(catalog.members.map(member => member.characterId), [1, 5]);
+    assert.ok(catalog.weapons.some(weapon => weapon.id === 'shortbow'));
+    assert.ok(catalog.armors.some(armor => armor.id === 'shield'));
+    const acid = catalog.items.find(item => item.name === 'Kwas');
+    const body = { characterIds: [5, 1], items: [
+      { itemId: acid.id, quantity: 2 }, { weaponId: 'shortbow', quantity: 1 }, { armorId: 'shield', quantity: 1 },
+    ], gold: 101 };
+
+    for (const userId of [2, 3, 6]) {
+      assert.equal((await request(equipmentPath, userId)).status, 404);
+      assert.equal((await award(body, userId)).status, 404);
+    }
+    assert.equal((await award({ ...body, characterIds: [1, 2] })).status, 404);
+    assert.equal((await award({ ...body, characterIds: [1, 3] })).status, 404);
+    assert.equal((await award({ ...body, items: [...body.items, { weaponId: 'missing', quantity: 1 }] })).status, 404);
+    assert.equal((await award({ ...body, characterIds: [1, 1] })).status, 400);
+    assert.equal((await award({ ...body, gold: 20_000 })).status, 400);
+    assert.equal((await award({ ...body, gold: 1.5 })).status, 400);
+    assert.equal((await award({ characterIds: [1] })).status, 400);
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM character_items').get().count, 0);
+
+    assert.equal((await award(body)).status, 201);
+    for (const [characterId, playerId, share] of [[1, 3, 50], [5, 4, 51]]) {
+      const inventoryPath = `/characters/${characterId}/inventory`;
+      const { items } = await (await request(inventoryPath, playerId)).json();
+      assert.equal(items.length, 4);
+      assert.ok(items.every(item => item.equipped === 0));
+      assert.equal(items.find(item => item.name === acid.name).quantity, 2);
+      assert.equal(items.find(item => item.armor?.id === 'shield').slot, 'off-hand');
+      assert.equal(items.find(item => item.name === 'Złoto (GP)').quantity, share);
+      const bow = items.find(item => item.weapon?.id === 'shortbow');
+      assert.equal(bow.weapon.damage, '1d6');
+      assert.equal((await request(`${inventoryPath}/${bow.id}/equip`, playerId, {})).status, 200);
+      assert.equal(db.prepare('SELECT equipped FROM character_items WHERE id = ?').get(bow.id).equipped, 1);
+    }
+
+    assert.equal((await award({ characterIds: [5, 1], gold: 1 })).status, 201);
+    const gold = db.prepare("SELECT character_id, quantity FROM character_items WHERE source_id = 'gold-piece' ORDER BY character_id, id");
+    assert.deepEqual(gold.all().map(row => [row.character_id, row.quantity]), [[1, 50], [5, 52]]);
+    assert.equal((await award({ characterIds: [1], gold: 9999 })).status, 201);
+    assert.deepEqual(gold.all().map(row => [row.character_id, row.quantity]), [[1, 50], [1, 9999], [5, 52]]);
+  } finally { app.closeAllConnections(); await new Promise(resolve => app.close(resolve)); db.close(); }
+});
+
 test('GM event stream reports relevant mutations and stops after logout', async () => {
   const db = openDatabase(':memory:'); seed(db);
   const app = createApp(db);

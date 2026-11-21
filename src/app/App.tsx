@@ -1,5 +1,6 @@
 import { GamesPage } from '../features/games/GamesPage';
 import { GameSessionPage } from '../features/games/GameSessionPage';
+import { GameEquipmentPage } from '../features/games/GameEquipmentPage';
 import { PlayerGamePage } from '../features/games/PlayerGamePage';
 import { useEffect, useState } from 'react';
 import { api, type User, type Character } from '../api';
@@ -53,13 +54,20 @@ export function App() {
     </main>
   </div>;
 
-  if (gameWindowId !== null) return <div className="game-window-shell">
-    <header className="game-window-toolbar"><a className="text-button" href={window.location.pathname}>← Wróć do gier</a><span>{user.name} · {user.role === 'gm' ? 'GM' : user.role === 'admin' ? 'Administrator' : 'Gracz'}</span><button className="text-button" onClick={logout} disabled={logoutPending}>Wyloguj się</button></header>
-    <main id="main" tabIndex={-1}>
-      {error && <p role="alert" className="form-error">{error}</p>}
-      {user.role === 'gm' ? <GameSessionPage key={`${user.id}-${gameWindowId}`} gameId={gameWindowId} userId={user.id} /> : <p role="alert" className="form-error">Widok gry jest dostępny tylko dla prowadzącego ją GM.</p>}
-    </main>
-  </div>;
+  if (gameWindowId !== null) {
+    const params = new URLSearchParams(window.location.search);
+    const characterId = Number(params.get('character'));
+    const equipmentCharacterId = Number.isSafeInteger(characterId) && characterId > 0 ? characterId : null;
+    return <div className="game-window-shell">
+      <header className="game-window-toolbar"><a className="text-button" href={window.location.pathname}>← Wróć do gier</a><span>{user.name} · {user.role === 'gm' ? 'GM' : user.role === 'admin' ? 'Administrator' : 'Gracz'}</span><button className="text-button" onClick={logout} disabled={logoutPending}>Wyloguj się</button></header>
+      <main id="main" tabIndex={-1}>
+        {error && <p role="alert" className="form-error">{error}</p>}
+        {user.role !== 'gm' ? <p role="alert" className="form-error">Widok gry jest dostępny tylko dla prowadzącego ją GM.</p>
+          : params.get('equipment') === '1' ? <GameEquipmentPage key={`${user.id}-${gameWindowId}`} gameId={gameWindowId} characterId={equipmentCharacterId} />
+          : <GameSessionPage key={`${user.id}-${gameWindowId}`} gameId={gameWindowId} userId={user.id} />}
+      </main>
+    </div>;
+  }
 
   return (
     <AppLayout key={user.id} user={user} activePage={activePage} onNavigate={setActivePage} onLogout={logout} logoutPending={logoutPending}>

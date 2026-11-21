@@ -418,15 +418,21 @@ nazwę, opis i miejsce noszenia przedmiotu. „Tylko plecak” służy przedmiot
 których nie można zakładać. Katalog zawiera wpisy podstawowe i jest zapisywany
 w kolekcji `item_catalog` w tej samej bazie Firestore co konta i postacie.
 
-GM otwiera **Gry → Otwórz grę**, a przy bohaterze wybiera przedmiot z katalogu
-i liczbę sztuk 1–9999 w formularzu **Przydziel ekwipunek**. Przedmiot trafia do
-plecaka, bez automatycznego zakładania. Każde przydzielenie tworzy osobną pozycję;
-katalog jest zbiorem wzorów i nie ma limitu zapasów.
+GM otwiera **Ekwipunek drużyny** z listy gier lub z panelu gry. Może w jednym
+przydziale wybrać postacie, dodać kilka przedmiotów, broni i pancerzy oraz ustawić
+liczbę sztuk na postać. Link **Przydziel ekwipunek** przy postaci zaznacza ją jako
+odbiorcę. Przedmioty trafiają do plecaków. Katalog jest zbiorem wzorów i nie ma
+limitu zapasów.
+
+Pole **Pula złota (GP)** dzieli podaną kwotę między zaznaczone postacie. Jeśli
+pozostają monety, pierwsze postacie na liście dostają po jednej więcej. Podgląd
+pokazuje dokładny wynik przed zapisem. Złoto trafia do plecaka jako pozycja
+**Złoto (GP)** i może być dalej przekazywane między postaciami.
 
 API pozwala przydzielać przedmioty wyłącznie GM prowadzącemu daną grę i tylko
 bohaterom z zaakceptowanym udziałem. Gracze nie mogą sami dodawać przedmiotów
-ani uzupełniać katalogu. Nowe wpisy katalogu pojawiają się po otwarciu gry lub
-wybraniu „Odśwież drużynę”. Gracz zobaczy przydział po ponownym otwarciu ekwipunku.
+ani uzupełniać katalogu. Cały przydział jest zapisywany w jednej transakcji.
+Otwarte widoki ekwipunku aktualizują się po zapisie.
 Przydział kopiuje nazwę, opis i slot z katalogu; późniejsze zmiany lub usunięcie
 wpisu katalogu bezpośrednio w bazie nie zmieniają już wydanych przedmiotów.
 

@@ -4,14 +4,18 @@ import itemCatalog from '../shared/item-catalog.json' with { type: 'json' };
 const itemsBySourceId = new Map(itemCatalog.map(item => [item.id, item]));
 export const itemDefinition = sourceId => itemsBySourceId.get(sourceId);
 
+export function listItems(db) {
+  return db.prepare(`SELECT i.id, i.name, i.description, i.slot, i.weight, i.cost, i.armor_id AS armorId,
+    a.category AS armorCategory, i.weapon_id AS weaponId FROM item_catalog i LEFT JOIN armor_catalog a ON a.id = i.armor_id
+    ORDER BY i.name, i.id`).all();
+}
+
 export function handleItems(db, user, path, method, body, send) {
   if (path !== '/api/items') return false;
   const reply = (status, data) => { send(status, data); return true; };
   if (method === 'GET') {
     if (!['admin', 'gm'].includes(user.role)) return reply(403, { error: 'Katalog jest dostępny dla administratora i GM.' });
-    return reply(200, { items: db.prepare(`SELECT i.id, i.name, i.description, i.slot, i.weight, i.cost, i.armor_id AS armorId,
-      a.category AS armorCategory FROM item_catalog i LEFT JOIN armor_catalog a ON a.id = i.armor_id
-      ORDER BY i.name, i.id`).all() });
+    return reply(200, { items: listItems(db) });
   }
   if (method === 'POST') {
     if (user.role !== 'admin') return reply(403, { error: 'Tylko administrator może dodawać przedmioty do katalogu.' });

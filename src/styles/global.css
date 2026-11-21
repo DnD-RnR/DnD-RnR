@@ -102,7 +102,7 @@ main.login-panel { padding: 36px; background: var(--surface); border: 1px solid 
 .stack-form label { display: grid; gap: 8px; font-size: .9rem; min-width: 0; }
 .stack-form input, .stack-form select, .stack-form textarea { width: 100%; min-width: 0; min-height: 48px; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--background); color: var(--text); font: inherit; font-size: 1rem; }
 .stack-form textarea { resize: vertical; }
-.equipment-assignment { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.member-equipment-link { display: inline-block; }
 .item-description { white-space: pre-wrap; overflow-wrap: anywhere; }
 .game-window-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 12px 24px; border-bottom: 1px solid var(--border); background: var(--surface); }
 .game-window-toolbar > span { color: var(--muted); }
@@ -201,6 +201,51 @@ button:disabled { cursor: wait; opacity: .6; }
 }
 
 .stack-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 20px; }
+.game-equipment-page { max-width: 1100px; }
+.game-equipment-page .page-heading .text-button { display: inline-block; margin-bottom: 8px; }
+.game-equipment-page h1 { overflow-wrap: anywhere; }
+.game-equipment-form { grid-template-columns: minmax(230px, 1fr) minmax(0, 2fr); align-items: start; }
+.game-equipment-form .card { min-width: 0; padding: 24px; }
+.game-equipment-form fieldset { gap: 14px; }
+.equipment-recipient-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; color: var(--muted); font-size: .85rem; }
+.equipment-recipient-list { display: grid; gap: 8px; }
+.equipment-recipient-list label {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; min-height: 48px;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--background); cursor: pointer;
+}
+.equipment-recipient-list label:has(input:checked) { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+.equipment-recipient-list input { width: 18px; height: 18px; min-height: 0; flex-shrink: 0; margin: 0; padding: 0; accent-color: var(--accent); }
+.equipment-recipient-list span { display: grid; overflow-wrap: anywhere; }
+.equipment-award { display: grid; gap: 16px; min-width: 0; }
+.equipment-catalog-picker { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; }
+.equipment-add-button { min-height: 48px; padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--raised); color: var(--accent); font-weight: 650; }
+.equipment-add-button:hover:not(:disabled) { border-color: var(--accent); }
+.equipment-loot-list, .equipment-gold-shares { list-style: none; padding: 0; margin: 0; }
+.equipment-loot-list > li { display: grid; grid-template-columns: minmax(0, 1fr) 8rem auto; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); }
+.equipment-loot-list > li:last-child { padding-bottom: 0; }
+.equipment-loot-name { display: grid; gap: 3px; overflow-wrap: anywhere; }
+.equipment-loot-name summary { cursor: pointer; color: var(--accent); font-size: .85rem; }
+.equipment-loot-name .item-description { margin: 6px 0 0; font-size: .85rem; }
+.equipment-loot-list button { align-self: end; min-height: 48px; }
+.equipment-gold-input { max-width: 12rem; }
+.equipment-gold-shares { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: 8px; }
+.equipment-gold-shares li { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 8px 12px; border-radius: 8px; background: var(--background); }
+.equipment-gold-shares span { overflow-wrap: anywhere; }
+.equipment-gold-shares strong { white-space: nowrap; color: var(--accent); }
+.equipment-award-actions { display: grid; gap: 8px; }
+.equipment-award-actions p { margin: 0; }
+.equipment-award-actions .primary-button { justify-self: end; }
+.equipment-award-success { padding: 12px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); }
+@media (max-width: 760px) {
+  .game-equipment-form { grid-template-columns: minmax(0, 1fr); }
+  .game-equipment-form .card { padding: 16px; }
+  .equipment-award-actions .primary-button { justify-self: stretch; }
+}
+@media (max-width: 460px) {
+  .equipment-catalog-picker { grid-template-columns: minmax(0, 1fr); }
+  .equipment-loot-list > li { grid-template-columns: minmax(0, 1fr) auto; }
+  .equipment-loot-name { grid-column: 1 / -1; }
+}
 .admin-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
 .admin-row p { margin-bottom: 0; }
 .admin-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; }
